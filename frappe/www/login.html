@@ -79,7 +79,10 @@
 
 {% macro logo_section(title=null, subtitle=null) %}
 <div class="page-card-head flex flex-col items-start gap-4 text-left">
-	<img class="app-logo" src="{{ logo }}">
+	<div class="flex flex-col gap-1">
+		<img class="app-logo" src="{{ logo }}">
+		<div class="text-xs text-ink-gray-5">{{ _("на основі Frappe Framework") }}</div>
+	</div>
 	<div class="page-card-head-text flex flex-col gap-1.5 w-full">
 		{% if title %}
 		<h4 class="text-3xl-bold text-ink-gray-9 w-full mt-0 mb-0">{{ _(title) }}</h4>

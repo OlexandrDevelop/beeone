@@ -50,7 +50,7 @@ def get_context(context):
 	context["disable_user_pass_login"] = cint(frappe.get_system_settings("disable_user_pass_login"))
 	context["logo"] = get_app_logo()
 	context["app_name"] = (
-		frappe.get_website_settings("app_name") or frappe.get_system_settings("app_name") or _("Frappe")
+		frappe.get_website_settings("app_name") or frappe.get_system_settings("app_name") or _("beeone")
 	)
 
 	signup_form_template = frappe.get_hooks("signup_form_template")
@@ -146,7 +146,7 @@ def send_login_link(email: str):
 		link = _generate_temporary_login_link(email, expiry)
 
 		app_name = (
-			frappe.get_website_settings("app_name") or frappe.get_system_settings("app_name") or _("Frappe")
+			frappe.get_website_settings("app_name") or frappe.get_system_settings("app_name") or _("beeone")
 		)
 
 		subject = _("Login To {0}").format(app_name)

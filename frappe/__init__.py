@@ -56,6 +56,8 @@ from .utils.jinja import (
 )
 
 __version__ = "16.52.0"
+# beeone:
+beeone_version = "0.1.0"
 __title__ = "Frappe Framework"
 
 if TYPE_CHECKING:  # pragma: no cover

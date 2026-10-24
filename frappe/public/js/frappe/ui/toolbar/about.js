@@ -12,9 +12,9 @@ frappe.ui.misc.about = function () {
 		`<div class="about-body flex flex-col gap-5 items-start">
 			<div class="about-frappe-section flex flex-col items-center gap-3 py-3 w-full">
 				<div class="about-frappe-header flex flex-col justify-center items-center gap-1.5">
-					<img src="/assets/frappe/images/frappe-comp-logo.svg" alt="Frappe" class="about-frappe-wordmark">
+					<img src="/assets/frappe/images/beeone-logo.svg" alt="beeone" class="about-frappe-wordmark">
 					<p class="about-tagline text-p-sm text-ink-gray-5 m-0">${__(
-						"Open Source applications for the web."
+						"на основі Frappe Framework"
 					)}</p>
 				</div>
 				<div class="about-social-btns flex gap-1">
