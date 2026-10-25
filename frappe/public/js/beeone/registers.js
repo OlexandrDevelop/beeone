@@ -103,6 +103,12 @@ beeone.registers.movements_dialog = function (frm, sets) {
 };
 
 $(document).on("form-refresh", (e, frm) => {
+	// a row of a register is written by posting a document only
+	if ((frappe.boot.beeone_registers || {})[frm.doctype]) {
+		frm.disable_form();
+		frm.disable_save();
+		return;
+	}
 	const registers = (frappe.boot.beeone_movements || {})[frm.doctype];
 	if (!registers || frm.doc.docstatus !== 1 || frm.is_new()) return;
 	frm.add_custom_button(__("Document Movements"), () => beeone.registers.show_movements(frm));
@@ -208,5 +214,6 @@ beeone.registers.report_dialog = function (info, command) {
 		},
 	});
 	dialog.show();
-	dialog.get_primary_btn().trigger("click");
+	const defaults = is_balance ? { at: today } : { start: month_start, end: today };
+	dialog.set_values(defaults).then(() => dialog.get_primary_btn().trigger("click"));
 };
