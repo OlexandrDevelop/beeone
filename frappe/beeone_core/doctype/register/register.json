@@ -1,0 +1,150 @@
+{
+ "actions": [],
+ "creation": "2026-10-25 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "register_doctype",
+  "register_kind",
+  "section_fields",
+  "fields",
+  "section_system",
+  "registrar_type_field",
+  "registrar_field",
+  "line_no_field",
+  "column_system",
+  "date_field",
+  "time_field",
+  "direction_field",
+  "section_totals",
+  "totals",
+  "totals_doctype",
+  "lock_dimension",
+  "control_negative"
+ ],
+ "fields": [
+  {
+   "fieldname": "register_doctype",
+   "fieldtype": "Link",
+   "label": "Register DocType",
+   "options": "DocType",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "register_kind",
+   "fieldtype": "Select",
+   "label": "Register Kind",
+   "options": "Accumulation: Balance\nAccumulation: Turnover\nInformation: Periodic\nInformation: Plain\nAccounting",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "section_fields",
+   "fieldtype": "Section Break",
+   "label": "Fields"
+  },
+  {
+   "fieldname": "fields",
+   "fieldtype": "Table",
+   "label": "Fields",
+   "options": "Register Field"
+  },
+  {
+   "fieldname": "section_system",
+   "fieldtype": "Section Break",
+   "label": "System Fields"
+  },
+  {
+   "fieldname": "registrar_type_field",
+   "fieldtype": "Data",
+   "label": "Registrar Type Field"
+  },
+  {
+   "fieldname": "registrar_field",
+   "fieldtype": "Data",
+   "label": "Registrar Field"
+  },
+  {
+   "fieldname": "line_no_field",
+   "fieldtype": "Data",
+   "label": "Line Number Field"
+  },
+  {
+   "fieldname": "column_system",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "date_field",
+   "fieldtype": "Data",
+   "label": "Date Field"
+  },
+  {
+   "fieldname": "time_field",
+   "fieldtype": "Data",
+   "label": "Time Field"
+  },
+  {
+   "fieldname": "direction_field",
+   "fieldtype": "Data",
+   "label": "Direction Field"
+  },
+  {
+   "fieldname": "section_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals and Controls"
+  },
+  {
+   "fieldname": "totals",
+   "fieldtype": "Select",
+   "label": "Totals",
+   "options": "None\nMonthly turnovers\nMonthly turnovers + current balance",
+   "default": "None"
+  },
+  {
+   "fieldname": "totals_doctype",
+   "fieldtype": "Link",
+   "label": "Totals DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "lock_dimension",
+   "fieldtype": "Data",
+   "label": "Period Lock Dimension"
+  },
+  {
+   "fieldname": "control_negative",
+   "fieldtype": "Table",
+   "label": "Control Negative",
+   "options": "Register Control Field"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-25 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Beeone Core",
+ "name": "Register",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "autoname": "field:register_doctype",
+ "naming_rule": "By fieldname",
+ "title_field": "register_doctype"
+}

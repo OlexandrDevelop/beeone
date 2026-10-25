@@ -21,6 +21,9 @@ IMPORTABLE_DOCTYPES = [
 	# to ensure permissions defined in doctype.json are synced correctly
 	("core", "permission_type"),
 	("core", "doctype"),
+	# beeone: register meta records come after every DocType of the app
+	("beeone_core", "register"),
+	("beeone_core", "document_movements"),
 	("core", "page"),
 	("core", "report"),
 	("desk", "dashboard_chart_source"),
