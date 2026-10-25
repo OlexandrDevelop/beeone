@@ -45,6 +45,11 @@ def movement_registers(doctype: str) -> list[str]:
 	return list(_cached(MOVEMENTS_KEY, _load_movements).get(doctype) or [])
 
 
+def movement_doctypes() -> dict:
+	"""Map of every DocType that writes registers to the names of its registers."""
+	return {doctype: rows for doctype, rows in _cached(MOVEMENTS_KEY, _load_movements).items() if rows}
+
+
 def clear_cache():
 	frappe.cache.delete_value([REGISTERS_KEY, MOVEMENTS_KEY])
 

@@ -3,7 +3,6 @@
 
 """Boot data of the register UI."""
 
-import frappe
 from frappe.beeone.registers import meta, query
 
 # a register is written by posting documents only, so the desk offers none of these
@@ -21,11 +20,7 @@ def boot_session(bootinfo):
 			"turnover": query.supports_turnover(reg),
 		}
 	bootinfo.beeone_registers = registers
-	bootinfo.beeone_movements = {
-		doctype: rows
-		for doctype in frappe.get_all("Document Movements", pluck="name", order_by=None)
-		if (rows := meta.movement_registers(doctype))
-	}
+	bootinfo.beeone_movements = meta.movement_doctypes()
 
 	user = bootinfo.get("user")
 	if user:
