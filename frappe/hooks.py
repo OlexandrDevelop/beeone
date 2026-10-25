@@ -30,11 +30,13 @@ app_include_js = [
 	"controls.bundle.js",
 	"report.bundle.js",
 	"telemetry.bundle.js",
+	"beeone_registers.bundle.js",  # beeone: movement viewer and register lists
 ]
 
 app_include_css = [
 	"desk.bundle.css",
 	"report.bundle.css",
+	"beeone_registers.bundle.css",  # beeone: movement viewer and register lists
 ]
 app_include_icons = [
 	"/assets/frappe/icons/lucide/icons.svg",
@@ -508,6 +510,9 @@ extend_bootinfo = [
 	"frappe.utils.telemetry.add_bootinfo",
 	"frappe.core.doctype.user_permission.user_permission.send_user_permissions",
 ]
+
+# beeone: register list and movement viewer data for the desk
+boot_session = ["frappe.beeone.boot.boot_session"]
 
 export_python_type_annotations = True
 

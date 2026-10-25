@@ -1,0 +1,103 @@
+// Movement viewer and register lists. Only Frappe theme variables are used, so an
+// application theme (for example its design tokens) restyles it without changes here.
+
+.beeone-viewer {
+	.beeone-tabs {
+		display: flex;
+		gap: var(--margin-sm);
+		flex-wrap: wrap;
+		border-bottom: 1px solid var(--border-color);
+		margin-bottom: var(--margin-md);
+	}
+
+	.beeone-tab {
+		background: none;
+		border: 0;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -1px;
+		padding: var(--padding-sm) var(--padding-md);
+		color: var(--text-muted);
+		font-weight: 500;
+		cursor: pointer;
+
+		&:hover {
+			color: var(--text-color);
+		}
+
+		&.is-active {
+			color: var(--text-color);
+			border-bottom-color: var(--primary);
+		}
+	}
+
+	.beeone-count {
+		display: inline-block;
+		min-width: 1.5em;
+		margin-left: var(--margin-xs);
+		padding: 0 var(--padding-xs);
+		border-radius: var(--border-radius-full);
+		background: var(--control-bg);
+		color: var(--text-muted);
+		font-size: var(--text-xs);
+		text-align: center;
+	}
+
+	.beeone-table-wrap {
+		max-height: 55vh;
+		overflow: auto;
+		border: 1px solid var(--border-color);
+		border-radius: var(--border-radius-md);
+	}
+
+	.beeone-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--text-md);
+
+		th,
+		td {
+			padding: var(--padding-sm) var(--padding-md);
+			border-bottom: 1px solid var(--border-color);
+			white-space: nowrap;
+		}
+
+		th {
+			position: sticky;
+			top: 0;
+			background: var(--subtle-fg, var(--control-bg));
+			color: var(--text-muted);
+			font-size: var(--text-sm);
+			font-weight: 500;
+			text-align: left;
+		}
+
+		tbody tr:hover td {
+			background: var(--subtle-fg, var(--control-bg));
+		}
+
+		tfoot td {
+			font-weight: 600;
+			border-bottom: 0;
+		}
+
+		.beeone-r {
+			text-align: right;
+		}
+	}
+
+	.beeone-num {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.beeone-note,
+	.beeone-empty {
+		margin-top: var(--margin-sm);
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+	}
+
+	.beeone-empty {
+		padding: var(--padding-xl) 0;
+		text-align: center;
+	}
+}
