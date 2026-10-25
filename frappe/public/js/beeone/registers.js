@@ -213,6 +213,7 @@ beeone.registers.report_dialog = function (info, command) {
 			});
 		},
 	});
+	beeone.registers.report_form = dialog; // the open command dialog, for tests
 	dialog.show();
 	const defaults = is_balance ? { at: today } : { start: month_start, end: today };
 	dialog.set_values(defaults).then(() => dialog.get_primary_btn().trigger("click"));

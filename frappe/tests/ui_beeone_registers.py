@@ -130,9 +130,10 @@ def test_turnover_command(page):
 	page.wait_for_selector(".list-row")
 	page.get_by_role("button", name=label("Turnovers"), exact=True).click()
 	page.wait_for_selector(".modal.show .beeone-viewer")
-	page.evaluate("cur_dialog.set_value('start', '2026-03-01')")
-	page.evaluate("cur_dialog.set_value('end', '2026-03-31')")
-	page.evaluate("cur_dialog.set_value('group_by', ['warehouse'])")
+	top = "beeone.registers.report_form"
+	page.evaluate(f"{top}.set_value('start', '2026-03-01')")
+	page.evaluate(f"{top}.set_value('end', '2026-03-31')")
+	page.evaluate(f"{top}.fields_dict.group_by.set_value(['warehouse'])")
 	page.locator(".modal.show .modal-footer .btn-primary").click()
 	page.wait_for_function("document.querySelectorAll('.modal.show .beeone-table tbody tr').length === 2")
 	shot(page, "turnover")
