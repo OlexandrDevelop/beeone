@@ -142,14 +142,16 @@ def _resources(reg, resources) -> list[str]:
 
 def _aggregate(reg, filters: list, group_by: list[str], resources: list[str]) -> list[dict]:
 	fields = [*group_by, *[{"SUM": f, "as": f} for f in resources]]
-	return frappe.get_list(
+	rows = frappe.get_list(
 		reg.register_doctype,
 		filters=filters,
 		fields=fields,
-		group_by=", ".join(f"`{f}`" for f in group_by) or None,
-		order_by=", ".join(f"`{f}` asc" for f in group_by) or None,
+		group_by=", ".join(group_by) or None,
+		order_by=", ".join(f"{f} asc" for f in group_by) or None,
 		limit_page_length=0,
 	)
+	# a sum without rows is one row of NULLs
+	return [row for row in rows if any(row.get(f) is not None for f in resources)]
 
 
 def balance(register: str, at=None, filters=None, group_by=None, resources=None) -> list[dict]:
