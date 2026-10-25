@@ -40,7 +40,17 @@ def _doctype(name, fields, submittable=False, **kw):
 			"custom": 1,
 			"fields": fields,
 			"is_submittable": int(submittable),
-			"permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1}],
+			"permissions": [
+				{
+					"role": "System Manager",
+					"read": 1,
+					"write": 1,
+					"create": 1,
+					"delete": 1,
+					"submit": int(submittable),
+					"cancel": int(submittable),
+				}
+			],
 			**kw,
 		}
 	).insert()
