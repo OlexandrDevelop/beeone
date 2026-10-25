@@ -141,7 +141,7 @@ def _resources(reg, resources) -> list[str]:
 
 
 def _aggregate(reg, filters: list, group_by: list[str], resources: list[str]) -> list[dict]:
-	fields = [*group_by, *[f"sum(`{f}`) as {f}" for f in resources]]
+	fields = [*group_by, *[{"SUM": f, "as": f} for f in resources]]
 	return frappe.get_list(
 		reg.register_doctype,
 		filters=filters,

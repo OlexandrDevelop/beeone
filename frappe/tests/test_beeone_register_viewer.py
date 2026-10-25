@@ -3,10 +3,13 @@
 
 """Movement viewer and register list API: document movements, balance, turnover and boot data."""
 
+from unittest.mock import patch
+
 import frappe
 from frappe.beeone import boot
 from frappe.beeone.api import registers as api
 from frappe.beeone.registers import query
+from frappe.model.document import Document
 from frappe.tests import IntegrationTestCase
 from frappe.tests.beeone_register_fixtures import DOCUMENT, EMPTY_LEDGER, LEDGER, create, remove
 
@@ -53,7 +56,8 @@ class TestBeeoneRegisterViewer(IntegrationTestCase):
 		other = frappe.get_doc(
 			{"doctype": DOCUMENT, "title": "Empty", "posting_date": "2026-03-16"}
 		).insert()
-		other.submit()
+		with patch.object(Document, "make_movements", lambda self, movements: None, create=True):
+			other.submit()
 		self.assertEqual(api.document_movements(DOCUMENT, other.name), [])
 
 	def test_movements_need_read_permission(self):
@@ -117,6 +121,7 @@ class TestBeeoneRegisterViewer(IntegrationTestCase):
 	def test_turnover_register_has_no_balance(self):
 		reg = frappe.get_doc("Register", EMPTY_LEDGER)
 		reg.register_kind = "Accumulation: Turnover"
+		reg.totals = "Monthly turnovers"
 		reg.save()
 		self.addCleanup(self._restore_kind)
 		self.assertRaises(frappe.ValidationError, api.balance, EMPTY_LEDGER)
@@ -127,6 +132,7 @@ class TestBeeoneRegisterViewer(IntegrationTestCase):
 	def _restore_kind(self):
 		reg = frappe.get_doc("Register", EMPTY_LEDGER)
 		reg.register_kind = "Accumulation: Balance"
+		reg.totals = "Monthly turnovers + current balance"
 		reg.save()
 
 	def test_register_info(self):
