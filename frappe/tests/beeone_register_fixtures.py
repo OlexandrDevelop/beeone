@@ -29,11 +29,20 @@ LEDGER_FIELDS = [
 ]
 
 
-def _doctype(name, fields, **kw):
+def _doctype(name, fields, submittable=False, **kw):
 	if frappe.db.exists("DocType", name):
 		return
 	frappe.get_doc(
-		{"doctype": "DocType", "name": name, "module": "Beeone Core", "custom": 1, "fields": fields, **kw}
+		{
+			"doctype": "DocType",
+			"name": name,
+			"module": "Beeone Core",
+			"custom": 1,
+			"fields": fields,
+			"is_submittable": int(submittable),
+			"permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1}],
+			**kw,
+		}
 	).insert()
 
 
@@ -76,7 +85,7 @@ def create_registers(kind="Accumulation: Balance"):
 			{"fieldname": "posting_date", "fieldtype": "Date"},
 			{"fieldname": "posting_time", "fieldtype": "Time"},
 		],
-		is_submittable=1,
+		submittable=True,
 	)
 	frappe.db.commit()
 
@@ -125,5 +134,8 @@ def remove():
 	for name in (LEDGER, EMPTY_LEDGER):
 		if frappe.db.exists("Register", name):
 			frappe.delete_doc("Register", name, force=True)
+	for name in (LEDGER, EMPTY_LEDGER, DOCUMENT):
+		if frappe.db.exists("DocType", name):
+			frappe.delete_doc("DocType", name, force=True)
 	frappe.db.commit()
 	clear_cache()
