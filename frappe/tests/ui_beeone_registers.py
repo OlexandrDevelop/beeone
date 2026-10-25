@@ -38,6 +38,7 @@ def label(text):
 def shot(page, name):
 	if SHOTS:
 		Path(SHOTS).mkdir(parents=True, exist_ok=True)
+		page.wait_for_timeout(600)  # let the dialog finish its animation
 		page.screenshot(path=str(Path(SHOTS) / f"{name}.png"))
 
 
@@ -133,7 +134,7 @@ def test_turnover_command(page):
 	top = "beeone.registers.report_form"
 	page.evaluate(f"{top}.set_value('start', '2026-03-01')")
 	page.evaluate(f"{top}.set_value('end', '2026-03-31')")
-	page.evaluate(f"{top}.fields_dict.group_by.set_value(['warehouse'])")
-	page.locator(".modal.show .modal-footer .btn-primary").click()
+	page.locator('.modal.show input[data-unit="item"]').uncheck()
+	page.locator(".modal.show .btn-modal-primary").click()
 	page.wait_for_function("document.querySelectorAll('.modal.show .beeone-table tbody tr').length === 2")
 	shot(page, "turnover")
