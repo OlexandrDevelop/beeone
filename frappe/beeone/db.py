@@ -230,10 +230,15 @@ def lock_keys(table: str, key_columns: list[str], keys: list[tuple]):
 
 
 def table_name(prefix: str, register: str) -> str:
-	"""Name of a table of a register. Names over the identifier limit get a short hash at the end."""
+	"""Name of a table of a register. Names over the identifier limit get a short hash at the end.
+
+	The limit is in bytes (PostgreSQL cuts a name at 63 bytes), so names with multibyte
+	characters are shortened the same way and never end in a half character.
+	"""
 	name = frappe.scrub(register)
 	limit = min(d.max_identifier for d in DIALECTS.values())
-	if len(prefix + name) <= limit:
+	if len((prefix + name).encode()) <= limit:
 		return prefix + name
 	digest = hashlib.sha1(name.encode()).hexdigest()[:8]
-	return f"{prefix}{name[: limit - len(prefix) - 9]}_{digest}"
+	room = limit - len(prefix.encode()) - 9
+	return f"{prefix}{name.encode()[:room].decode(errors='ignore')}_{digest}"

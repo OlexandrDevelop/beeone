@@ -77,6 +77,29 @@ class TestBeeoneDb(IntegrationTestCase):
 		self.assertNotEqual(long, other)
 		self.assertEqual(long, db.table_name("__beeone_tot_", "Very Long Register Name " * 5))
 
+	def test_table_name_limit_is_in_bytes(self):
+		base = "\u0431" * 25  # 25 two-byte letters: 50 bytes, the table name is 63 bytes
+		one = db.table_name("__beeone_tot_", base)
+		two = db.table_name("__beeone_tot_", base + "\u0431")
+		self.assertEqual(one, "__beeone_tot_" + base)
+		self.assertLessEqual(len(two.encode()), 63)
+		self.assertNotEqual(one, two)
+		other = db.table_name("__beeone_tot_", base + "\u0432")
+		self.assertNotEqual(two, other)
+		self.assertLessEqual(len(other.encode()), 63)
+
+	def test_long_multibyte_names_do_not_share_a_table(self):
+		base = "\u0431" * 25
+		first, second = db.table_name("__beeone_tot_", base), db.table_name("__beeone_tot_", base + "\u0431")
+		self.addCleanup(db.drop_table, first)
+		self.addCleanup(db.drop_table, second)
+		db.create_totals_table(first, ["item"], ["qty"])
+		db.upsert(first, ["item"], ["qty"], [(("Nut",), [1])])
+		# deleting the register with the longer name must leave the other table alone
+		db.drop_table(second)
+		self.assertTrue(db.table_exists(first))
+		self.assertEqual(frappe.db.sql(f"SELECT COUNT(*) FROM {db.quote(first)}")[0][0], 1)
+
 	def test_unknown_database_is_refused(self):
 		real = frappe.db.db_type
 		frappe.db.db_type = "sqlite"
