@@ -22,6 +22,14 @@ def _doctype(name, fields, **kw):
 	).insert()
 
 
+def _drop_register():
+	"""Saving a register with totals creates tables, and that DDL commits the row."""
+	frappe.db.rollback()
+	if frappe.db.exists("Register", LEDGER):
+		frappe.delete_doc("Register", LEDGER, force=True)
+		frappe.db.commit()
+
+
 def _register_json(**overrides):
 	data = {
 		"doctype": "Register",
@@ -59,7 +67,7 @@ class TestRegisterMeta(IntegrationTestCase):
 		_doctype(DOCUMENT, [{"fieldname": "title", "fieldtype": "Data"}])
 
 	def tearDown(self):
-		frappe.db.rollback()
+		_drop_register()
 
 	def _insert(self, **overrides):
 		return frappe.get_doc(_register_json(**overrides)).insert()
@@ -138,7 +146,7 @@ class TestDocumentMovements(IntegrationTestCase):
 		TestRegisterMeta.setUpClass()
 
 	def tearDown(self):
-		frappe.db.rollback()
+		_drop_register()
 
 	def _register(self):
 		return frappe.get_doc(_register_json()).insert()
@@ -186,7 +194,7 @@ class TestRegisterSync(IntegrationTestCase):
 		TestRegisterMeta.setUpClass()
 
 	def tearDown(self):
-		frappe.db.rollback()
+		_drop_register()
 
 	def _write(self, data) -> str:
 		folder = Path(tempfile.mkdtemp()) / "register" / "beeone_test_ledger"

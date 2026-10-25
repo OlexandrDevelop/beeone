@@ -55,7 +55,7 @@ class RecordSet:
 
 	def read(self) -> list[dict]:
 		reg = self.reg
-		order = f"`{reg.line_no_field}` asc, creation asc, name asc" if reg.line_no_field else "creation asc, name asc"
+		order = f"{reg.line_no_field} asc, creation asc, name asc" if reg.line_no_field else "creation asc, name asc"
 		return frappe.get_all(self.doctype, filters=self._filters(), fields=["*"], order_by=order)
 
 	def delete(self) -> None:
