@@ -112,6 +112,10 @@ def delete_doc(
 			else:
 				return False
 
+		from frappe.beeone.registers import check_direct_write  # beeone: registers are written by posting only
+
+		check_direct_write(doctype)
+
 		doc = None
 		if doctype == "DocType":
 			if for_reload:

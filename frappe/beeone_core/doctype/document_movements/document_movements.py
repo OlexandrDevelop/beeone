@@ -1,6 +1,7 @@
 # Copyright (c) 2026, beeone contributors
 # License: MIT. See LICENSE
 
+from frappe.beeone.registers.meta import clear_cache
 from frappe.beeone.register_meta import validate_document_movements
 from frappe.model.document import Document
 
@@ -12,3 +13,9 @@ class DocumentMovements(Document):
 	def before_import(self):
 		# the file sync skips validate, but a broken record must stop migrate
 		validate_document_movements(self)
+
+	def on_update(self):
+		clear_cache()
+
+	def on_trash(self):
+		clear_cache()

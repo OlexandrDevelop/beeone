@@ -475,6 +475,7 @@ class Document(BaseDocument):
 		self._set_defaults()
 		self.set_user_and_timestamp()
 		self.set_docstatus()
+		self.check_direct_register_write()  # beeone: registers are written by posting only
 		self.check_permission("create")
 		self.check_if_latest()
 		self._validate_links()
@@ -582,6 +583,7 @@ class Document(BaseDocument):
 		self.check_if_locked()
 		self._set_defaults()
 		self._restore_masked_fields_from_db()
+		self.check_direct_register_write()  # beeone: registers are written by posting only
 		self.check_permission("write", "save")
 
 		self.set_user_and_timestamp()
@@ -1445,6 +1447,21 @@ class Document(BaseDocument):
 					(d for d in (self._doc_before_save.get(fieldname) or []) if d.name == row.name), None
 				)
 
+	def check_direct_register_write(self):  # beeone:
+		from frappe.beeone.registers import check_direct_write
+
+		check_direct_write(self.doctype)
+
+	def post_movements(self):  # beeone:
+		from frappe.beeone.registers import post
+
+		post(self)
+
+	def unpost_movements(self):  # beeone:
+		from frappe.beeone.registers import unpost
+
+		unpost(self)
+
 	def run_post_save_methods(self):
 		"""Run standard methods after `INSERT` or `UPDATE`. Standard Methods are:
 
@@ -1457,8 +1474,10 @@ class Document(BaseDocument):
 			self.run_method("on_update")
 		elif self._action == "submit":
 			self.run_method("on_update")
+			self.post_movements()  # beeone: write the registers of the document
 			self.run_method("on_submit")
 		elif self._action == "cancel":
+			self.unpost_movements()  # beeone: delete the register rows of the document
 			self.run_method("on_cancel")
 			self.check_no_back_links_exist()
 		elif self._action == "update_after_submit":
