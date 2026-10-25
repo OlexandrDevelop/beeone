@@ -124,6 +124,11 @@ def validate_register(doc):
 			_("Register {0}: current balance totals need kind Accumulation: Balance").format(register),
 			title=_("Invalid Register"),
 		)
+	if totals == TOTALS_BALANCE and not any(row.role == "Dimension" for row in doc.get("fields") or []):
+		frappe.throw(
+			_("Register {0}: current balance totals need at least one dimension").format(register),
+			title=_("Invalid Register"),
+		)
 	if doc.totals_doctype:
 		if totals == TOTALS_NONE:
 			frappe.throw(

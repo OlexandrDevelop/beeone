@@ -313,3 +313,21 @@ class TestBeeoneRegisters(IntegrationTestCase):
 		before = (self._turnover("a"), self._current("a"), self._current("b"))
 		rebuild_totals(get_register(LEDGER))
 		self.assertEqual((self._turnover("a"), self._current("a"), self._current("b")), before)
+
+	def test_balance_register_without_dimension_is_refused(self):
+		from frappe.beeone.register_meta import validate_register
+
+		register = frappe.get_doc(
+			{
+				"doctype": "Register",
+				"register_doctype": LEDGER,
+				"register_kind": "Accumulation: Balance",
+				"registrar_field": "voucher_no",
+				"date_field": "posting_date",
+				"totals": "Monthly turnovers + current balance",
+				"fields": [{"doctype": "Register Field", "fieldname": "qty", "role": "Resource"}],
+			}
+		)
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			validate_register(register)
+		self.assertIn("dimension", str(ctx.exception))
