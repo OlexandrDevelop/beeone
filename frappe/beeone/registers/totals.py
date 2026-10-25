@@ -10,6 +10,7 @@ rows, with the keys sorted so two parallel documents lock them in the same order
 from collections import defaultdict
 
 import frappe
+from frappe.beeone import db
 from frappe.utils import cstr, flt, get_first_day, getdate
 
 TOTALS_NONE = "None"
@@ -21,11 +22,11 @@ def scrub(register: str) -> str:
 
 
 def totals_table(register: str) -> str:
-	return f"__beeone_tot_{scrub(register)}"
+	return db.table_name("__beeone_tot_", register)
 
 
 def current_table(register: str) -> str:
-	return f"__beeone_cur_{scrub(register)}"
+	return db.table_name("__beeone_cur_", register)
 
 
 def dimensions(reg) -> list[str]:
@@ -45,23 +46,6 @@ def has_current(reg) -> bool:
 	return has_totals(reg) and reg.totals == TOTALS_BALANCE
 
 
-def _create(table: str, key_columns: list[str], res: list[str]):
-	columns = [
-		f"`{col}` DATE NOT NULL" if col == "period" else f"`{col}` VARCHAR(140) NOT NULL DEFAULT ''"
-		for col in key_columns
-	]
-	columns += [f"`{col}` DECIMAL(21,9) NOT NULL DEFAULT 0" for col in res]
-	key = ", ".join(f"`{col}`" for col in key_columns)
-	frappe.db.sql_ddl(
-		f"CREATE TABLE `{table}` ({', '.join(columns)}, PRIMARY KEY ({key})) "
-		"ENGINE=InnoDB ROW_FORMAT=DYNAMIC CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-	)
-
-
-def _columns(table: str) -> list[str]:
-	return [row[0] for row in frappe.db.sql(f"SHOW COLUMNS FROM `{table}`")]
-
-
 def ensure_totals_tables(reg):
 	"""Create the totals tables of the register. Rebuild them when its fields changed.
 
@@ -77,11 +61,11 @@ def ensure_totals_tables(reg):
 
 	rebuild = False
 	for table, key in wanted.items():
-		if frappe.db.sql("SHOW TABLES LIKE %s", table):
-			if _columns(table) == [*key, *res]:
+		if db.table_exists(table):
+			if db.table_columns(table) == [*key, *res]:
 				continue
-			frappe.db.sql_ddl(f"DROP TABLE `{table}`")
-		_create(table, key, res)
+			db.drop_table(table)
+		db.create_totals_table(table, key, res)
 		rebuild = True
 	if rebuild:
 		rebuild_totals(reg)
@@ -127,17 +111,10 @@ def apply_deltas(reg, turnover: dict, current: dict):
 def _upsert(table: str, key_columns: list[str], reg, deltas: dict):
 	res = resources(reg)
 	keys = sorted(k for k, v in deltas.items() if any(v.values()))
-	for key in keys:
-		values = [flt(deltas[key].get(f)) for f in res]
-		columns = ", ".join(f"`{c}`" for c in [*key_columns, *res])
-		marks = ", ".join(["%s"] * (len(key_columns) + len(res)))
-		update = ", ".join(f"`{f}` = `{f}` + VALUES(`{f}`)" for f in res)
-		frappe.db.sql(
-			f"INSERT INTO `{table}` ({columns}) VALUES ({marks}) ON DUPLICATE KEY UPDATE {update}",
-			[*key, *values],
-		)
+	rows = [(key, [flt(deltas[key].get(f)) for f in res]) for key in keys]
+	db.upsert(table, key_columns, res, rows)
 
 
 def drop_totals_tables(register: str):
 	for table in (totals_table(register), current_table(register)):
-		frappe.db.sql_ddl(f"DROP TABLE IF EXISTS `{table}`")
+		db.drop_table(table)

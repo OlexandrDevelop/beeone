@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.beeone.registers import Moment, RecordSet, document_moment, record_set, repost
+from frappe.beeone.registers.posting import _timedelta
 from frappe.beeone.registers.meta import clear_cache
 from frappe.beeone.registers.totals import current_table, totals_table
 from frappe.model.document import Document
@@ -143,7 +144,7 @@ class TestBeeoneRegisters(IntegrationTestCase):
 		self.assertEqual([(r.line, r.item, r.qty) for r in rows], [(1, "a", 5), (2, "b", 3)])
 		self.assertEqual({r.voucher_type for r in rows}, {DOCUMENT})
 		self.assertEqual({r.posting_date for r in rows}, {date(2026, 3, 15)})
-		self.assertEqual({r.posting_time for r in rows}, {timedelta(hours=10, minutes=30)})
+		self.assertEqual({_timedelta(r.posting_time) for r in rows}, {timedelta(hours=10, minutes=30)})
 
 		calls = []
 		original = frappe.db.bulk_insert

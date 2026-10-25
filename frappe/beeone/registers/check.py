@@ -19,6 +19,7 @@ from typing import NamedTuple
 
 import frappe
 from frappe import _
+from frappe.beeone import db
 from frappe.beeone.registers import totals
 from frappe.beeone.registers.meta import movement_doctypes, register_doctypes
 from frappe.beeone.registers.posting import _timedelta, document_moment
@@ -51,28 +52,19 @@ def parse_month(value: str | None):
 		frappe.throw(_("Month must look like YYYY-MM: {0}").format(value))
 
 
-def _q(name: str) -> str:
-	return "`" + name.replace("`", "") + "`"
-
-
-def _norm(key: tuple) -> tuple:
-	# keys of the totals tables compare like the database does: no case, no trailing spaces
-	return tuple(cstr(part).casefold().rstrip() for part in key)
-
-
 def _movement_parts(reg, monthly: bool, from_month):
 	"""SQL parts to sum the movements: key expressions, sum expressions, where, values."""
 	dims, res = totals.dimensions(reg), totals.resources(reg)
-	date = _q(reg.date_field) if reg.date_field else None
-	keys = [f"DATE_FORMAT({date}, '%%Y-%%m-01')"] if monthly else []
-	keys += [f"IFNULL({_q(f)}, '')" for f in dims]
+	date = db.quote(reg.date_field) if reg.date_field else None
+	keys = [db.month_start(date)] if monthly else []
+	keys += [db.text_key(db.quote(f)) for f in dims]
 	where, values = [], []
 	if monthly:
 		where.append(f"{date} IS NOT NULL")
 		if from_month:
 			where.append(f"{date} >= %s")
 			values.append(from_month)
-	sums = [f"SUM(IFNULL({_q(f)}, 0))" for f in res]
+	sums = [f"SUM(COALESCE({db.quote(f)}, 0))" for f in res]
 	return keys, sums, where, values
 
 
@@ -94,7 +86,7 @@ def _expected_pages(reg, monthly: bool, from_month, batch: int):
 	size = len(keys)
 	if not size:
 		rows = frappe.db.sql(
-			f"SELECT {', '.join(sums)} FROM {_q('tab' + reg.register_doctype)}"
+			f"SELECT {', '.join(sums)} FROM {db.quote('tab' + reg.register_doctype)}"
 			f"{' WHERE ' + ' AND '.join(where) if where else ''}",
 			values,
 		)
@@ -103,18 +95,24 @@ def _expected_pages(reg, monthly: bool, from_month, batch: int):
 			yield page
 		return
 	aliases = [f"_k{i}" for i in range(size)]
-	select = ", ".join(f"{expr} AS {_q(alias)}" for expr, alias in zip(keys, aliases, strict=True))
-	group = ", ".join(_q(a) for a in aliases)
+	select = ", ".join(
+		[f"{expr} AS {db.quote(alias)}" for expr, alias in zip(keys, aliases, strict=True)]
+		+ [f"{expr} AS {db.quote(f'_s{i}')}" for i, expr in enumerate(sums)]
+	)
+	group = ", ".join(str(i + 1) for i in range(size))
+	inner = (
+		f"SELECT {select} FROM {db.quote('tab' + reg.register_doctype)}"
+		f"{' WHERE ' + ' AND '.join(where) if where else ''} GROUP BY {group}"
+	)
+	names = ", ".join(db.quote(a) for a in aliases)
 	last = None
 	while True:
-		having, params = "", list(values)
+		after, params = "", list(values)
 		if last is not None:
-			having = f" HAVING ({group}) > ({', '.join(['%s'] * size)})"
+			after = f" WHERE ({names}) > ({', '.join(['%s'] * size)})"
 			params += list(last)
 		rows = frappe.db.sql(
-			f"SELECT {select}, {', '.join(sums)} FROM {_q('tab' + reg.register_doctype)}"
-			f"{' WHERE ' + ' AND '.join(where) if where else ''} GROUP BY {group}{having} "
-			f"ORDER BY {group} LIMIT {int(batch)}",
+			f"SELECT * FROM ({inner}) AS g{after} ORDER BY {group} LIMIT {int(batch)}",
 			params,
 		)
 		if not rows:
@@ -134,11 +132,11 @@ def _expected_for(reg, monthly: bool, from_month, keys: list[tuple]) -> dict:
 	params = [*values, *[part for key in keys for part in key]]
 	group = ", ".join(str(i + 1) for i in range(len(exprs)))
 	rows = frappe.db.sql(
-		f"SELECT {', '.join(exprs + sums)} FROM {_q('tab' + reg.register_doctype)} "
+		f"SELECT {', '.join(exprs + sums)} FROM {db.quote('tab' + reg.register_doctype)} "
 		f"WHERE {' AND '.join(where)} GROUP BY {group}",
 		params,
 	)
-	return {_norm(k): (k, a) for k, a in _split(rows, len(exprs)) if _nonzero(a)}
+	return {db.key_norm(k): (k, a) for k, a in _split(rows, len(exprs)) if _nonzero(a)}
 
 
 def _table_columns(reg, monthly: bool) -> list[str]:
@@ -148,30 +146,30 @@ def _table_columns(reg, monthly: bool) -> list[str]:
 def _actual_for(reg, table: str, monthly: bool, keys: list[tuple]) -> dict:
 	"""{normalized key: (key, sums)} of the totals table for the given keys only."""
 	columns = _table_columns(reg, monthly)
-	select = ", ".join(_q(c) for c in [*columns, *totals.resources(reg)])
+	select = ", ".join(db.quote(c) for c in [*columns, *totals.resources(reg)])
 	if not columns:
-		rows = frappe.db.sql(f"SELECT {select} FROM {_q(table)}")
+		rows = frappe.db.sql(f"SELECT {select} FROM {db.quote(table)}")
 		where, params = "", []
 	else:
-		where = f" WHERE ({', '.join(_q(c) for c in columns)}) IN ({_marks(len(keys), len(columns))})"
+		where = f" WHERE ({', '.join(db.quote(c) for c in columns)}) IN ({_marks(len(keys), len(columns))})"
 		params = [part for key in keys for part in key]
-		rows = frappe.db.sql(f"SELECT {select} FROM {_q(table)}{where}", params)
-	return {_norm(k): (k, a) for k, a in _split(rows, len(columns))}
+		rows = frappe.db.sql(f"SELECT {select} FROM {db.quote(table)}{where}", params)
+	return {db.key_norm(k): (k, a) for k, a in _split(rows, len(columns))}
 
 
 def _table_pages(reg, table: str, monthly: bool, from_month, batch: int):
 	"""Pages of (key, sums) of the totals table, in key order, zero rows left out."""
 	columns = _table_columns(reg, monthly)
-	select = ", ".join(_q(c) for c in [*columns, *totals.resources(reg)])
+	select = ", ".join(db.quote(c) for c in [*columns, *totals.resources(reg)])
 	if not columns:
-		page = [(k, a) for k, a in _split(frappe.db.sql(f"SELECT {select} FROM {_q(table)}"), 0) if _nonzero(a)]
+		page = [(k, a) for k, a in _split(frappe.db.sql(f"SELECT {select} FROM {db.quote(table)}"), 0) if _nonzero(a)]
 		if page:
 			yield page
 		return
-	group = ", ".join(_q(c) for c in columns)
+	group = ", ".join(db.quote(c) for c in columns)
 	where, values = [], []
 	if monthly and from_month:
-		where.append("`period` >= %s")
+		where.append(f"{db.quote('period')} >= %s")
 		values.append(from_month)
 	last = None
 	while True:
@@ -180,7 +178,7 @@ def _table_pages(reg, table: str, monthly: bool, from_month, batch: int):
 			conditions.append(f"({group}) > ({', '.join(['%s'] * len(columns))})")
 			params += list(last)
 		rows = frappe.db.sql(
-			f"SELECT {select} FROM {_q(table)}{' WHERE ' + ' AND '.join(conditions) if conditions else ''} "
+			f"SELECT {select} FROM {db.quote(table)}{' WHERE ' + ' AND '.join(conditions) if conditions else ''} "
 			f"ORDER BY {group} LIMIT {int(batch)}",
 			params,
 		)
@@ -202,13 +200,13 @@ def _diff(reg, table: str, monthly: bool, from_month, batch: int = BATCH):
 	for page in _expected_pages(reg, monthly, from_month, batch):
 		actual = _actual_for(reg, table, monthly, [key for key, _ in page])
 		for key, want in page:
-			have_key, have = actual.get(_norm(key), (None, zero))
+			have_key, have = actual.get(db.key_norm(key), (None, zero))
 			if any(abs(a - b) > EPSILON for a, b in zip(want, have, strict=True)):
 				yield key, have_key, want, have
 	for page in _table_pages(reg, table, monthly, from_month, batch):
 		expected = _expected_for(reg, monthly, from_month, [key for key, _ in page])
 		for key, have in page:
-			if _norm(key) not in expected:
+			if db.key_norm(key) not in expected:
 				yield key, key, zero, have
 
 
@@ -229,17 +227,13 @@ def _tables(reg, from_month) -> list[tuple]:
 	return tables
 
 
-def _exists(table: str) -> bool:
-	return bool(frappe.db.sql("SHOW TABLES LIKE %s", table))
-
-
 def check_totals(reg, from_month=None, batch: int = BATCH) -> list[Issue]:
 	"""Checks 1 and 2."""
 	issues = []
 	if not totals.has_totals(reg):
 		return issues
 	for table, monthly, check in _tables(reg, from_month):
-		if not _exists(table):
+		if not db.table_exists(table):
 			issues.append(Issue(reg.name, check, table, "table is missing"))
 			continue
 		for key, _have_key, want, have in _diff(reg, table, monthly, from_month, batch):
@@ -260,15 +254,15 @@ def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 	fixed = 0
 	for table, monthly, _check in _tables(reg, from_month):
 		columns = _table_columns(reg, monthly)
-		if not _exists(table):
-			totals._create(table, columns, res)
+		if not db.table_exists(table):
+			db.create_totals_table(table, columns, res)
 		count = 0
 		for key, have_key, want, _have in _diff(reg, table, monthly, from_month, batch):
 			if _nonzero(want):
 				_set_row(table, columns, res, key, want)
 			else:
-				where = " AND ".join(f"{_q(c)} = %s" for c in columns)
-				frappe.db.sql(f"DELETE FROM {_q(table)}{' WHERE ' + where if where else ''}", list(have_key))
+				where = " AND ".join(f"{db.quote(c)} = %s" for c in columns)
+				frappe.db.sql(f"DELETE FROM {db.quote(table)}{' WHERE ' + where if where else ''}", list(have_key))
 			count += 1
 			if count % batch == 0:
 				frappe.db.commit()
@@ -278,13 +272,7 @@ def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 
 
 def _set_row(table: str, columns: list[str], res: list[str], key: tuple, values: list[float]):
-	names = ", ".join(_q(c) for c in [*columns, *res])
-	marks = ", ".join(["%s"] * (len(columns) + len(res)))
-	update = ", ".join(f"{_q(f)} = VALUES({_q(f)})" for f in res)
-	frappe.db.sql(
-		f"INSERT INTO {_q(table)} ({names}) VALUES ({marks}) ON DUPLICATE KEY UPDATE {update}",
-		[*key, *values],
-	)
+	db.upsert(table, columns, res, [(key, values)], add=False)
 
 
 def _recorder_types(reg) -> list[str] | None:
@@ -295,36 +283,37 @@ def _recorder_types(reg) -> list[str] | None:
 
 def _recorders(reg, from_month, batch: int):
 	"""Yield batches of (type, recorder, rows, min date, max date, min time, max time) per recorder."""
-	table, rec, rec_type = _q("tab" + reg.register_doctype), _q(reg.registrar_field), None
-	if reg.registrar_type_field:
-		rec_type = _q(reg.registrar_type_field)
-	type_sql = f"IFNULL({rec_type}, '')" if rec_type else "''"
+	table, rec = db.quote("tab" + reg.register_doctype), db.quote(reg.registrar_field)
+	typed = bool(reg.registrar_type_field)
+	# without a type field the rows are grouped by the recorder alone, the type is empty
+	keys = [db.text_key(db.quote(reg.registrar_type_field)), rec] if typed else [rec]
+	group = ", ".join(keys)
 	date, time = reg.date_field, reg.time_field
 	extra = [
-		f"MIN({_q(date)}), MAX({_q(date)})" if date else "NULL, NULL",
-		f"MIN({_q(time)}), MAX({_q(time)})" if time else "NULL, NULL",
-		f"COUNT({_q(date)})" if date else "0",
-		f"COUNT({_q(time)})" if time else "0",
+		f"MIN({db.quote(date)}), MAX({db.quote(date)})" if date else "NULL, NULL",
+		f"MIN({db.quote(time)}), MAX({db.quote(time)})" if time else "NULL, NULL",
+		f"COUNT({db.quote(date)})" if date else "0",
+		f"COUNT({db.quote(time)})" if time else "0",
 	]
 	where, values = f"{rec} IS NOT NULL AND {rec} != ''", []
 	if from_month and date:
-		where += f" AND {_q(date)} >= %s"
+		where += f" AND {db.quote(date)} >= %s"
 		values.append(from_month)
 	last = None
 	while True:
 		after, params = "", list(values)
 		if last:
-			after = f" AND ({type_sql}, {rec}) > (%s, %s)"
+			after = f" AND ({group}) > ({', '.join(['%s'] * len(keys))})"
 			params += list(last)
 		rows = frappe.db.sql(
-			f"SELECT {type_sql}, {rec}, COUNT(*), {', '.join(extra)} FROM {table} WHERE {where}{after} "
-			f"GROUP BY {type_sql}, {rec} ORDER BY {type_sql}, {rec} LIMIT {int(batch)}",
+			f"SELECT {group}, COUNT(*), {', '.join(extra)} FROM {table} WHERE {where}{after} "
+			f"GROUP BY {group} ORDER BY {group} LIMIT {int(batch)}",
 			params,
 		)
 		if not rows:
 			return
-		yield rows
-		last = (rows[-1][0], rows[-1][1])
+		yield rows if typed else [("", *row) for row in rows]
+		last = tuple(rows[-1][: len(keys)])
 
 
 def check_recorders(reg, from_month=None, batch: int = BATCH) -> list[Issue]:

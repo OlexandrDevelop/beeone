@@ -4,6 +4,7 @@
 """Consistency check of the beeone registers: totals, cancelled documents, moments."""
 
 import frappe
+from frappe.beeone import db
 from frappe.beeone.registers.check import (
 	CHECK_CANCELLED,
 	CHECK_CURRENT,
@@ -152,9 +153,9 @@ class TestBeeoneRegisterCheck(IntegrationTestCase):
 		frappe.db.sql_ddl(f"drop table `{current_table(LEDGER)}`")
 		frappe.db.sql(f"update `{totals_table(LEDGER)}` set qty = qty + 1")
 		self.assertEqual(check_registers(LEDGER, parse_month("2026-03"), fix=True)["fixed"], 3)
-		self.assertFalse(frappe.db.sql("show tables like %s", current_table(LEDGER)))
+		self.assertFalse(db.table_exists(current_table(LEDGER)))
 		check_registers(LEDGER, fix=True)
-		self.assertTrue(frappe.db.sql("show tables like %s", current_table(LEDGER)))
+		self.assertTrue(db.table_exists(current_table(LEDGER)))
 		self.assertEqual(self._issues(), [])
 
 	def test_unknown_register_and_bad_month(self):
