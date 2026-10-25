@@ -7,8 +7,13 @@ const esc = (text) => frappe.utils.escape_html(String(text ?? ""));
 const API = "frappe.beeone.api.registers.";
 const NUMERIC = ["Currency", "Float", "Int", "Long Int", "Percent"];
 
+// Only numbers, dates and times go through frappe.format (it returns markup for them).
+// Every other value is text of a register row and is escaped, so it can never become HTML.
+const FORMATTED = [...NUMERIC, "Date", "Datetime", "Time", "Duration", "Check"];
+
 beeone.registers.format = function (value, column, row) {
 	if (value === null || value === undefined || value === "") return "";
+	if (!FORMATTED.includes(column.fieldtype)) return esc(value);
 	const df = { fieldtype: column.fieldtype, options: column.options, fieldname: column.fieldname };
 	return frappe.format(value, df, { inline: true }, row);
 };

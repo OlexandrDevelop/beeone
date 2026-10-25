@@ -138,3 +138,26 @@ def test_turnover_command(page):
 	page.locator(".modal.show .btn-modal-primary").click()
 	page.wait_for_function("document.querySelectorAll('.modal.show .beeone-table tbody tr').length === 2")
 	shot(page, "turnover")
+
+
+def test_text_values_of_rows_are_escaped(page):
+	open_desk(page, LEDGER)
+	page.wait_for_selector(".list-row")
+	evil = "<img src=x onerror=window.beeone_xss=1>"
+	page.evaluate(
+		"""(evil) => {
+			const columns = [
+				{fieldname: "item", label: "Item", fieldtype: "Data", role: "Dimension"},
+				{fieldname: "link", label: "Link", fieldtype: "Link", options: "User", role: "Dimension"},
+			];
+			$("<div id='beeone-xss'></div>").appendTo("body").html(
+				beeone.registers.table(columns, [{item: evil, link: evil}])
+			);
+		}""",
+		evil,
+	)
+	page.wait_for_selector("#beeone-xss table")
+	page.wait_for_timeout(300)
+	assert page.locator("#beeone-xss img").count() == 0
+	assert page.evaluate("window.beeone_xss") is None
+	assert evil in page.locator("#beeone-xss td").first.inner_text()
