@@ -232,6 +232,33 @@ class TestRegisterSync(IntegrationTestCase):
 		)
 
 
+class TestRegisterMetaOrder(IntegrationTestCase):
+	def test_meta_files_come_after_schema_of_all_modules(self):
+		from frappe.model.sync import order_register_meta_files
+
+		files = [
+			"/a/mod_a/document_movements/x/x.json",
+			"/a/mod_a/register/x/x.json",
+			"/a/mod_a/doctype/x/x.json",
+			"/a/mod_b/register/y/y.json",
+			"/a/mod_b/doctype/register/register.json",
+			"/a/mod_b/doctype/y/y.json",
+			"/a/mod_b/report/r/r.json",
+		]
+		self.assertEqual(
+			order_register_meta_files(files),
+			[
+				"/a/mod_a/doctype/x/x.json",
+				"/a/mod_b/doctype/register/register.json",
+				"/a/mod_b/doctype/y/y.json",
+				"/a/mod_b/report/r/r.json",
+				"/a/mod_a/register/x/x.json",
+				"/a/mod_b/register/y/y.json",
+				"/a/mod_a/document_movements/x/x.json",
+			],
+		)
+
+
 class TestCoreIsCountryNeutral(IntegrationTestCase):
 	def test_no_cyrillic_in_core_meta(self):
 		root = Path(frappe.get_app_path("frappe"))

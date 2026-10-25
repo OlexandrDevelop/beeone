@@ -137,6 +137,9 @@ def sync_for(app_name, force=0, reset_permissions=False):
 		folder = os.path.dirname(frappe.get_module(app_name + "." + module_name).__file__)
 		files = get_doc_files(files=files, start_path=folder)
 
+	# beeone: register meta is imported after the schema of every module of the app
+	files = order_register_meta_files(files)
+
 	# The same walk again, rooted at the app, for the few doctypes an app may ship outside any
 	# module, which today means an app-rooted `Sidebar`. `get_doc_files` needs no changes for
 	# this, since it already takes the directory to start from.
@@ -167,6 +170,24 @@ def sync_for(app_name, force=0, reset_permissions=False):
 	# Apps-mode site holds no icon rows, shipped or generated, and switching to the grid is what
 	# imports them.
 	import_desktop_icon_fixtures(app_name, force=force)
+
+
+# beeone: register meta record folders, in the order they must be imported
+REGISTER_META_FOLDERS = ("register", "document_movements")
+
+
+def order_register_meta_files(files):
+	"""Move Register and Document Movements records after all other files, across modules.
+
+	A record may point to a DocType or a Register of another module of the same app.
+	The order is stable inside each group: other files, Register records, Document Movements.
+	"""
+
+	def rank(path):
+		folder = os.path.basename(os.path.dirname(os.path.dirname(path)))
+		return REGISTER_META_FOLDERS.index(folder) + 1 if folder in REGISTER_META_FOLDERS else 0
+
+	return sorted(files, key=rank)
 
 
 def get_doc_files(files, start_path, doctypes=None):
