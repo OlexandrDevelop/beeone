@@ -179,6 +179,11 @@ def get_translations_from_apps(lang, apps=None):
 	for app in apps or frappe.get_installed_apps(_ensure_on_bench=True):
 		translations.update(get_translations_from_csv(lang, app) or {})
 		translations.update(get_translations_from_mo(lang, app) or {})
+		# beeone: extra translation files that an app lists in the hook beeone_translation_files
+		from frappe.beeone.localization import get_translation_files
+
+		for path in get_translation_files(lang, app):
+			translations.update(get_translation_dict_from_file(path, lang, app) or {})
 	if parent := get_parent_language(lang):
 		parent_translations = get_translations_from_apps(parent, apps)
 		parent_translations.update(translations)
