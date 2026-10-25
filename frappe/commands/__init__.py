@@ -105,6 +105,8 @@ def call_command(cmd, context):
 
 def get_commands():
 	# prevent circular imports
+	from frappe.beeone.commands import commands as beeone_commands  # beeone: bench beeone group
+
 	from .gettext import commands as gettext_commands
 	from .redis_utils import commands as redis_commands
 	from .scheduler import commands as scheduler_commands
@@ -122,6 +124,7 @@ def get_commands():
 		+ gettext_commands
 		+ utils_commands
 		+ redis_commands
+		+ beeone_commands
 	)
 
 	for command in all_commands:
