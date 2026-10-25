@@ -119,6 +119,44 @@ class TestBeeoneRegisterCheck(IntegrationTestCase):
 		self.assertEqual(len(issues), 1)
 		self.assertIn("time", issues[0].detail)
 
+	def test_movement_without_time_among_timed_ones_is_found(self):
+		name = frappe.get_all(LEDGER, pluck="name", limit=1, order_by="name")[0]
+		frappe.db.set_value(LEDGER, name, "posting_time", None)
+		issues = [i for i in self._issues() if i.check == CHECK_MOMENT]
+		self.assertEqual(len(issues), 1)
+
+	def test_movement_without_date_among_dated_ones_is_found(self):
+		name = frappe.get_all(LEDGER, pluck="name", limit=1, order_by="name")[0]
+		frappe.db.set_value(LEDGER, name, "posting_date", None)
+		self.assertIn(CHECK_MOMENT, self._checks())
+
+	def test_blank_recorder_type_is_reported_not_a_crash(self):
+		frappe.db.sql(f"update `tab{LEDGER}` set voucher_type = ''")
+		issues = [i for i in self._issues() if i.check == CHECK_CANCELLED]
+		self.assertEqual(len(issues), 1)
+		self.assertIn("type is empty", issues[0].detail)
+
+	def test_small_batches_find_every_difference(self):
+		from frappe.beeone.registers.check import check_totals
+		from frappe.beeone.registers.meta import get_register
+
+		frappe.db.sql(f"delete from `{totals_table(LEDGER)}` where item = 'Nut'")
+		frappe.db.sql(f"update `{totals_table(LEDGER)}` set qty = qty + 1 where item = 'Bolt'")
+		frappe.db.sql(
+			f"insert into `{totals_table(LEDGER)}` (period, warehouse, item, qty, amount) "
+			"values ('2026-01-01', 'Ghost', 'Gear', 3, 9)"
+		)
+		self.assertEqual(len(check_totals(get_register(LEDGER), batch=1)), 4)
+
+	def test_month_fix_does_not_create_the_current_table(self):
+		frappe.db.sql_ddl(f"drop table `{current_table(LEDGER)}`")
+		frappe.db.sql(f"update `{totals_table(LEDGER)}` set qty = qty + 1")
+		self.assertEqual(check_registers(LEDGER, parse_month("2026-03"), fix=True)["fixed"], 3)
+		self.assertFalse(frappe.db.sql("show tables like %s", current_table(LEDGER)))
+		check_registers(LEDGER, fix=True)
+		self.assertTrue(frappe.db.sql("show tables like %s", current_table(LEDGER)))
+		self.assertEqual(self._issues(), [])
+
 	def test_unknown_register_and_bad_month(self):
 		with self.assertRaises(frappe.DoesNotExistError):
 			check_registers("No Such Register")

@@ -60,60 +60,156 @@ def _norm(key: tuple) -> tuple:
 	return tuple(cstr(part).casefold().rstrip() for part in key)
 
 
-def _movement_sums(reg, monthly: bool, from_month) -> dict:
-	"""{normalized key: (key, [sums of the resources])} from the movements, zero rows left out."""
+def _movement_parts(reg, monthly: bool, from_month):
+	"""SQL parts to sum the movements: key expressions, sum expressions, where, values."""
 	dims, res = totals.dimensions(reg), totals.resources(reg)
 	date = _q(reg.date_field) if reg.date_field else None
-	key_sql = [f"DATE_FORMAT({date}, '%%Y-%%m-01')"] if monthly else []
-	key_sql += [f"IFNULL({_q(f)}, '')" for f in dims]
+	keys = [f"DATE_FORMAT({date}, '%%Y-%%m-01')"] if monthly else []
+	keys += [f"IFNULL({_q(f)}, '')" for f in dims]
 	where, values = [], []
 	if monthly:
 		where.append(f"{date} IS NOT NULL")
 		if from_month:
 			where.append(f"{date} >= %s")
 			values.append(from_month)
-	sums = ", ".join(f"SUM(IFNULL({_q(f)}, 0))" for f in res)
-	group = f" GROUP BY {', '.join(str(i + 1) for i in range(len(key_sql)))}" if key_sql else ""
+	sums = [f"SUM(IFNULL({_q(f)}, 0))" for f in res]
+	return keys, sums, where, values
+
+
+def _marks(count: int, size: int) -> str:
+	return ", ".join("(" + ", ".join(["%s"] * size) + ")" for _ in range(count))
+
+
+def _nonzero(amounts: list[float]) -> bool:
+	return any(abs(v) > EPSILON for v in amounts)
+
+
+def _split(rows, size: int) -> list[tuple]:
+	return [(tuple(cstr(p) for p in row[:size]), [flt(v) for v in row[size:]]) for row in rows]
+
+
+def _expected_pages(reg, monthly: bool, from_month, batch: int):
+	"""Pages of (key, sums) of the movements, in key order, zero rows left out."""
+	keys, sums, where, values = _movement_parts(reg, monthly, from_month)
+	size = len(keys)
+	if not size:
+		rows = frappe.db.sql(
+			f"SELECT {', '.join(sums)} FROM {_q('tab' + reg.register_doctype)}"
+			f"{' WHERE ' + ' AND '.join(where) if where else ''}",
+			values,
+		)
+		page = [(k, a) for k, a in _split(rows, 0) if _nonzero(a)]
+		if page:
+			yield page
+		return
+	aliases = [f"_k{i}" for i in range(size)]
+	select = ", ".join(f"{expr} AS {_q(alias)}" for expr, alias in zip(keys, aliases, strict=True))
+	group = ", ".join(_q(a) for a in aliases)
+	last = None
+	while True:
+		having, params = "", list(values)
+		if last is not None:
+			having = f" HAVING ({group}) > ({', '.join(['%s'] * size)})"
+			params += list(last)
+		rows = frappe.db.sql(
+			f"SELECT {select}, {', '.join(sums)} FROM {_q('tab' + reg.register_doctype)}"
+			f"{' WHERE ' + ' AND '.join(where) if where else ''} GROUP BY {group}{having} "
+			f"ORDER BY {group} LIMIT {int(batch)}",
+			params,
+		)
+		if not rows:
+			return
+		last = tuple(rows[-1][:size])
+		page = [(k, a) for k, a in _split(rows, size) if _nonzero(a)]
+		if page:
+			yield page
+
+
+def _expected_for(reg, monthly: bool, from_month, keys: list[tuple]) -> dict:
+	"""{normalized key: (key, sums)} of the movements for the given keys only."""
+	exprs, sums, where, values = _movement_parts(reg, monthly, from_month)
+	if not exprs:
+		return {(): ((), a) for _k, a in next(_expected_pages(reg, monthly, from_month, 1), [])}
+	where = [*where, f"({', '.join(exprs)}) IN ({_marks(len(keys), len(exprs))})"]
+	params = [*values, *[part for key in keys for part in key]]
+	group = ", ".join(str(i + 1) for i in range(len(exprs)))
 	rows = frappe.db.sql(
-		f"SELECT {', '.join(key_sql + [sums])} FROM {_q('tab' + reg.register_doctype)}"
-		f"{' WHERE ' + ' AND '.join(where) if where else ''}{group}",
-		values,
+		f"SELECT {', '.join(exprs + sums)} FROM {_q('tab' + reg.register_doctype)} "
+		f"WHERE {' AND '.join(where)} GROUP BY {group}",
+		params,
 	)
-	size = len(key_sql)
-	result = {}
-	for row in rows:
-		key, amounts = tuple(cstr(part) for part in row[:size]), [flt(v) for v in row[size:]]
-		if any(abs(v) > EPSILON for v in amounts):
-			result[_norm(key)] = (key, amounts)
-	return result
+	return {_norm(k): (k, a) for k, a in _split(rows, len(exprs)) if _nonzero(a)}
 
 
-def _table_sums(reg, table: str, monthly: bool, from_month) -> dict:
-	dims, res = totals.dimensions(reg), totals.resources(reg)
-	columns = (["period"] if monthly else []) + dims
-	where, values = "", []
+def _table_columns(reg, monthly: bool) -> list[str]:
+	return (["period"] if monthly else []) + totals.dimensions(reg)
+
+
+def _actual_for(reg, table: str, monthly: bool, keys: list[tuple]) -> dict:
+	"""{normalized key: (key, sums)} of the totals table for the given keys only."""
+	columns = _table_columns(reg, monthly)
+	select = ", ".join(_q(c) for c in [*columns, *totals.resources(reg)])
+	if not columns:
+		rows = frappe.db.sql(f"SELECT {select} FROM {_q(table)}")
+		where, params = "", []
+	else:
+		where = f" WHERE ({', '.join(_q(c) for c in columns)}) IN ({_marks(len(keys), len(columns))})"
+		params = [part for key in keys for part in key]
+		rows = frappe.db.sql(f"SELECT {select} FROM {_q(table)}{where}", params)
+	return {_norm(k): (k, a) for k, a in _split(rows, len(columns))}
+
+
+def _table_pages(reg, table: str, monthly: bool, from_month, batch: int):
+	"""Pages of (key, sums) of the totals table, in key order, zero rows left out."""
+	columns = _table_columns(reg, monthly)
+	select = ", ".join(_q(c) for c in [*columns, *totals.resources(reg)])
+	if not columns:
+		page = [(k, a) for k, a in _split(frappe.db.sql(f"SELECT {select} FROM {_q(table)}"), 0) if _nonzero(a)]
+		if page:
+			yield page
+		return
+	group = ", ".join(_q(c) for c in columns)
+	where, values = [], []
 	if monthly and from_month:
-		where, values = " WHERE `period` >= %s", [from_month]
-	select = ", ".join(_q(c) for c in [*columns, *res])
-	result = {}
-	for row in frappe.db.sql(f"SELECT {select} FROM {_q(table)}{where}", values):
-		key = tuple(cstr(part) for part in row[: len(columns)])
-		result[_norm(key)] = (key, [flt(v) for v in row[len(columns) :]])
-	return result
+		where.append("`period` >= %s")
+		values.append(from_month)
+	last = None
+	while True:
+		conditions, params = list(where), list(values)
+		if last is not None:
+			conditions.append(f"({group}) > ({', '.join(['%s'] * len(columns))})")
+			params += list(last)
+		rows = frappe.db.sql(
+			f"SELECT {select} FROM {_q(table)}{' WHERE ' + ' AND '.join(conditions) if conditions else ''} "
+			f"ORDER BY {group} LIMIT {int(batch)}",
+			params,
+		)
+		if not rows:
+			return
+		last = tuple(rows[-1][: len(columns)])
+		page = [(k, a) for k, a in _split(rows, len(columns)) if _nonzero(a)]
+		if page:
+			yield page
 
 
-def _diff(reg, table: str, monthly: bool, from_month) -> list[tuple]:
-	"""Rows that differ: (kind, key, expected, actual). Missing sums count as zero."""
-	expected = _movement_sums(reg, monthly, from_month)
-	actual = _table_sums(reg, table, monthly, from_month)
+def _diff(reg, table: str, monthly: bool, from_month, batch: int = BATCH):
+	"""Yield the rows that differ: (key, key in the table or None, movement sums, table sums).
+
+	Reads pages of `batch` keys. A missing sum counts as zero. Pass 1 goes over the keys of
+	the movements, pass 2 over the keys of the table that have no movements.
+	"""
 	zero = [0.0] * len(totals.resources(reg))
-	found = []
-	for norm in sorted(set(expected) | set(actual)):
-		want_key, want = expected.get(norm, (None, zero))
-		have_key, have = actual.get(norm, (None, zero))
-		if any(abs(a - b) > EPSILON for a, b in zip(want, have, strict=True)):
-			found.append((want_key or have_key, have_key, want, have))
-	return found
+	for page in _expected_pages(reg, monthly, from_month, batch):
+		actual = _actual_for(reg, table, monthly, [key for key, _ in page])
+		for key, want in page:
+			have_key, have = actual.get(_norm(key), (None, zero))
+			if any(abs(a - b) > EPSILON for a, b in zip(want, have, strict=True)):
+				yield key, have_key, want, have
+	for page in _table_pages(reg, table, monthly, from_month, batch):
+		expected = _expected_for(reg, monthly, from_month, [key for key, _ in page])
+		for key, have in page:
+			if _norm(key) not in expected:
+				yield key, key, zero, have
 
 
 def _describe(reg, key: tuple, monthly: bool) -> str:
@@ -125,19 +221,28 @@ def _amounts(reg, values: list[float]) -> str:
 	return ", ".join(f"{name}={value:g}" for name, value in zip(totals.resources(reg), values, strict=True))
 
 
-def check_totals(reg, from_month=None) -> list[Issue]:
+def _tables(reg, from_month) -> list[tuple]:
+	"""(table, monthly, check) of the totals tables to check. No current balance for a month range."""
+	tables = [(totals.totals_table(reg.name), True, CHECK_TOTALS)]
+	if totals.has_current(reg) and not from_month:
+		tables.append((totals.current_table(reg.name), False, CHECK_CURRENT))
+	return tables
+
+
+def _exists(table: str) -> bool:
+	return bool(frappe.db.sql("SHOW TABLES LIKE %s", table))
+
+
+def check_totals(reg, from_month=None, batch: int = BATCH) -> list[Issue]:
 	"""Checks 1 and 2."""
 	issues = []
 	if not totals.has_totals(reg):
 		return issues
-	tables = [(totals.totals_table(reg.name), True, CHECK_TOTALS)]
-	if totals.has_current(reg) and not from_month:
-		tables.append((totals.current_table(reg.name), False, CHECK_CURRENT))
-	for table, monthly, check in tables:
-		if not frappe.db.sql("SHOW TABLES LIKE %s", table):
+	for table, monthly, check in _tables(reg, from_month):
+		if not _exists(table):
 			issues.append(Issue(reg.name, check, table, "table is missing"))
 			continue
-		for key, _have_key, want, have in _diff(reg, table, monthly, from_month):
+		for key, _have_key, want, have in _diff(reg, table, monthly, from_month, batch):
 			detail = f"movements: {_amounts(reg, want)}; table: {_amounts(reg, have)}"
 			issues.append(Issue(reg.name, check, _describe(reg, key, monthly), detail))
 	return issues
@@ -146,41 +251,29 @@ def check_totals(reg, from_month=None) -> list[Issue]:
 def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 	"""Write the sums of the movements into the totals tables, in batches. Returns the fixed rows.
 
-	Every batch is committed. The movements are only read.
+	Reads and writes `batch` keys at a time and commits after every batch. A missing
+	table is created empty and filled the same way. The movements are only read.
 	"""
 	if not totals.has_totals(reg):
 		return 0
+	res = totals.resources(reg)
 	fixed = 0
-	missing = [
-		table
-		for table in (
-			totals.totals_table(reg.name),
-			totals.current_table(reg.name) if totals.has_current(reg) else None,
-		)
-		if table and not frappe.db.sql("SHOW TABLES LIKE %s", table)
-	]
-	if missing:
-		# creates the tables and fills them from the movements
-		totals.ensure_totals_tables(reg)
+	for table, monthly, _check in _tables(reg, from_month):
+		columns = _table_columns(reg, monthly)
+		if not _exists(table):
+			totals._create(table, columns, res)
+		count = 0
+		for key, have_key, want, _have in _diff(reg, table, monthly, from_month, batch):
+			if _nonzero(want):
+				_set_row(table, columns, res, key, want)
+			else:
+				where = " AND ".join(f"{_q(c)} = %s" for c in columns)
+				frappe.db.sql(f"DELETE FROM {_q(table)}{' WHERE ' + where if where else ''}", list(have_key))
+			count += 1
+			if count % batch == 0:
+				frappe.db.commit()
 		frappe.db.commit()
-		fixed += len(missing)
-
-	dims, res = totals.dimensions(reg), totals.resources(reg)
-	tables = [(totals.totals_table(reg.name), True)]
-	if totals.has_current(reg) and not from_month:
-		tables.append((totals.current_table(reg.name), False))
-	for table, monthly in tables:
-		columns = (["period"] if monthly else []) + dims
-		diff = _diff(reg, table, monthly, from_month)
-		for start in range(0, len(diff), batch):
-			for key, have_key, want, _have in diff[start : start + batch]:
-				if any(abs(v) > EPSILON for v in want):
-					_set_row(table, columns, res, key, want)
-				else:
-					where = " AND ".join(f"{_q(c)} = %s" for c in columns)
-					frappe.db.sql(f"DELETE FROM {_q(table)} WHERE {where}", list(have_key))
-				fixed += 1
-			frappe.db.commit()
+		fixed += count
 	return fixed
 
 
@@ -210,6 +303,8 @@ def _recorders(reg, from_month, batch: int):
 	extra = [
 		f"MIN({_q(date)}), MAX({_q(date)})" if date else "NULL, NULL",
 		f"MIN({_q(time)}), MAX({_q(time)})" if time else "NULL, NULL",
+		f"COUNT({_q(date)})" if date else "0",
+		f"COUNT({_q(time)})" if time else "0",
 	]
 	where, values = f"{rec} IS NOT NULL AND {rec} != ''", []
 	if from_month and date:
@@ -245,7 +340,14 @@ def check_recorders(reg, from_month=None, batch: int = BATCH) -> list[Issue]:
 	for rows in _recorders(reg, from_month, batch):
 		by_type = {}
 		for row in rows:
-			by_type.setdefault(row[0] or only_type[0], []).append(row)
+			if not row[0] and not reg.registrar_type_field:
+				by_type.setdefault(only_type[0], []).append(row)
+			elif not row[0]:
+				issues.append(
+					Issue(reg.name, CHECK_CANCELLED, f"recorder {row[1]}", f"recorder type is empty, {row[2]} movements")
+				)
+			else:
+				by_type.setdefault(row[0], []).append(row)
 		for doctype, items in by_type.items():
 			issues += _check_documents(reg, doctype, items)
 	return issues
@@ -261,7 +363,7 @@ def _check_documents(reg, doctype: str, items: list) -> list[Issue]:
 			row.name: row.docstatus
 			for row in frappe.get_all(doctype, filters={"name": ("in", names)}, fields=["name", "docstatus"], order_by=None)
 		}
-	for _type, name, count, min_date, max_date, min_time, max_time in items:
+	for _type, name, count, min_date, max_date, min_time, max_time, dates, times in items:
 		subject = f"{doctype} {name}"
 		if name not in states:
 			issues.append(Issue(reg.name, CHECK_CANCELLED, subject, f"document is deleted, {count} movements"))
@@ -269,10 +371,20 @@ def _check_documents(reg, doctype: str, items: list) -> list[Issue]:
 		if states[name] == 2:
 			issues.append(Issue(reg.name, CHECK_CANCELLED, subject, f"document is cancelled, {count} movements"))
 			continue
-		if min_date != max_date or min_time != max_time:
+		# MIN and MAX skip NULL, so a row without date or time is counted apart
+		if (
+			min_date != max_date
+			or min_time != max_time
+			or (reg.date_field and 0 < dates < count)
+			or (reg.time_field and 0 < times < count)
+		):
 			issues.append(Issue(reg.name, CHECK_MOMENT, subject, "movements have more than one moment"))
 			continue
 		if not reg.date_field:
+			continue
+		if not dates:
+			if reg.register_kind != "Information: Plain":
+				issues.append(Issue(reg.name, CHECK_MOMENT, subject, f"movements have no date, {count} movements"))
 			continue
 		issues += _check_moment(reg, doctype, name, min_date, min_time)
 	return issues
@@ -334,3 +446,4 @@ def format_report(result: dict, limit: int = 200) -> str:
 		lines.append(f"Totals fixed: {result['fixed']} rows")
 	lines.append(f"Registers checked: {len(result['checked'])}, discrepancies: {len(issues)}")
 	return "\n".join(lines)
+
