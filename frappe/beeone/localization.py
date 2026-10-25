@@ -7,7 +7,7 @@ The core knows no country. An app gives its rules through hooks in its hooks.py:
 
 	amount_in_words = {"uk": "my_app.words.money_in_words"}
 	beeone_validators = {"tax_id": "my_app.codes.check_tax_id", "iban": "my_app.codes.validate_iban"}
-	beeone_formats = {"uk": {"date_format": "dd.mm.yyyy", "number_format": "#.###,##"}}
+	beeone_formats = {"uk": {"date_pattern": "dd.mm.yyyy", "number_pattern": "#.###,##"}}
 	beeone_translation_files = {"uk": ["translations/uk_extra.csv"]}
 
 The first app that gives a key wins when two apps give the same key. Functions of the app keep
@@ -16,7 +16,7 @@ their own names and error texts: the core only calls them.
 
 import frappe
 
-FORMAT_KEYS = ("date_format", "time_format", "number_format", "currency_format", "time_zone", "first_day_of_the_week")
+FORMAT_KEYS = ("date_pattern", "time_pattern", "number_pattern", "currency_pattern", "time_zone", "first_day_of_the_week")
 
 
 def _handler(hook: str, key: str):

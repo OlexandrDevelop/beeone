@@ -14,7 +14,7 @@ from frappe.tests import IntegrationTestCase
 HOOKS = {
 	"amount_in_words": {"xx": ["frappe.tests.test_beeone_localization.sample_words"]},
 	"beeone_validators": {"sample_code": ["frappe.tests.test_beeone_localization.sample_code"]},
-	"beeone_formats": {"xx": {"date_format": ["dd.mm.yyyy"], "number_format": ["#.###,##"], "other": ["no"]}},
+	"beeone_formats": {"xx": {"date_pattern": ["dd.mm.yyyy"], "number_pattern": ["#.###,##"], "other": ["no"]}},
 }
 
 
@@ -57,7 +57,7 @@ class TestBeeoneLocalization(IntegrationTestCase):
 	def test_formats_only_known_keys(self):
 		with patch("frappe.get_hooks", _hooks):
 			self.assertEqual(
-				localization.get_formats("xx-YY"), {"date_format": "dd.mm.yyyy", "number_format": "#.###,##"}
+				localization.get_formats("xx-YY"), {"date_pattern": "dd.mm.yyyy", "number_pattern": "#.###,##"}
 			)
 			self.assertEqual(localization.get_formats("zz"), {})
 
