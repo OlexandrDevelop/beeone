@@ -172,7 +172,9 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 			getdoc(LEDGER, foreign)
 		own = frappe.db.get_value(LEDGER, {"unit": OWN}, "name")
 		self.assertTrue(frappe.has_permission(LEDGER, "read", own))
-		self.assertTrue(getdoc(LEDGER, own))
+		frappe.local.response = frappe._dict({"docs": []})
+		getdoc(LEDGER, own)
+		self.assertIn(own, [d.name for d in frappe.response.docs])
 
 	def test_user_without_permission_sees_all(self):
 		frappe.set_user(USER_ALL)
@@ -187,7 +189,9 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 			frappe.set_user(user)
 			self.assertEqual(len(frappe.get_list(LEDGER)), 2, user)
 			self.assertTrue(frappe.has_permission(LEDGER, "read", foreign), user)
-			self.assertTrue(getdoc(LEDGER, foreign), user)
+			frappe.local.response = frappe._dict({"docs": []})
+			getdoc(LEDGER, foreign)
+			self.assertIn(foreign, [d.name for d in frappe.response.docs], user)
 
 	def test_write_with_foreign_value_is_rejected(self):
 		frappe.set_user(USER_ONE)
