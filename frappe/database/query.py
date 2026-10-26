@@ -1633,6 +1633,17 @@ class Engine:
 			self.query = self.query.where(condition)
 
 	def get_permission_conditions(self, doctype: str, table: Table) -> Criterion | None:
+		condition = self._get_share_and_user_conditions(doctype, table)
+
+		# beeone: row-restricting dimensions of a register apply to shared documents too
+		from frappe.beeone.registers import rights
+
+		if c := rights.query_conditions(doctype, self.user):
+			dimension = RawCriterion(f"({c})")
+			return dimension if condition is None else condition & dimension
+		return condition
+
+	def _get_share_and_user_conditions(self, doctype: str, table: Table) -> Criterion | None:
 		role_permissions = frappe.permissions.get_role_permissions(doctype, user=self.user)
 		has_role_permission = role_permissions.get("read") or role_permissions.get("select")
 
@@ -1692,12 +1703,6 @@ class Engine:
 		for method in condition_methods:
 			if c := frappe.call(frappe.get_attr(method), self.user, doctype=doctype):
 				conditions.append(RawCriterion(f"({c})"))
-
-		# beeone: rows of a register are limited by its row-restricting dimensions
-		from frappe.beeone.registers import rights
-
-		if c := rights.query_conditions(doctype, self.user):
-			conditions.append(RawCriterion(f"({c})"))
 
 		active_child_tables = []
 		current_tables = self.get_queried_tables()

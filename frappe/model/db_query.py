@@ -1100,6 +1100,12 @@ from {tables}
 			if not only_if_shared and self.shared and conditions:
 				conditions = f"(({conditions}) or ({self.get_share_condition()}))"
 
+			# beeone: row-restricting dimensions of a register apply to shared documents too
+			from frappe.beeone.registers import rights
+
+			if c := rights.query_conditions(self.doctype, self.user):
+				conditions = f"({conditions}) and ({c})" if conditions else c
+
 			return conditions
 
 		else:
@@ -1182,12 +1188,6 @@ from {tables}
 		for method in condition_methods:
 			if c := frappe.call(frappe.get_attr(method), self.user, doctype=self.doctype):
 				conditions.append(c)
-
-		# beeone: rows of a register are limited by its row-restricting dimensions
-		from frappe.beeone.registers import rights
-
-		if c := rights.query_conditions(self.doctype, self.user):
-			conditions.append(c)
 
 		active_child_tables = []
 		if len(self.tables) > 1:  # only if query has multiple tables involved

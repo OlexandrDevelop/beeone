@@ -155,6 +155,14 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		result = query.document_movements(DOCUMENT, "doc-1")
 		self.assertEqual([r["unit"] for r in result[0]["rows"]], [OWN])
 
+	def test_shared_foreign_row_stays_hidden(self):
+		foreign = frappe.db.get_value(LEDGER, {"unit": OTHER}, "name")
+		frappe.share.add(LEDGER, foreign, USER_ONE, read=1, flags={"ignore_share_permission": True})
+		frappe.set_user(USER_ONE)
+		rows = frappe.get_list(LEDGER, fields=["unit"])
+		self.assertEqual([r.unit for r in rows], [OWN])
+		self.assertEqual(query.balance(LEDGER, group_by=[])[0]["qty"], 10)
+
 	def test_user_without_permission_sees_all(self):
 		frappe.set_user(USER_ALL)
 		self.assertEqual(len(frappe.get_list(LEDGER)), 2)
