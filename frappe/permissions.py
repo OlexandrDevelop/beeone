@@ -223,6 +223,14 @@ def has_permission(
 			ignore_share_permissions=ignore_share_permissions,
 		)
 
+	# beeone: a share or owner grant never opens a register row outside the user's dimensions
+	if perm and doc and not isinstance(doc, str | int):
+		from frappe.beeone.registers import rights
+
+		if not rights.has_row_access(doc, user):
+			push_perm_check_log(_("Not allowed by row-level rights of the register"), debug=debug)
+			return False
+
 	return bool(perm)
 
 

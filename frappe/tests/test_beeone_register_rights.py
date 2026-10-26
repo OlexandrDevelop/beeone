@@ -162,6 +162,12 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		rows = frappe.get_list(LEDGER, fields=["unit"])
 		self.assertEqual([r.unit for r in rows], [OWN])
 		self.assertEqual(query.balance(LEDGER, group_by=[])[0]["qty"], 10)
+		# the direct read of the shared foreign row is refused too
+		self.assertFalse(frappe.has_permission(LEDGER, "read", foreign))
+		with self.assertRaises(frappe.PermissionError):
+			frappe.get_doc(LEDGER, foreign).check_permission("read")
+		own = frappe.db.get_value(LEDGER, {"unit": OWN}, "name")
+		self.assertTrue(frappe.has_permission(LEDGER, "read", own))
 
 	def test_user_without_permission_sees_all(self):
 		frappe.set_user(USER_ALL)

@@ -82,6 +82,18 @@ def query_conditions(doctype: str, user: str | None = None) -> str:
 	return " and ".join(conditions)
 
 
+def has_row_access(doc, user: str | None = None) -> bool:
+	"""False when the register row `doc` has a value of a restricting dimension the user may not use."""
+	for fieldname, docs in allowed_values(doc.doctype, user).items():
+		if not docs:
+			continue
+		value = doc.get(fieldname)
+		if value in docs or (value in (None, "") and not _strict()):
+			continue
+		return False
+	return True
+
+
 def check_write(doctype: str, rows: list[dict], user: str | None = None):
 	"""Throw PermissionError when a row has a value of a restricting dimension the user may not use."""
 	for fieldname, docs in allowed_values(doctype, user).items():
