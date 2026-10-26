@@ -82,9 +82,19 @@ def query_conditions(doctype: str, user: str | None = None) -> str:
 	return " and ".join(conditions)
 
 
-def has_row_access(doc, user: str | None = None) -> bool:
+def has_row_access(doc, user: str | None = None, doctype: str | None = None) -> bool:
 	"""False when the register row `doc` has a value of a restricting dimension the user may not use."""
-	for fieldname, docs in allowed_values(doc.doctype, user).items():
+	if not doc:
+		return True
+	dt = doctype or getattr(doc, "doctype", None) or (doc.get("doctype") if isinstance(doc, dict) else None)
+	if not dt:
+		return True
+	dims = allowed_values(dt, user)
+	if not dims:
+		return True
+	if isinstance(doc, str | int):
+		doc = frappe.get_lazy_doc(dt, doc)
+	for fieldname, docs in dims.items():
 		if not docs:
 			continue
 		value = doc.get(fieldname)

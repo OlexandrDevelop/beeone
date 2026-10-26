@@ -156,6 +156,8 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		self.assertEqual([r["unit"] for r in result[0]["rows"]], [OWN])
 
 	def test_shared_foreign_row_stays_hidden(self):
+		from frappe.desk.form.load import getdoc
+
 		foreign = frappe.db.get_value(LEDGER, {"unit": OTHER}, "name")
 		frappe.share.add(LEDGER, foreign, USER_ONE, read=1, flags={"ignore_share_permission": True})
 		frappe.set_user(USER_ONE)
@@ -166,8 +168,11 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		self.assertFalse(frappe.has_permission(LEDGER, "read", foreign))
 		with self.assertRaises(frappe.PermissionError):
 			frappe.get_doc(LEDGER, foreign).check_permission("read")
+		with self.assertRaises(frappe.PermissionError):
+			getdoc(LEDGER, foreign)
 		own = frappe.db.get_value(LEDGER, {"unit": OWN}, "name")
 		self.assertTrue(frappe.has_permission(LEDGER, "read", own))
+		self.assertTrue(getdoc(LEDGER, own))
 
 	def test_user_without_permission_sees_all(self):
 		frappe.set_user(USER_ALL)
@@ -175,9 +180,14 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		self.assertEqual(query.balance(LEDGER, group_by=[])[0]["qty"], 17)
 
 	def test_system_manager_and_administrator_see_all(self):
+		from frappe.desk.form.load import getdoc
+
+		foreign = frappe.db.get_value(LEDGER, {"unit": OTHER}, "name")
 		for user in (USER_MANAGER, "Administrator"):
 			frappe.set_user(user)
 			self.assertEqual(len(frappe.get_list(LEDGER)), 2, user)
+			self.assertTrue(frappe.has_permission(LEDGER, "read", foreign), user)
+			self.assertTrue(getdoc(LEDGER, foreign), user)
 
 	def test_write_with_foreign_value_is_rejected(self):
 		frappe.set_user(USER_ONE)

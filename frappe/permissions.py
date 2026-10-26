@@ -139,6 +139,14 @@ def has_permission(
 		if isinstance(doc, str | int):
 			# perf: Avoid loading child tables for perm checks
 			doc = frappe.get_lazy_doc(meta.name, doc)
+
+		# beeone: row-restricting dimensions of a register take precedence over role, owner and share
+		from frappe.beeone.registers import rights
+
+		if not rights.has_row_access(doc, user, doctype=doctype):
+			push_perm_check_log(_("Not allowed by row-level rights of the register"), debug=debug)
+			return False
+
 		perm = get_doc_permissions(doc, user=user, ptype=ptype, debug=debug).get(ptype)
 		if not perm:
 			debug and _debug_log(
@@ -224,10 +232,10 @@ def has_permission(
 		)
 
 	# beeone: a share or owner grant never opens a register row outside the user's dimensions
-	if perm and doc and not isinstance(doc, str | int):
+	if perm and doc:
 		from frappe.beeone.registers import rights
 
-		if not rights.has_row_access(doc, user):
+		if not rights.has_row_access(doc, user, doctype=doctype):
 			push_perm_check_log(_("Not allowed by row-level rights of the register"), debug=debug)
 			return False
 
@@ -431,9 +439,14 @@ def has_user_permission(doc, user=None, debug=False, *, ptype=None):
 
 		meta = frappe.get_meta(d.doctype)
 
+		# beeone: row-restricting dimensions of a register are handled by beeone rights
+		from frappe.beeone.registers import rights
+
+		skip_fields = rights.restricting_fieldnames(d.doctype)
+
 		# check all link fields for user permissions
 		for field in meta.get_link_fields():
-			if field.ignore_user_permissions:
+			if field.ignore_user_permissions or field.fieldname in skip_fields:
 				continue
 
 			# empty value, do you still want to apply user permissions?
