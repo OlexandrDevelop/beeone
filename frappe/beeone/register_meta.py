@@ -85,6 +85,18 @@ def validate_register(doc):
 				title=_("Invalid Register"),
 			)
 
+		if row.restrict_rows and (
+			row.role != "Dimension"
+			or fields[row.fieldname].fieldtype != "Link"
+			or fields[row.fieldname].get("ignore_user_permissions")
+		):
+			frappe.throw(
+				_(
+					"Register {0}: {1} restricts rows, so it must be a Link dimension that does not ignore user permissions"
+				).format(register, frappe.bold(row.fieldname)),
+				title=_("Invalid Register"),
+			)
+
 	for key in SYSTEM_FIELDS:
 		if doc.get(key):
 			_require_field(register, doctype, fields, doc.get(key), doc.meta.get_label(key))

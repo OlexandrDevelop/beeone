@@ -1545,8 +1545,12 @@ class Engine:
 			return conditions
 
 		doctype_link_fields = self.get_doctype_link_fields(doctype)
+		# beeone: row-restricting dimensions of a register are handled by beeone rights
+		from frappe.beeone.registers import rights
+
+		skip_fields = rights.restricting_fieldnames(doctype)
 		for df in doctype_link_fields:
-			if df.get("ignore_user_permissions"):
+			if df.get("ignore_user_permissions") or df.get("fieldname") in skip_fields:
 				continue
 
 			user_permission_values = user_permissions.get(df.get("options"), {})
@@ -1689,6 +1693,12 @@ class Engine:
 			if c := frappe.call(frappe.get_attr(method), self.user, doctype=doctype):
 				conditions.append(RawCriterion(f"({c})"))
 
+		# beeone: rows of a register are limited by its row-restricting dimensions
+		from frappe.beeone.registers import rights
+
+		if c := rights.query_conditions(doctype, self.user):
+			conditions.append(RawCriterion(f"({c})"))
+
 		active_child_tables = []
 		current_tables = self.get_queried_tables()
 		if len(current_tables) > 1:
@@ -1760,8 +1770,12 @@ class Engine:
 				return match_filters
 
 			permission_filters = {}
+			# beeone: row-restricting dimensions of a register are handled by beeone rights
+			from frappe.beeone.registers import rights
+
+			skip_fields = rights.restricting_fieldnames(self.doctype)
 			for df in self.get_doctype_link_fields(self.doctype):
-				if df.get("ignore_user_permissions"):
+				if df.get("ignore_user_permissions") or df.get("fieldname") in skip_fields:
 					continue
 
 				options = df.get("options")

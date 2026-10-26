@@ -5,7 +5,8 @@
  "engine": "InnoDB",
  "field_order": [
   "fieldname",
-  "role"
+  "role",
+  "restrict_rows"
  ],
  "fields": [
   {
@@ -22,6 +23,14 @@
    "options": "Dimension\nResource\nAttribute",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "restrict_rows",
+   "fieldtype": "Check",
+   "label": "Restricts Rows",
+   "description": "Users see and write only rows whose value is allowed by their User Permissions. A Link dimension.",
+   "depends_on": "eval:doc.role=='Dimension'",
+   "default": "0"
   }
  ],
  "index_web_pages_for_search": 1,

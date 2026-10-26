@@ -1114,6 +1114,11 @@ from {tables}
 	def add_user_permissions(self, user_permissions):
 		doctype_link_fields = self.doctype_meta.get_link_fields()
 
+		# beeone: row-restricting dimensions of a register are handled by beeone rights
+		from frappe.beeone.registers import rights
+
+		skip_fields = rights.restricting_fieldnames(self.doctype)
+
 		# append current doctype with fieldname as 'name' as first link field
 		doctype_link_fields.append(
 			dict(
@@ -1125,7 +1130,7 @@ from {tables}
 		match_filters = {}
 		match_conditions = []
 		for df in doctype_link_fields:
-			if df.get("ignore_user_permissions"):
+			if df.get("ignore_user_permissions") or df.get("fieldname") in skip_fields:
 				continue
 
 			user_permission_values = user_permissions.get(df.get("options"), {})
@@ -1177,6 +1182,12 @@ from {tables}
 		for method in condition_methods:
 			if c := frappe.call(frappe.get_attr(method), self.user, doctype=self.doctype):
 				conditions.append(c)
+
+		# beeone: rows of a register are limited by its row-restricting dimensions
+		from frappe.beeone.registers import rights
+
+		if c := rights.query_conditions(self.doctype, self.user):
+			conditions.append(c)
 
 		active_child_tables = []
 		if len(self.tables) > 1:  # only if query has multiple tables involved

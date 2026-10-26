@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.beeone.registers import totals
+from frappe.beeone.registers import rights, totals
 from frappe.beeone.registers.meta import get_register
 
 
@@ -65,6 +65,7 @@ class RecordSet:
 		"""Delete the old rows of the set and insert `rows` in one statement."""
 		old = self.read()
 		new = self._prepare(rows)
+		rights.check_write(self.doctype, new)
 		turnover, current = defaultdict(lambda: defaultdict(float)), defaultdict(lambda: defaultdict(float))
 		for row in old:
 			totals._collect(self.reg, row, -1, turnover, current)
