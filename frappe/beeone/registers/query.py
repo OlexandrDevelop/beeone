@@ -358,24 +358,34 @@ def slice_last(
 		frappe.throw(_("Register {0} has no date field").format(reg.name))
 
 	dims = totals.dimensions(reg)
-	group_by = _check_group_by(reg, group_by)
-	for fieldname in filters or {}:
-		if fieldname not in dims:
-			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
-	fallback_empty = list(fallback_empty or [])
-	for fieldname in fallback_empty:
-		if fieldname not in dims:
-			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
 	meta = frappe.get_meta(reg.register_doctype)
 	permitted = set(meta.get_permitted_fieldnames())
-	for fieldname in fields or []:
-		if not meta.has_field(fieldname):
-			frappe.throw(_("{0} is not a field of register {1}").format(fieldname, reg.name))
+
+	def readable(fieldname):
+		# a dimension of a higher permission level cannot key, filter or fall back a slice: that would tell its values
 		if fieldname not in permitted:
 			frappe.throw(
 				_("You have no permission to read field {0} of register {1}").format(fieldname, reg.name),
 				frappe.PermissionError,
 			)
+
+	# the default key holds the dimensions the user may read
+	group_by = [d for d in dims if d in permitted] if group_by is None else _check_group_by(reg, group_by)
+	for fieldname in group_by:
+		readable(fieldname)
+	for fieldname in filters or {}:
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+		readable(fieldname)
+	fallback_empty = list(fallback_empty or [])
+	for fieldname in fallback_empty:
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+		readable(fieldname)
+	for fieldname in fields or []:
+		if not meta.has_field(fieldname):
+			frappe.throw(_("{0} is not a field of register {1}").format(fieldname, reg.name))
+		readable(fieldname)
 
 	from frappe.beeone.registers import rights
 
@@ -393,7 +403,21 @@ def slice_last(
 
 	from frappe.beeone import db
 
+	def readable_names(flt_values: dict) -> list[str]:
+		"""Rows the user may read by owner, share, User Permissions and permission hooks: what `get_list` allows."""
+		query = [[reg.register_doctype, f, "in" if isinstance(v, list | tuple) else "=", v] for f, v in flt_values.items()]
+		query.append([reg.register_doctype, reg.date_field, "<=" if not first else ">=", day])
+		return frappe.get_list(
+			reg.register_doctype, filters=query, pluck="name", order_by=None, limit_page_length=0
+		)
+
 	def run(flt_values: dict) -> list[dict]:
+		restrict_now = restrict
+		if frappe.session.user != "Administrator":
+			names = readable_names(flt_values)
+			if not names:
+				return []
+			restrict_now = {**restrict, "name": (names, False)}
 		return db.select_last(
 			reg.register_doctype,
 			group_by,
@@ -403,7 +427,7 @@ def slice_last(
 			reg.time_field,
 			flt_values,
 			first,
-			restrict,
+			restrict_now,
 		)
 
 	def with_fallback(flt_values: dict, pending: list[str]) -> list[dict]:

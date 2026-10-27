@@ -13,6 +13,8 @@ UNIT = "Beeone Slice Unit"
 SETTING = "Beeone Slice Setting"
 ROLE = "Beeone Slice Reader"
 USER = "slice.one@example.com"
+OWNER_ROLE = "Beeone Slice Owner"
+OWNER_USER = "slice.owner@example.com"
 OWN, OTHER = "slice-own", "slice-other"
 
 
@@ -20,8 +22,9 @@ class TestBeeoneSliceRights(IntegrationTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
-		if not frappe.db.exists("Role", ROLE):
-			frappe.get_doc({"doctype": "Role", "role_name": ROLE}).insert()
+		for role in (ROLE, OWNER_ROLE):
+			if not frappe.db.exists("Role", role):
+				frappe.get_doc({"doctype": "Role", "role_name": role}).insert()
 		frappe.get_doc(
 			{
 				"doctype": "DocType",
@@ -47,6 +50,7 @@ class TestBeeoneSliceRights(IntegrationTestCase):
 				],
 				"permissions": [
 					{"role": ROLE, "read": 1, "permlevel": 0},
+					{"role": OWNER_ROLE, "read": 1, "if_owner": 1, "permlevel": 0},
 					{"role": "System Manager", "read": 1, "permlevel": 0},
 					{"role": "System Manager", "read": 1, "permlevel": 1},
 				],
@@ -70,6 +74,9 @@ class TestBeeoneSliceRights(IntegrationTestCase):
 		if not frappe.db.exists("User", USER):
 			frappe.get_doc({"doctype": "User", "email": USER, "first_name": "Slice", "send_welcome_email": 0}).insert()
 		frappe.get_doc("User", USER).add_roles(ROLE)
+		if not frappe.db.exists("User", OWNER_USER):
+			frappe.get_doc({"doctype": "User", "email": OWNER_USER, "first_name": "Owner", "send_welcome_email": 0}).insert()
+		frappe.get_doc("User", OWNER_USER).add_roles(OWNER_ROLE)
 		clear_cache()
 		frappe.db.commit()
 
@@ -146,6 +153,33 @@ class TestBeeoneSliceRights(IntegrationTestCase):
 			frappe.set_user("Administrator")
 			frappe.db.set_value("DocField", {"parent": SETTING, "fieldname": "unit"}, "permlevel", 0)
 			frappe.clear_cache(doctype=SETTING)
+
+	def test_a_hidden_dimension_cannot_filter_group_or_fall_back(self):
+		frappe.db.set_value("DocField", {"parent": SETTING, "fieldname": "unit"}, "permlevel", 1)
+		frappe.clear_cache(doctype=SETTING)
+		try:
+			frappe.set_user(USER)
+			for kw in ({"filters": {"unit": OWN}}, {"group_by": ["unit"]}, {"fallback_empty": ["unit"]}):
+				with self.assertRaises(frappe.PermissionError):
+					slice_last(SETTING, "2026-06-01", **kw)
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.set_value("DocField", {"parent": SETTING, "fieldname": "unit"}, "permlevel", 0)
+			frappe.clear_cache(doctype=SETTING)
+
+	def test_an_owner_only_reader_gets_only_own_rows(self):
+		frappe.set_user(OWNER_USER)
+		try:
+			self.assertEqual(slice_last(SETTING, "2026-06-01"), [])
+		finally:
+			frappe.set_user("Administrator")
+		frappe.db.set_value(SETTING, {"unit": OWN}, "owner", OWNER_USER)
+		frappe.set_user(OWNER_USER)
+		try:
+			rows = slice_last(SETTING, "2026-06-01", group_by=["unit"])
+			self.assertEqual([r["value"] for r in rows], [1])
+		finally:
+			frappe.set_user("Administrator")
 
 	def test_fields_of_a_higher_permission_level_are_hidden(self):
 		frappe.set_user(USER)
