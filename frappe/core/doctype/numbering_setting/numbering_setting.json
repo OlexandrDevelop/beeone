@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 0,
- "autoname": "Prompt",
+ "autoname": "hash",
  "creation": "2026-10-27 17:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -15,7 +15,8 @@
   "separator",
   "digits",
   "scope_chars",
-  "reset"
+  "reset",
+  "setting_key"
  ],
  "fields": [
   {
@@ -83,6 +84,15 @@
    "fieldtype": "Select",
    "label": "Restart Counter",
    "options": "Never\nYearly\nMonthly"
+  },
+  {
+   "fieldname": "setting_key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "hidden": 1,
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1
   }
  ],
  "links": [],

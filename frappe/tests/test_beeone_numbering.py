@@ -25,6 +25,7 @@ def make_doctype():
 			"autoname": "numbering",
 			"fields": [
 				{"fieldname": "company", "fieldtype": "Data", "label": "Company"},
+				{"fieldname": "department", "fieldtype": "Data", "label": "Department"},
 				{"fieldname": "doc_date", "fieldtype": "Date", "label": "Date"},
 			],
 			"permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1}],
@@ -90,17 +91,37 @@ class TestBeeoneNumbering(IntegrationTestCase):
 		self.assertEqual(self.new(company="A").name, "Q-0001")
 		self.assertEqual(self.new(company="B").name, "Q-0002")
 
-	def test_same_pair_is_refused_by_the_key(self):
+	def test_same_pair_is_refused_by_the_database(self):
 		first = setting(scope="K")
-		self.assertEqual(first.name, f"{TEST_DOCTYPE}:K")
+		self.assertEqual(first.setting_key, f"{TEST_DOCTYPE}:K")
+		dup = frappe.get_doc(
+			{
+				"doctype": "Numbering Setting",
+				"ref_doctype": TEST_DOCTYPE,
+				"scope": "K",
+				"setting_key": first.setting_key,
+				"prefix": "Y",
+				"digits": 4,
+			}
+		)
 		frappe.db.savepoint("dup_pair")
-		with self.assertRaises(frappe.DuplicateEntryError):
-			dup = frappe.get_doc(
-				{"doctype": "Numbering Setting", "ref_doctype": TEST_DOCTYPE, "scope": "K", "prefix": "Y", "digits": 4}
-			)
-			dup.name = first.name
-			dup.db_insert()
+		with self.assertRaises(frappe.ValidationError):
+			dup.db_insert()  # skips validate: only the unique column can stop it
 		frappe.db.rollback(save_point="dup_pair")
+
+	def test_scope_field_must_match(self):
+		setting(scope="A", scope_field="company", prefix="AC")
+		setting(scope="C", scope_field="department", prefix="CC")
+		setting(prefix="Z")
+		# department A is not the scope of the company setting
+		self.assertEqual(self.new(company="B", department="A").name, "Z-0001")
+		self.assertEqual(self.new(company="B", department="C").name, "CC-0001")
+
+	def test_separator_is_part_of_the_counter_key(self):
+		setting(scope="A", scope_field="company", prefix="Q")
+		setting(scope="B", scope_field="company", prefix="Q-", separator="")
+		self.assertEqual(self.new(company="A").name, "Q-0001")
+		self.assertEqual(self.new(company="B").name, "Q-0002")
 
 	def test_no_setting_is_an_error(self):
 		with self.assertRaises(frappe.ValidationError):

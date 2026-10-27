@@ -46,15 +46,17 @@ def next_name(
 	"""Take the next number of a series and return the full name.
 
 	`key` is the name of the counter in `Series`. Without it the key is built from the
-	document type and the name stem (prefix, scope part, period), so settings that render the
+	document type and the text before the number (prefix, scope part, period, separator), so settings that render the
 	same stem share one counter and never give the same name twice. A caller that moves an
 	existing numbering to the core passes its old key, so the counter goes on.
 	"""
 	period = period_label(reset, date)
 	glue = separator or ""
-	stem = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
-	number = getseries(key or f"NS:{ref_doctype}:{stem}", int(digits))
-	return glue.join(p for p in (stem, number) if p)
+	head = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
+	if head:
+		head += glue
+	number = getseries(key or f"NS:{ref_doctype}:{head}", int(digits))
+	return head + number
 
 
 def get_setting(ref_doctype: str, scope: str | None = None):
@@ -77,7 +79,9 @@ def name_for(doc) -> str | None:
 		distinct=True,
 	):
 		value = doc.get(scope_field) if scope_field else None
-		if value and frappe.db.exists(DOCTYPE, {"ref_doctype": doc.doctype, "scope": value}):
+		if value and frappe.db.exists(
+			DOCTYPE, {"ref_doctype": doc.doctype, "scope": value, "scope_field": scope_field}
+		):
 			scope = value
 			break
 	setting = get_setting(doc.doctype, scope)
