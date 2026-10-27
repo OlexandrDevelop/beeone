@@ -64,7 +64,7 @@ class StatusMachine:
 
 def load_machines() -> dict[str, StatusMachine]:
 	"""All machines from the hooks of the installed apps (cached for the request)."""
-	cache = frappe.local.__dict__.setdefault("beeone_status_machines", None)
+	cache = getattr(frappe.local, "beeone_status_machines", None)
 	if cache is not None:
 		return cache
 	machines = {}
