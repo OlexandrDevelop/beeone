@@ -28,6 +28,13 @@ from frappe import _
 DEFAULT_FIELD = "status"
 HOOK = "beeone_status_machines"
 ADMIN_ROLE = "System Manager"
+DOCSTATUS_LABELS = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
+
+
+def docstatus_label(docstatus) -> str:
+	"""The translated label of a docstatus (0, 1, 2); apps may translate it further."""
+	label = DOCSTATUS_LABELS.get(int(docstatus or 0))
+	return _(label) if label else ""
 
 
 class StatusMachine:
@@ -126,12 +133,15 @@ def set_status(
 		_throw(denied, doc, current, status, _("Not enough rights to change status from {0} to {1}"), frappe.PermissionError)
 	if before:
 		before(doc, current, status)
+	if machine.field in (extra or {}):
+		frappe.throw(_("The status field cannot be set through extra values"))
 	values = {machine.field: status, **(extra or {})}
 	if save:
 		doc.flags.from_set_status = True
 		doc.update(values)
 		doc.save()
 	else:
+		doc.check_permission("write")
 		frappe.db.set_value(doctype, name, values)
 		doc.update(values)
 	return doc

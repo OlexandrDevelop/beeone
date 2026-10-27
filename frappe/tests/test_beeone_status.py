@@ -109,6 +109,26 @@ class TestBeeoneStatus(IntegrationTestCase):
 		)
 		self.assertEqual(frappe.db.get_value(TEST_DOCTYPE, doc.name, ["status", "note"]), ("Closed", "done"))
 
+	def test_docstatus_labels(self):
+		self.assertEqual([status.docstatus_label(i) for i in (0, 1, 2)], ["Draft", "Submitted", "Cancelled"])
+		self.assertEqual(status.docstatus_label(None), "Draft")
+		self.assertEqual(status.docstatus_label(5), "")
+
+	def test_extra_cannot_replace_status(self):
+		doc = self.new_doc("Draft")
+		with self.assertRaises(frappe.ValidationError):
+			status.set_status(
+				TEST_DOCTYPE, doc.name, "Open", machine=machine(), save=False, extra={"status": "Closed"}
+			)
+		self.assertEqual(frappe.db.get_value(TEST_DOCTYPE, doc.name, "status"), "Draft")
+
+	def test_db_write_needs_write_permission(self):
+		doc = self.new_doc("Open")
+		with self.set_user("Guest"):
+			with self.assertRaises(frappe.PermissionError):
+				status.set_status(TEST_DOCTYPE, doc.name, "Closed", machine=machine(), save=False)
+		self.assertEqual(frappe.db.get_value(TEST_DOCTYPE, doc.name, "status"), "Open")
+
 	def test_flag_set_when_saving(self):
 		doc = self.new_doc("Open")
 		status.set_status(TEST_DOCTYPE, doc.name, "Closed", machine=machine(), doc=doc)
