@@ -93,12 +93,14 @@ class TestBeeoneNumbering(IntegrationTestCase):
 	def test_same_pair_is_refused_by_the_key(self):
 		first = setting(scope="K")
 		self.assertEqual(first.name, f"{TEST_DOCTYPE}:K")
+		frappe.db.savepoint("dup_pair")
 		with self.assertRaises(frappe.DuplicateEntryError):
 			dup = frappe.get_doc(
 				{"doctype": "Numbering Setting", "ref_doctype": TEST_DOCTYPE, "scope": "K", "prefix": "Y", "digits": 4}
 			)
 			dup.name = first.name
 			dup.db_insert()
+		frappe.db.rollback(save_point="dup_pair")
 
 	def test_no_setting_is_an_error(self):
 		with self.assertRaises(frappe.ValidationError):
