@@ -509,7 +509,8 @@ def delete_dynamic_links(doctype, name):
 	delete_references("ToDo", doctype, name, "reference_type")
 	delete_references("Email Unsubscribe", doctype, name)
 	delete_references("DocShare", doctype, name, "share_doctype", "share_name")
-	delete_references("Version", doctype, name, "ref_doctype", "docname")
+	# beeone: the change log rows (action set) stay after the delete; only the standard versions go
+	frappe.db.delete("Version", {"ref_doctype": doctype, "docname": name, "action": ("is", "not set")})
 	delete_references("Comment", doctype, name)
 	delete_references("View Log", doctype, name)
 	delete_references("Document Follow", doctype, name, "ref_doctype", "ref_docname")
