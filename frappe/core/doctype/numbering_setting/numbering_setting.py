@@ -8,6 +8,7 @@ from frappe.model.document import Document
 
 class NumberingSetting(Document):
 	def validate(self):
+		self.scope = self.scope or ""
 		if not 1 <= (self.digits or 0) <= 12:
 			frappe.throw(_("Digits must be from 1 to 12"))
 		if (self.scope_chars or 0) < 0:
