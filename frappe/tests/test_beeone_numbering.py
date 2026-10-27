@@ -46,6 +46,7 @@ class TestBeeoneNumbering(IntegrationTestCase):
 		make_doctype()
 
 	def setUp(self):
+		frappe.db.delete(TEST_DOCTYPE)
 		frappe.db.delete("Numbering Setting", {"ref_doctype": TEST_DOCTYPE})
 		frappe.db.delete("Series", {"name": ("like", f"NS:{TEST_DOCTYPE}:%")})
 
