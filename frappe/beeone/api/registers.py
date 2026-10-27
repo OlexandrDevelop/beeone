@@ -52,3 +52,13 @@ def turnover(register: str, start, end, filters=None, group_by=None, resources=N
 		frappe.parse_json(group_by) if group_by is not None else None,
 		frappe.parse_json(resources) if resources else None,
 	)
+
+
+@frappe.whitelist()
+def current_balance(register: str, filters=None, lock=False, resources=None):
+	return query.current_balance(
+		register,
+		frappe.parse_json(filters) if filters else None,
+		bool(lock),
+		frappe.parse_json(resources) if resources else None,
+	)

@@ -123,6 +123,10 @@ class TestBeeoneDb(IntegrationTestCase):
 		db.upsert(TABLE, ["period", "item"], ["qty", "amount"], rows[:1], add=False)
 		self.assertEqual(self._read(), [("Bolt", 1, 2), ("Nut", 6, 8)])
 		db.lock_keys(TABLE, ["period", "item"], [("2026-03-01", "Nut"), ("2026-03-01", "Bolt")])
+		cur_rows = db.select_current(TABLE, ["period", "item"], ["qty", "amount"], filters={"item": "Nut"}, lock=True)
+		self.assertEqual(len(cur_rows), 1)
+		self.assertEqual(cur_rows[0]["item"], "Nut")
+		self.assertEqual((Decimal(cur_rows[0]["qty"]), Decimal(cur_rows[0]["amount"])), (Decimal(6), Decimal(8)))
 		with self.assertRaises(frappe.ValidationError):
 			db.upsert(TABLE, ["period", "item"], ["qty", "amount"], [rows[0], rows[0]])
 

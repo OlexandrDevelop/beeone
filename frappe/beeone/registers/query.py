@@ -177,3 +177,23 @@ def turnover(register: str, start, end, filters=None, group_by=None, resources=N
 	query = _check_filters(reg, filters)
 	query.append([reg.register_doctype, reg.date_field, "between", [start, end]])
 	return _aggregate(reg, query, _check_group_by(reg, group_by), _resources(reg, resources))
+
+
+def current_balance(register: str, filters=None, lock: bool = False, resources=None) -> list[dict]:
+	"""Current balance of the resources from the current totals table.
+
+	When `lock` is True, takes a FOR UPDATE row lock on the matching keys in sorted order.
+	"""
+	reg = get_register(register)
+	if not totals.has_current(reg):
+		frappe.throw(_("Register {0} has no current balance totals").format(reg.name))
+	frappe.has_permission(reg.register_doctype, "read", throw=True)
+	dims = totals.dimensions(reg)
+	res = _resources(reg, resources)
+	table = totals.current_table(reg.name)
+	for fieldname in (filters or {}):
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+	from frappe.beeone import db
+
+	return db.select_current(table, dims, res, filters=filters, lock=lock)

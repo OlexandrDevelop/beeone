@@ -229,6 +229,28 @@ def lock_keys(table: str, key_columns: list[str], keys: list[tuple]):
 	)
 
 
+def select_current(
+	table: str,
+	key_columns: list[str],
+	value_columns: list[str],
+	filters: dict | None = None,
+	lock: bool = False,
+) -> list[dict]:
+	"""Select rows from current totals table, with optional FOR UPDATE lock and keys in sorted order."""
+	q = quote
+	select_cols = [q(c) for c in [*key_columns, *value_columns]]
+	where, params = [], []
+	for k, v in (filters or {}).items():
+		if k in key_columns:
+			where.append(f"{q(k)} = %s")
+			params.append(v)
+	where_clause = f" WHERE {' AND '.join(where)}" if where else ""
+	order_clause = f" ORDER BY {', '.join(q(c) for c in key_columns)}" if key_columns else ""
+	lock_clause = " FOR UPDATE" if lock else ""
+	sql = f"SELECT {', '.join(select_cols)} FROM {q(table)}{where_clause}{order_clause}{lock_clause}"
+	return frappe.db.sql(sql, params, as_dict=True)
+
+
 def table_name(prefix: str, register: str) -> str:
 	"""Name of a table of a register. Names over the identifier limit get a short hash at the end.
 

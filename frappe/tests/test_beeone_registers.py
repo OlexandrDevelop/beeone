@@ -164,6 +164,10 @@ class TestBeeoneRegisters(IntegrationTestCase):
 		turnover = self._turnover("a")
 		self.assertEqual([(r.period, r.qty) for r in turnover], [(date(2026, 3, 1), 7), (date(2026, 4, 1), 4)])
 		self.assertEqual(self._current("a"), 11)
+		from frappe.beeone.registers import query
+		cur_rows = query.current_balance(LEDGER, filters={"item": "a"}, lock=True)
+		self.assertEqual(len(cur_rows), 1)
+		self.assertEqual(cur_rows[0]["qty"], 11)
 
 	def test_draft_writes_nothing(self):
 		doc = self._document("a:5", submit=False)
