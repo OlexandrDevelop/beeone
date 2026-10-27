@@ -203,8 +203,40 @@ class TestBeeoneRegisterInformation(IntegrationTestCase):
 			frappe.get_doc({"doctype": PRICE, "item": "Bolt", "valid_from": "2026-03-01", "price": 1}).insert()
 
 	def test_slice_refuses_an_accumulation_register(self):
-		from frappe.tests.beeone_register_fixtures import LEDGER, create_registers
-
-		create_registers()
+		name = "Beeone Info Stock"
+		_doctype(
+			name,
+			[
+				{"fieldname": "voucher_type", "fieldtype": "Data"},
+				{"fieldname": "voucher_no", "fieldtype": "Data"},
+				{"fieldname": "posting_date", "fieldtype": "Date"},
+				{"fieldname": "item", "fieldtype": "Data"},
+				{"fieldname": "qty", "fieldtype": "Float"},
+			],
+		)
+		self.addCleanup(self._drop, name)
+		_register(
+			name,
+			"Accumulation: Balance",
+			[
+				{"doctype": "Register Field", "fieldname": "item", "role": "Dimension"},
+				{"doctype": "Register Field", "fieldname": "qty", "role": "Resource"},
+			],
+			registrar_type_field="voucher_type",
+			registrar_field="voucher_no",
+			date_field="posting_date",
+			totals="None",
+		)
+		clear_cache()
 		with self.assertRaises(frappe.ValidationError):
-			slice_last(LEDGER, "2026-03-01")
+			slice_last(name, "2026-03-01")
+
+	@staticmethod
+	def _drop(name):
+		frappe.db.rollback()
+		if frappe.db.exists("Register", name):
+			frappe.delete_doc("Register", name, force=True)
+		if frappe.db.exists("DocType", name):
+			frappe.delete_doc("DocType", name, force=True)
+		frappe.db.commit()
+		clear_cache()
