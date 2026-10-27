@@ -9,7 +9,7 @@ from frappe.model.document import Document
 
 
 class NumberingSetting(Document):
-	def autoname(self):
+	def before_naming(self):
 		# The name is the key (document type, scope): the primary key keeps it unique, also
 		# when two transactions insert the same pair at once.
 		self.scope = self.scope or ""
