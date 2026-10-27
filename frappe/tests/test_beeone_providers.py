@@ -49,8 +49,18 @@ class TestSignatureContract(IntegrationTestCase):
 		signature = provider.sign(ProviderKey(b"Ivan", "x"), b"<xml/>", "basic")
 		data, signer = provider.verify(signature)
 		self.assertEqual(data, b"<xml/>")
-		self.assertEqual(signer["subject"], "Ivan")
-		self.assertEqual(provider.signer_info(signature)["subject"], "Ivan")
+		self.assertRegex(signer["subject"], r"^EMU-[0-9a-f]{12}$")
+		self.assertEqual(provider.signer_info(signature)["subject"], signer["subject"])
+		self.assertEqual(provider.verify(provider.sign(ProviderKey(b"Ivan"), b"x"))[1]["subject"], signer["subject"])
+
+	def test_signature_holds_no_key_data(self):
+		provider = SignatureEmulator()
+		signature = provider.sign(ProviderKey(SECRET_KEY_DATA.encode(), SECRET_PASSWORD), b"data")
+		import base64
+
+		shown = signature + base64.b64decode(signature[len(provider.PREFIX) :]) + repr(provider.verify(signature)).encode()
+		self.assertNotIn(SECRET_KEY_DATA.encode(), shown)
+		self.assertNotIn(SECRET_PASSWORD.encode(), shown)
 
 	def test_bad_inputs(self):
 		provider = SignatureEmulator()
@@ -62,6 +72,24 @@ class TestSignatureContract(IntegrationTestCase):
 			provider.verify(b"garbage")
 		with self.assertRaises(SignatureError):
 			provider.verify(SignatureEmulator.PREFIX + b"AAAA")
+		import base64
+		import hashlib
+		import json
+
+		def forge(body):
+			return SignatureEmulator.PREFIX + base64.b64encode(json.dumps(body).encode())
+
+		digest = hashlib.sha256(b"a").hexdigest()
+		for body in (
+			[],
+			"text",
+			{"data": base64.b64encode(b"a").decode(), "sha256": digest},
+			{"data": base64.b64encode(b"a").decode(), "sha256": digest, "signer": 5, "level": "x", "time": "t"},
+		):
+			with self.assertRaises(SignatureError):
+				provider.verify(forge(body))
+			with self.assertRaises(SignatureError):
+				provider.signer_info(forge(body))
 
 	def test_tampered_data_fails(self):
 		import base64

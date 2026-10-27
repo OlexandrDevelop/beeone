@@ -55,18 +55,21 @@ class SignatureProvider(ABC):
 class SignatureEmulator(SignatureProvider):
 	"""Signature = `EMU1.` + base64 of a JSON with the data, its sha256, the signer and the time.
 
-	The signer is the text of the key data. A key with the text `invalid` or the password `wrong`
+	The signer is a non-secret fingerprint of the key data (`EMU-` and 12 hex digits): the key data
+	themselves are never put into a signature. A key with the text `invalid` or the password `wrong`
 	is refused, so a test can reach the error paths.
 	"""
 
 	name = "emulator"
 	PREFIX = b"EMU1."
+	FIELDS = ("data", "sha256", "signer", "level", "time")
 
 	def sign(self, key, data, level=None):
 		log_call(self.name, "sign", key=key, level=level, size=len(data))
-		signer = (key.data or b"").decode("utf-8", "replace").strip()
-		if not signer or signer == "invalid":
+		raw = (key.data or b"").strip()
+		if not raw or raw == b"invalid":
 			raise SignatureError("The key cannot be read")
+		signer = "EMU-" + hashlib.sha256(raw).hexdigest()[:12]
 		if key.password == "wrong":
 			raise SignatureError("Wrong key password")
 		body = {
@@ -83,6 +86,8 @@ class SignatureEmulator(SignatureProvider):
 			raise SignatureError("Not a signature of the emulator")
 		try:
 			body = json.loads(base64.b64decode(signature[len(self.PREFIX) :]))
+			if not isinstance(body, dict) or not all(isinstance(body.get(k), str) for k in self.FIELDS):
+				raise ValueError
 			data = base64.b64decode(body["data"])
 		except Exception:
 			raise SignatureError("The signature is damaged") from None
