@@ -191,12 +191,16 @@ doc_events = {
 			"frappe.core.doctype.user_type.user_type.apply_permissions_for_non_standard_user_type",
 			"frappe.core.doctype.permission_log.permission_log.make_perm_log",
 			"frappe.search.sqlite_search.update_doc_index",
+			"frappe.beeone.change_log.on_update",  # beeone: document change log
 		],
+		"after_insert": ["frappe.beeone.change_log.after_insert"],  # beeone: document change log
+		"on_submit": ["frappe.beeone.change_log.on_submit"],  # beeone: document change log
 		"after_rename": "frappe.desk.notifications.clear_doctype_notifications",
 		"on_cancel": [
 			"frappe.desk.notifications.clear_doctype_notifications",
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
 			"frappe.automation.doctype.assignment_rule.assignment_rule.apply",
+			"frappe.beeone.change_log.on_cancel",  # beeone: document change log
 		],
 		"on_trash": [
 			"frappe.desk.notifications.clear_doctype_notifications",
@@ -208,11 +212,15 @@ doc_events = {
 			"frappe.automation.doctype.assignment_rule.assignment_rule.apply",
 			"frappe.automation.doctype.assignment_rule.assignment_rule.update_due_date",
 			"frappe.core.doctype.file.utils.attach_files_to_document",
+			"frappe.beeone.change_log.on_update_after_submit",  # beeone: document change log
 		],
 		"on_change": [
 			"frappe.automation.doctype.milestone_tracker.milestone_tracker.evaluate_milestone",
 		],
-		"after_delete": ["frappe.core.doctype.permission_log.permission_log.make_perm_log"],
+		"after_delete": [
+			"frappe.core.doctype.permission_log.permission_log.make_perm_log",
+			"frappe.beeone.change_log.after_delete",  # beeone: document change log
+		],
 	},
 	"Event": {
 		"after_insert": "frappe.integrations.doctype.google_calendar.google_calendar.insert_event_in_google_calendar",

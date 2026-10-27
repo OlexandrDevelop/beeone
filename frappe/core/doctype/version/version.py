@@ -21,6 +21,7 @@ class Version(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		action: DF.Data | None
 		data: DF.Code | None
 		docname: DF.Data
 		ref_doctype: DF.Link

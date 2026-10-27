@@ -10,6 +10,7 @@
   "ref_doctype",
   "column_break_3",
   "docname",
+  "action",
   "data",
   "section_break_4",
   "table_html"
@@ -33,6 +34,13 @@
    "in_list_view": 1,
    "label": "Document Name",
    "reqd": 1
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "label": "Action",
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "data",
