@@ -118,3 +118,28 @@ def _upsert(table: str, key_columns: list[str], reg, deltas: dict):
 def drop_totals_tables(register: str):
 	for table in (totals_table(register), current_table(register)):
 		db.drop_table(table)
+
+
+def is_information(reg) -> bool:
+	return reg.register_kind in ("Information: Periodic", "Information: Plain")
+
+
+def ensure_period_index(reg):
+	"""Index on the period column of an information register, for the slice queries.
+
+	Runs a DDL statement, which commits, so call it when the register meta is saved or after migrate.
+	"""
+	if not (is_information(reg) and reg.date_field):
+		return
+	if db.table_exists("tab" + reg.register_doctype):
+		db.ensure_index("tab" + reg.register_doctype, "period", [reg.date_field])
+
+
+def ensure_all_period_indexes():
+	"""After migrate: the register meta may be imported before the table of its DocType."""
+	try:
+		names = frappe.get_all("Register", pluck="name", order_by=None)
+	except frappe.db.TableMissingError:
+		return
+	for name in names:
+		ensure_period_index(frappe.get_doc("Register", name))

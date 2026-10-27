@@ -11,10 +11,11 @@ import frappe
 from frappe import _
 from frappe.beeone.registers import totals
 from frappe.beeone.registers.meta import get_register
-from frappe.utils import getdate
+from frappe.utils import cstr, getdate
 
 KIND_BALANCE = "Accumulation: Balance"
 KIND_TURNOVER = "Accumulation: Turnover"
+KIND_INFORMATION = ("Information: Periodic", "Information: Plain")
 MOVEMENT_LIMIT = 5000
 
 STANDARD_LABELS = {"name": "ID"}
@@ -22,6 +23,10 @@ STANDARD_LABELS = {"name": "ID"}
 
 def supports_balance(reg) -> bool:
 	return reg.register_kind == KIND_BALANCE
+
+
+def supports_slice(reg) -> bool:
+	return reg.register_kind in KIND_INFORMATION
 
 
 def supports_turnover(reg) -> bool:
@@ -325,3 +330,112 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 	from frappe.beeone import db
 
 	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)
+
+
+def _row_rights(reg, filters: dict) -> dict | None:
+	"""The filters narrowed to the dimension values the user may read. None when nothing is left."""
+	from frappe.beeone.registers import rights
+
+	filters = dict(filters)
+	for fieldname, valid in rights.allowed_values(reg.register_doctype).items():
+		if valid is None:
+			continue
+		if fieldname in filters:
+			val = filters[fieldname]
+			common = [v for v in val if v in valid] if isinstance(val, list | tuple) else ([val] if val in valid else [])
+			if not common:
+				return None
+			filters[fieldname] = common if isinstance(val, list | tuple) else val
+		else:
+			filters[fieldname] = valid
+	return filters
+
+
+def slice_last(
+	register: str,
+	at=None,
+	filters=None,
+	group_by=None,
+	fields=None,
+	fallback_empty=None,
+	first: bool = False,
+) -> list[dict]:
+	"""The latest value of every key of an information register on the end of day `at` (today when empty).
+
+	`filters` maps a dimension to a value or to a list of values. `group_by` lists the dimensions that make
+	the key (all dimensions when empty); the row with the latest period of each key is returned, with its
+	period, resources, attributes and the extra `fields`. A row of one key with the same date is chosen by
+	its time, then by its creation. `fallback_empty` lists dimensions that fall back to the empty value when
+	a key has no row for the filtered value, like a characteristic that has no price of its own.
+	With `first` the earliest row on or after `at` is returned instead.
+	"""
+	reg = get_register(register)
+	if not supports_slice(reg):
+		frappe.throw(_("Register {0} is not an information register").format(reg.name))
+	frappe.has_permission(reg.register_doctype, "read", throw=True)
+	if not reg.date_field:
+		frappe.throw(_("Register {0} has no date field").format(reg.name))
+
+	dims = totals.dimensions(reg)
+	group_by = _check_group_by(reg, group_by)
+	for fieldname in filters or {}:
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+	fallback_empty = list(fallback_empty or [])
+	for fieldname in fallback_empty:
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+	meta = frappe.get_meta(reg.register_doctype)
+	for fieldname in fields or []:
+		if not meta.has_field(fieldname):
+			frappe.throw(_("{0} is not a field of register {1}").format(fieldname, reg.name))
+
+	allowed = _row_rights(reg, filters or {})
+	if allowed is None:
+		return []
+
+	columns = [
+		*group_by,
+		reg.date_field,
+		*([reg.time_field] if reg.time_field else []),
+		*[row.fieldname for row in reg.fields if row.role != "Dimension"],
+		*(fields or []),
+	]
+	day = getdate(at)
+
+	from frappe.beeone import db
+
+	def run(flt_values: dict) -> list[dict]:
+		return db.select_last(
+			reg.register_doctype,
+			group_by,
+			columns,
+			reg.date_field,
+			day,
+			reg.time_field,
+			flt_values,
+			first,
+		)
+
+	def with_fallback(flt_values: dict, pending: list[str]) -> list[dict]:
+		if not pending:
+			return run(flt_values)
+		field, rest = pending[0], pending[1:]
+		value = flt_values.get(field)
+		rows = with_fallback(flt_values, rest)
+		if value in (None, "") or isinstance(value, list | tuple):
+			return rows
+		found = {_key(row, group_by, field): row for row in with_fallback({**flt_values, field: ""}, rest)}
+		found.update({_key(row, group_by, field): row for row in rows})
+		return [found[key] for key in sorted(found, key=lambda key: tuple(cstr(part) for part in key))]
+
+	return with_fallback(allowed, fallback_empty)
+
+
+def _key(row: dict, group_by: list[str], skip: str) -> tuple:
+	return tuple(row.get(f) for f in group_by if f != skip)
+
+
+def slice_first(register: str, at=None, filters=None, group_by=None, fields=None, fallback_empty=None) -> list[dict]:
+	"""The earliest value of every key on or after the day `at`. See `slice_last`."""
+	return slice_last(register, at, filters, group_by, fields, fallback_empty, first=True)

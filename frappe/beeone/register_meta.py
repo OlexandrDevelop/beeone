@@ -115,15 +115,19 @@ def validate_register(doc):
 				title=_("Invalid Register"),
 			)
 
-	if doc.register_kind != "Information: Plain":
-		for key in ("registrar_field", "date_field"):
-			if not doc.get(key):
-				frappe.throw(
-					_("Register {0}: {1} is required for kind {2}").format(
-						register, doc.meta.get_label(key), doc.register_kind
-					),
-					title=_("Invalid Register"),
-				)
+	# an information register can be independent of documents: its rows are written by the user or by the application
+	required = {
+		"Information: Plain": (),
+		"Information: Periodic": ("date_field",),
+	}.get(doc.register_kind, ("registrar_field", "date_field"))
+	for key in required:
+		if not doc.get(key):
+			frappe.throw(
+				_("Register {0}: {1} is required for kind {2}").format(
+					register, doc.meta.get_label(key), doc.register_kind
+				),
+				title=_("Invalid Register"),
+			)
 
 	totals = doc.totals or TOTALS_NONE
 	if totals != TOTALS_NONE and doc.register_kind in KIND_INFORMATION:

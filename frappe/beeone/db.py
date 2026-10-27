@@ -66,6 +66,10 @@ class Dialect:
 	def ddl(self, query: str):
 		frappe.db.sql_ddl(query)
 
+	def ensure_index(self, table: str, name: str, columns: list[str]):
+		q = self.quote
+		self.ddl(f"CREATE INDEX IF NOT EXISTS {q(name)} ON {q(table)} ({', '.join(q(c) for c in columns)})")
+
 	def _update_clause(self, table: str, value_columns: list[str], add: bool) -> str:
 		raise NotImplementedError
 
@@ -187,6 +191,12 @@ def ddl(query: str):
 	dialect().ddl(query)
 
 
+def ensure_index(table: str, tag: str, columns: list[str]):
+	"""Create an index on the columns of a table when it is not there. The name is made from the table and the tag."""
+	digest = hashlib.sha1(f"{table}:{tag}".encode()).hexdigest()[:16]
+	dialect().ensure_index(table, f"beeone_ix_{digest}", columns)
+
+
 def month_start(expr: str) -> str:
 	return dialect().month_start(expr)
 
@@ -256,6 +266,56 @@ def select_current(
 	order_clause = f" ORDER BY {', '.join(q(c) for c in key_columns)}" if key_columns else ""
 	lock_clause = " FOR UPDATE" if lock else ""
 	sql = f"SELECT {', '.join(select_cols)} FROM {q(table)}{where_clause}{order_clause}{lock_clause}"
+	return frappe.db.sql(sql, params, as_dict=True)
+
+
+def select_last(
+	table: str,
+	key_columns: list[str],
+	columns: list[str],
+	date_column: str,
+	at,
+	time_column: str | None = None,
+	filters: dict | None = None,
+	first: bool = False,
+) -> list[dict]:
+	"""For every key, the row with the latest period on or before `at` (the earliest on or after it when `first`).
+
+	Rows of one key with the same date are ordered by time, then by creation and name, so the result is stable.
+	`filters` maps a column to a value or to a list of values. The result has `columns` of the chosen rows,
+	keys in sorted order.
+	"""
+	q = quote
+	where, params = [f"{q(date_column)} {'>=' if first else '<='} %s"], [at]
+	for k, v in (filters or {}).items():
+		if isinstance(v, list | tuple):
+			if not v:
+				where.append("1 = 0")
+				continue
+			where.append(f"{q(k)} IN ({', '.join(['%s'] * len(v))})")
+			params.extend(v)
+		elif v in (None, ""):
+			# an empty link is NULL or an empty string
+			where.append(f"{dialect().text_key(q(k))} = ''")
+		else:
+			where.append(f"{q(k)} = %s")
+			params.append(v)
+	way = "ASC" if first else "DESC"
+	order = [f"{q(date_column)} {way}"]
+	if time_column:
+		order.append(f"COALESCE({q(time_column)}, '00:00:00') {way}")
+	order += [f"{q('creation')} {way}", f"{q('name')} {way}"]
+	partition = f"PARTITION BY {', '.join(q(c) for c in key_columns)} " if key_columns else ""
+	inner = (
+		f"SELECT {', '.join(q(c) for c in dict.fromkeys(columns))}, "
+		f"ROW_NUMBER() OVER ({partition}ORDER BY {', '.join(order)}) AS {q('__rn')} "
+		f"FROM {q('tab' + table)} WHERE {' AND '.join(where)}"
+	)
+	outer_order = f" ORDER BY {', '.join(q(c) for c in key_columns)}" if key_columns else ""
+	sql = (
+		f"SELECT {', '.join(q(c) for c in dict.fromkeys(columns))} FROM ({inner}) AS {q('s')} "
+		f"WHERE {q('__rn')} = 1{outer_order}"
+	)
 	return frappe.db.sql(sql, params, as_dict=True)
 
 

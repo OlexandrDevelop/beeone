@@ -8,6 +8,7 @@ from frappe import _
 
 REGISTERS_KEY = "beeone_register_doctypes"
 MOVEMENTS_KEY = "beeone_document_movements"
+KIND_INFORMATION = ("Information: Periodic", "Information: Plain")
 
 
 def _load_registers() -> dict:
@@ -64,6 +65,10 @@ def get_register(register: str):
 def check_direct_write(doctype: str):
 	"""Movements of a register are written by posting a document or by a RecordSet only."""
 	if frappe.flags.get("beeone_register_write") or doctype not in register_doctypes():
+		return
+	reg = get_register(register_doctypes()[doctype])
+	# an independent information register has no recorder: the rows are edited like a document, with the rights of the DocType
+	if reg.register_kind in KIND_INFORMATION and not reg.registrar_field:
 		return
 	frappe.throw(
 		_("Movements of register {0} can only be written by posting a document").format(

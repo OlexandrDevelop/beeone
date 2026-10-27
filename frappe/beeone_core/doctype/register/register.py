@@ -3,7 +3,7 @@
 
 from frappe.beeone.register_meta import validate_register
 from frappe.beeone.registers.meta import clear_cache
-from frappe.beeone.registers.totals import drop_totals_tables, ensure_totals_tables
+from frappe.beeone.registers.totals import drop_totals_tables, ensure_period_index, ensure_totals_tables
 from frappe.model.document import Document
 
 
@@ -18,6 +18,7 @@ class Register(Document):
 	def on_update(self):
 		clear_cache()
 		ensure_totals_tables(self)
+		ensure_period_index(self)
 
 	def on_trash(self):
 		clear_cache()

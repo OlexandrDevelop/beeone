@@ -330,6 +330,7 @@ setup_wizard_exception = [
 
 before_migrate = ["frappe.core.doctype.patch_log.patch_log.before_migrate"]
 after_migrate = [
+	"frappe.beeone.registers.totals.ensure_all_period_indexes",  # beeone: period index of information registers
 	"frappe.website.doctype.website_theme.website_theme.after_migrate",
 	"frappe.search.sqlite_search.build_index_in_background",
 	"frappe.desk.doctype.notification_type.notification_type.install_notification_types",
