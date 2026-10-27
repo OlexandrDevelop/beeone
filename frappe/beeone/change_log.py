@@ -8,18 +8,20 @@ The log is off for every doctype. An app turns it on with hooks:
 	beeone_change_log_doctypes = ["My Document"]            # names
 	beeone_change_log_predicates = ["my_app.log.is_tracked"]  # fn(doc) -> bool
 	beeone_change_log_sinks = ["my_app.log.on_entry"]         # fn(doc, entry), optional
-	beeone_change_log_private_doctypes = ["My Private Doc"]   # rights depend on the record owner
+	beeone_change_log_context = ["my_app.log.context"]        # fn(doc) -> dict kept with the Delete entry
+	beeone_change_log_deleted_access = ["my_app.log.allow"]   # fn(doctype, name, info, user) -> bool
 
 An entry is a Version row with `action` set (Create, Update, Submit, Cancel, Delete). Its `data`
 holds `{"change_log": {"rows": [{"field", "old_value", "new_value"}], "user": ...}}`. Rows of the
 standard `track_changes` have an empty `action` and are never returned here.
 
 Reading is checked per record: a user sees the history of a document only when they may read that
-document. The history of a deleted document is shown only to users who may read the doctype
-without any record restriction. For a private doctype the history of a deleted document is shown
-only to the owner of that document (and Administrator).
+document. Entries are never readable through the Version doctype itself (only Administrator).
+A deleted document cannot be checked any more, so its history is shown only to Administrator or
+when an app hook (`beeone_change_log_deleted_access`) allows it from the data kept at delete time
+(`beeone_change_log_context` plus the owner). When a name is used again, the entries of the old
+document are moved to a retired key, so a new document never shows the history of an old one.
 """
-
 import json
 
 import frappe
@@ -100,24 +102,46 @@ def record(doc, action: str, rows: list[dict] | None = None):
 		frappe.throw(_("Unknown change log action {0}").format(action))
 	if not is_tracked(doc):
 		return None
+	info = {"user": frappe.session.user, "rows": rows or []}
+	retired = None
+	if action == "Create":
+		retired = _retire(doc.doctype, doc.name)
+	elif action == "Delete":
+		info["doc_owner"] = doc.get("owner")
+		info["context"] = {}
+		for path in frappe.get_hooks("beeone_change_log_context") or []:
+			info["context"].update(frappe.get_attr(path)(doc) or {})
 	entry = frappe.get_doc(
 		{
 			"doctype": "Version",
 			"ref_doctype": doc.doctype,
 			"docname": doc.name,
 			"action": action,
-			"data": frappe.as_json(
-				{"change_log": {"user": frappe.session.user, "doc_owner": doc.get("owner"), "rows": rows or []}},
-				indent=None,
-			),
+			"data": frappe.as_json({"change_log": info}, indent=None),
 		}
 	)
+	entry.flags.retired_as = retired
 	entry.flags.ignore_permissions = True
 	entry.flags.ignore_links = True
 	entry.insert()
 	for path in frappe.get_hooks("beeone_change_log_sinks") or []:
 		frappe.get_attr(path)(doc, entry)
 	return entry
+
+
+def _retire(doctype: str, name: str) -> str | None:
+	"""Move the entries of an earlier document with the same name to a retired key."""
+	if not frappe.db.exists("Version", {"ref_doctype": doctype, "docname": name, "action": ("in", ACTIONS)}):
+		return None
+	retired = f"{name[:100]}#retired-{frappe.generate_hash(length=10)}"
+	frappe.db.set_value(
+		"Version",
+		{"ref_doctype": doctype, "docname": name, "action": ("in", ACTIONS)},
+		"docname",
+		retired,
+		update_modified=False,
+	)
+	return retired
 
 
 def record_change(doc, rows: list[dict]):
@@ -159,34 +183,29 @@ def after_delete(doc, method=None):
 
 
 # ------------------------------------------------------------------ read
-def is_private(doctype: str) -> bool:
-	return doctype in (frappe.get_hooks("beeone_change_log_private_doctypes") or [])
+def delete_info(doctype: str, name: str) -> dict | None:
+	"""What was kept when the document was deleted (None when there is no Delete entry)."""
+	data = frappe.db.get_value(
+		"Version", {"ref_doctype": doctype, "docname": name, "action": "Delete"}, "data", order_by="creation desc"
+	)
+	return (json.loads(data or "{}").get("change_log") or {}) if data else None
 
 
-def can_read_deleted(doctype: str, doc_owner: str | None = None, user: str | None = None) -> bool:
+def can_read_deleted(doctype: str, name: str, user: str | None = None) -> bool:
 	"""May the user read the history of a record that no longer exists?
 
-	The record cannot be checked any more, so the rule is strict: the user must have the doctype right
-	and no record restriction. For a private doctype only the owner of the deleted record qualifies.
+	Only Administrator, or an app hook that accepts the data kept at delete time. No hook: no access.
 	"""
 	user = user or frappe.session.user
 	if user == "Administrator":
 		return True
-	if is_private(doctype):
-		return bool(doc_owner) and doc_owner == user and bool(frappe.has_permission(doctype, "read", user=user))
-	if not frappe.has_permission(doctype, "read", user=user):
+	info = delete_info(doctype, name)
+	if info is None:
 		return False
-	from frappe.permissions import get_user_permissions
-
-	return not get_user_permissions(user)  # no record restriction at all
-
-
-def deleted_owner(doctype: str, name: str) -> str | None:
-	"""Owner of a deleted record, taken from its Delete entry."""
-	data = frappe.db.get_value(
-		"Version", {"ref_doctype": doctype, "docname": name, "action": "Delete"}, "data", order_by="creation desc"
+	return any(
+		frappe.get_attr(path)(doctype, name, info, user)
+		for path in frappe.get_hooks("beeone_change_log_deleted_access") or []
 	)
-	return (json.loads(data or "{}").get("change_log") or {}).get("doc_owner") if data else None
 
 
 def _readable_names(doctype: str, names: list[str]) -> set[str]:
@@ -216,7 +235,7 @@ def readable_names(doctype: str, names) -> set[str]:
 	existing = set(frappe.get_all(doctype, filters={"name": ("in", list(names))}, pluck="name"))
 	allowed = _readable_names(doctype, list(existing))
 	for n in names - existing:
-		if can_read_deleted(doctype, deleted_owner(doctype, n)):
+		if can_read_deleted(doctype, n):
 			allowed.add(n)
 	return allowed
 
@@ -234,7 +253,7 @@ def check_history_access(doctype: str, name: str):
 	"""Raise PermissionError unless the user may read the record (or its deleted history)."""
 	if frappe.db.exists(doctype, name):
 		frappe.has_permission(doctype, "read", name, throw=True)
-	elif not can_read_deleted(doctype, deleted_owner(doctype, name)):
+	elif not can_read_deleted(doctype, name):
 		raise frappe.PermissionError(_("No permission to read the history of {0}").format(doctype))
 
 
@@ -283,3 +302,20 @@ def get_log(doctype=None, user=None, action=None, limit: int = 100) -> list[dict
 		if len(page) < limit * 2:
 			break
 	return result[:limit]
+
+
+# ------------------------------------------------------------------ Version doctype access
+def version_permission_query(user=None, doctype=None):
+	"""Entries of the change log are not open through the Version doctype (use get_history / get_log)."""
+	if (user or frappe.session.user) == "Administrator":
+		return ""
+	from frappe.beeone import db
+
+	d = db.dialect()
+	return f"{db.text_key(d.quote('tabVersion') + '.' + d.quote('action'))} = ''"
+
+
+def version_has_permission(doc, ptype=None, user=None, debug=False):
+	if doc.get("action") and (user or frappe.session.user) != "Administrator":
+		return False
+	return True

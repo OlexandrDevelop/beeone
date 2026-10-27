@@ -149,17 +149,14 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 		self.assertEqual(change_log.get_log(doctype=DOCTYPE), [])
 		self.assertRaises(frappe.PermissionError, change_log.get_history, DOCTYPE, "norole-1")
 
-	def test_deleted_history_needs_unrestricted_read(self):
+	def test_deleted_history_denied_without_hook(self):
 		with patch("frappe.get_hooks", _hooks([DOCTYPE])):
 			frappe.get_doc({"doctype": DOCTYPE, "title": "gone-1"}).insert()
-			frappe.get_doc({"doctype": DOCTYPE, "title": "keep-1"}).insert()
 			frappe.delete_doc(DOCTYPE, "gone-1", force=1)
-		add_user_permission(DOCTYPE, "keep-1", USER)
-		frappe.clear_cache(user=USER)
-		frappe.set_user(USER)
-		self.assertEqual({e["ref_name"] for e in change_log.get_log(doctype=DOCTYPE)}, {"keep-1"})
-		self.assertRaises(frappe.PermissionError, change_log.get_history, DOCTYPE, "gone-1")
 		frappe.set_user(USER_ALL)
+		self.assertRaises(frappe.PermissionError, change_log.get_history, DOCTYPE, "gone-1")
+		self.assertEqual(change_log.get_log(doctype=DOCTYPE), [])
+		frappe.set_user("Administrator")
 		self.assertEqual(len(change_log.get_history(DOCTYPE, "gone-1")), 2)
 
 	def test_filters_by_user_and_action(self):
@@ -170,13 +167,24 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 		self.assertEqual([e["action"] for e in change_log.get_log(doctype=DOCTYPE, action="Update")], ["Update"])
 		self.assertEqual(change_log.get_log(doctype=DOCTYPE, user="nobody@example.com"), [])
 
-	def test_deleted_private_doctype_only_for_owner(self):
-		def get_hooks(hook=None, *args, **kwargs):
-			if hook == "beeone_change_log_private_doctypes":
-				return [DOCTYPE]
-			return _hooks([DOCTYPE])(hook, *args, **kwargs)
+	def test_deleted_history_hook_decides_with_kept_data(self):
+		allow = []
 
-		with patch("frappe.get_hooks", get_hooks):
+		def hook(doctype, name, info, user):
+			allow.append((info.get("doc_owner"), info.get("context")))
+			return info.get("doc_owner") == user
+
+		def get_hooks(h=None, *args, **kwargs):
+			if h == "beeone_change_log_deleted_access":
+				return ["x.allow"]
+			if h == "beeone_change_log_context":
+				return ["x.ctx"]
+			return _hooks([DOCTYPE])(h, *args, **kwargs)
+
+		real = frappe.get_attr
+		fns = {"x.allow": hook, "x.ctx": lambda doc: {"title": doc.title}}
+
+		with patch("frappe.get_hooks", get_hooks), patch("frappe.get_attr", lambda p: fns.get(p) or real(p)):
 			frappe.set_user(USER)
 			frappe.get_doc({"doctype": DOCTYPE, "title": "priv-1"}).insert()
 			frappe.delete_doc(DOCTYPE, "priv-1", force=1)
@@ -184,5 +192,32 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 			frappe.set_user(USER_ALL)
 			self.assertRaises(frappe.PermissionError, change_log.get_history, DOCTYPE, "priv-1")
 			self.assertEqual(change_log.get_log(doctype=DOCTYPE), [])
-			frappe.set_user("Administrator")
-			self.assertEqual(len(change_log.get_history(DOCTYPE, "priv-1")), 2)
+		self.assertEqual(allow[0], (USER, {"title": "priv-1"}))
+
+	def test_reused_name_does_not_show_old_history(self):
+		with patch("frappe.get_hooks", _hooks([DOCTYPE])):
+			old = frappe.get_doc({"doctype": DOCTYPE, "title": "reuse-1", "note": "secret"}).insert()
+			old.note = "secret2"
+			old.save()
+			frappe.delete_doc(DOCTYPE, "reuse-1", force=1)
+			frappe.get_doc({"doctype": DOCTYPE, "title": "reuse-1"}).insert()
+		self.assertEqual([h["action"] for h in change_log.get_history(DOCTYPE, "reuse-1")], ["Create"])
+		self.assertNotIn("secret", str(change_log.get_history(DOCTYPE, "reuse-1")))
+		frappe.set_user(USER_ALL)
+		self.assertEqual({e["ref_name"] for e in change_log.get_log(doctype=DOCTYPE)}, {"reuse-1"})
+
+	def test_version_doctype_hides_log_rows(self):
+		with patch("frappe.get_hooks", _hooks([DOCTYPE])):
+			frappe.get_doc({"doctype": DOCTYPE, "title": "ver-2"}).insert()
+		frappe.get_doc(
+			{"doctype": "Version", "ref_doctype": DOCTYPE, "docname": "plain-2", "data": "{}"}
+		).insert(ignore_permissions=True)
+		frappe.get_doc("User", USER_ALL).add_roles("System Manager")
+		frappe.clear_cache(user=USER_ALL)
+		frappe.set_user(USER_ALL)
+		names = frappe.get_list("Version", filters={"ref_doctype": DOCTYPE}, pluck="docname")
+		self.assertEqual(names, ["plain-2"])
+		row = frappe.get_all("Version", filters={"docname": "ver-2"}, pluck="name", ignore_permissions=True)[0]
+		self.assertFalse(frappe.has_permission("Version", "read", row))
+		frappe.set_user("Administrator")
+		frappe.get_doc("User", USER_ALL).remove_roles("System Manager")

@@ -116,6 +116,7 @@ pdf_generator = [
 # permissions
 
 permission_query_conditions = {
+	"Version": "frappe.beeone.change_log.version_permission_query",  # beeone: change log rows
 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 	"ToDo": "frappe.desk.doctype.todo.todo.get_permission_query_conditions",
 	"User": "frappe.core.doctype.user.user.get_permission_query_conditions",
@@ -142,6 +143,7 @@ permission_query_conditions = {
 }
 
 has_permission = {
+	"Version": "frappe.beeone.change_log.version_has_permission",  # beeone: change log rows
 	"Event": "frappe.desk.doctype.event.event.has_permission",
 	"ToDo": "frappe.desk.doctype.todo.todo.has_permission",
 	"Note": "frappe.desk.doctype.note.note.has_permission",
