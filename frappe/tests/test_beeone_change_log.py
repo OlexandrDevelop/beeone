@@ -169,3 +169,20 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 			doc.save()
 		self.assertEqual([e["action"] for e in change_log.get_log(doctype=DOCTYPE, action="Update")], ["Update"])
 		self.assertEqual(change_log.get_log(doctype=DOCTYPE, user="nobody@example.com"), [])
+
+	def test_deleted_private_doctype_only_for_owner(self):
+		def get_hooks(hook=None, *args, **kwargs):
+			if hook == "beeone_change_log_private_doctypes":
+				return [DOCTYPE]
+			return _hooks([DOCTYPE])(hook, *args, **kwargs)
+
+		with patch("frappe.get_hooks", get_hooks):
+			frappe.set_user(USER)
+			frappe.get_doc({"doctype": DOCTYPE, "title": "priv-1"}).insert()
+			frappe.delete_doc(DOCTYPE, "priv-1", force=1)
+			self.assertEqual(len(change_log.get_history(DOCTYPE, "priv-1")), 2)
+			frappe.set_user(USER_ALL)
+			self.assertRaises(frappe.PermissionError, change_log.get_history, DOCTYPE, "priv-1")
+			self.assertEqual(change_log.get_log(doctype=DOCTYPE), [])
+			frappe.set_user("Administrator")
+			self.assertEqual(len(change_log.get_history(DOCTYPE, "priv-1")), 2)

@@ -8,6 +8,7 @@ The log is off for every doctype. An app turns it on with hooks:
 	beeone_change_log_doctypes = ["My Document"]            # names
 	beeone_change_log_predicates = ["my_app.log.is_tracked"]  # fn(doc) -> bool
 	beeone_change_log_sinks = ["my_app.log.on_entry"]         # fn(doc, entry), optional
+	beeone_change_log_private_doctypes = ["My Private Doc"]   # rights depend on the record owner
 
 An entry is a Version row with `action` set (Create, Update, Submit, Cancel, Delete). Its `data`
 holds `{"change_log": {"rows": [{"field", "old_value", "new_value"}], "user": ...}}`. Rows of the
@@ -15,7 +16,8 @@ standard `track_changes` have an empty `action` and are never returned here.
 
 Reading is checked per record: a user sees the history of a document only when they may read that
 document. The history of a deleted document is shown only to users who may read the doctype
-without any record restriction.
+without any record restriction. For a private doctype the history of a deleted document is shown
+only to the owner of that document (and Administrator).
 """
 
 import json
@@ -104,7 +106,10 @@ def record(doc, action: str, rows: list[dict] | None = None):
 			"ref_doctype": doc.doctype,
 			"docname": doc.name,
 			"action": action,
-			"data": frappe.as_json({"change_log": {"user": frappe.session.user, "rows": rows or []}}, indent=None),
+			"data": frappe.as_json(
+				{"change_log": {"user": frappe.session.user, "doc_owner": doc.get("owner"), "rows": rows or []}},
+				indent=None,
+			),
 		}
 	)
 	entry.flags.ignore_permissions = True
@@ -154,12 +159,34 @@ def after_delete(doc, method=None):
 
 
 # ------------------------------------------------------------------ read
-def _unrestricted(doctype: str) -> bool:
-	if frappe.session.user == "Administrator" or "System Manager" in frappe.get_roles():
+def is_private(doctype: str) -> bool:
+	return doctype in (frappe.get_hooks("beeone_change_log_private_doctypes") or [])
+
+
+def can_read_deleted(doctype: str, doc_owner: str | None = None, user: str | None = None) -> bool:
+	"""May the user read the history of a record that no longer exists?
+
+	The record cannot be checked any more, so the rule is strict: the user must have the doctype right
+	and no record restriction. For a private doctype only the owner of the deleted record qualifies.
+	"""
+	user = user or frappe.session.user
+	if user == "Administrator":
 		return True
+	if is_private(doctype):
+		return bool(doc_owner) and doc_owner == user and bool(frappe.has_permission(doctype, "read", user=user))
+	if not frappe.has_permission(doctype, "read", user=user):
+		return False
 	from frappe.permissions import get_user_permissions
 
-	return not get_user_permissions(frappe.session.user)  # no record restriction at all
+	return not get_user_permissions(user)  # no record restriction at all
+
+
+def deleted_owner(doctype: str, name: str) -> str | None:
+	"""Owner of a deleted record, taken from its Delete entry."""
+	data = frappe.db.get_value(
+		"Version", {"ref_doctype": doctype, "docname": name, "action": "Delete"}, "data", order_by="creation desc"
+	)
+	return (json.loads(data or "{}").get("change_log") or {}).get("doc_owner") if data else None
 
 
 def _readable_names(doctype: str, names: list[str]) -> set[str]:
@@ -181,21 +208,25 @@ def _present(row) -> dict:
 	}
 
 
+def readable_names(doctype: str, names) -> set[str]:
+	"""Of the given record names, those whose history the current user may see."""
+	names = set(names)
+	if not names or not frappe.db.exists("DocType", doctype) or not frappe.has_permission(doctype, "read"):
+		return set()
+	existing = set(frappe.get_all(doctype, filters={"name": ("in", list(names))}, pluck="name"))
+	allowed = _readable_names(doctype, list(existing))
+	for n in names - existing:
+		if can_read_deleted(doctype, deleted_owner(doctype, n)):
+			allowed.add(n)
+	return allowed
+
+
 def _visible(entries) -> list:
 	"""Keep only entries of documents that the current user may read."""
 	by_type: dict[str, set[str]] = {}
 	for e in entries:
 		by_type.setdefault(e.ref_doctype, set()).add(e.docname)
-	allowed: dict[str, set[str]] = {}
-	deleted_ok: dict[str, bool] = {}
-	for doctype, names in by_type.items():
-		if not frappe.db.exists("DocType", doctype):
-			allowed[doctype] = set()
-			continue
-		existing = set(frappe.get_all(doctype, filters={"name": ("in", list(names))}, pluck="name"))
-		allowed[doctype] = _readable_names(doctype, list(existing))
-		deleted_ok[doctype] = frappe.has_permission(doctype, "read") and _unrestricted(doctype)
-		allowed[doctype] |= {n for n in names if n not in existing and deleted_ok[doctype]}
+	allowed = {doctype: readable_names(doctype, names) for doctype, names in by_type.items()}
 	return [e for e in entries if e.docname in allowed.get(e.ref_doctype, ())]
 
 
@@ -203,7 +234,7 @@ def check_history_access(doctype: str, name: str):
 	"""Raise PermissionError unless the user may read the record (or its deleted history)."""
 	if frappe.db.exists(doctype, name):
 		frappe.has_permission(doctype, "read", name, throw=True)
-	elif not (frappe.has_permission(doctype, "read") and _unrestricted(doctype)):
+	elif not can_read_deleted(doctype, deleted_owner(doctype, name)):
 		raise frappe.PermissionError(_("No permission to read the history of {0}").format(doctype))
 
 
