@@ -127,8 +127,13 @@ class TestBeeoneRegisterInformation(IntegrationTestCase):
 		self._price("A", [{"item": "Bolt", "price": 1}], time="09:00:00")
 		self._price("B", [{"item": "Bolt", "price": 2}], time="11:00:00")
 		self._price("C", [{"item": "Bolt", "price": 3}], time="11:00:00")
+		# the creation time has a resolution of one second: set it apart for the same moment
+		for voucher, created in (("B", "2026-03-01 10:00:00"), ("C", "2026-03-01 10:00:05")):
+			frappe.db.set_value(PRICE, {"voucher_no": voucher}, "creation", created)
 		self.assertEqual(slice_last(PRICE, "2026-03-01")[0]["price"], 3)
 		self.assertEqual(slice_first(PRICE, "2026-03-01")[0]["price"], 1)
+		frappe.db.set_value(PRICE, {"voucher_no": "C"}, "creation", "2026-03-01 09:59:00")
+		self.assertEqual(slice_last(PRICE, "2026-03-01")[0]["price"], 2)
 
 	def test_fallback_to_the_empty_value(self):
 		self._price("A", [{"item": "Bolt", "variant": "", "price": 10}], "2026-03-01")
