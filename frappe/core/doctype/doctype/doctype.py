@@ -1146,7 +1146,7 @@ def validate_series(dt, autoname=None, name=None):
 		autoname
 		and (not autoname.startswith("field:"))
 		and (not autoname.startswith("eval:"))
-		and (autoname.lower() not in ("prompt", "hash"))
+		and (autoname.lower() not in ("prompt", "hash", "numbering"))  # beeone: numbering
 		and (not autoname.startswith("naming_series:"))
 		and (not autoname.startswith("format:"))
 	):

@@ -227,6 +227,11 @@ def set_name_from_naming_options(autoname, doc):
 		set_name_by_naming_series(doc)
 	elif _autoname.startswith("prompt"):
 		_prompt_autoname(autoname, doc)
+	elif _autoname == "numbering":
+		# beeone: names from the Numbering Setting
+		from frappe.beeone import numbering
+
+		numbering.autoname(doc)
 	elif _autoname.startswith("format:"):
 		doc.name = _format_autoname(autoname, doc)
 	elif "#" in autoname:

@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-10-27 17:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ref_doctype",
+  "scope",
+  "scope_field",
+  "date_field",
+  "column_break_1",
+  "prefix",
+  "separator",
+  "digits",
+  "scope_chars",
+  "reset"
+ ],
+ "fields": [
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "description": "Value of the scope field (for example an organization). Empty: the setting is for all documents of the type.",
+   "fieldname": "scope",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Scope"
+  },
+  {
+   "description": "Field of the document that holds the scope value.",
+   "fieldname": "scope_field",
+   "fieldtype": "Data",
+   "label": "Scope Field"
+  },
+  {
+   "description": "Field of the document that gives the date of the number. Empty: today.",
+   "fieldname": "date_field",
+   "fieldtype": "Data",
+   "label": "Date Field"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "prefix",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Prefix",
+   "reqd": 1
+  },
+  {
+   "default": "-",
+   "fieldname": "separator",
+   "fieldtype": "Data",
+   "label": "Separator"
+  },
+  {
+   "default": "6",
+   "fieldname": "digits",
+   "fieldtype": "Int",
+   "label": "Digits"
+  },
+  {
+   "default": "0",
+   "description": "How many first characters of the scope go into the number. 0: none.",
+   "fieldname": "scope_chars",
+   "fieldtype": "Int",
+   "label": "Scope Characters"
+  },
+  {
+   "default": "Never",
+   "fieldname": "reset",
+   "fieldtype": "Select",
+   "label": "Restart Counter",
+   "options": "Never\nYearly\nMonthly"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-27 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Core",
+ "name": "Numbering Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
