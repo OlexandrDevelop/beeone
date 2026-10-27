@@ -135,6 +135,21 @@ class TestBeeoneRegisterInformation(IntegrationTestCase):
 		frappe.db.set_value(PRICE, {"voucher_no": "C"}, "creation", "2026-03-01 09:59:00")
 		self.assertEqual(slice_last(PRICE, "2026-03-01")[0]["price"], 2)
 
+	def test_equal_moments_are_won_by_the_row_written_later(self):
+		# same date, same time, no manual creation: the order of writing decides, not the random name
+		for attempt in range(20):
+			item = f"Tie{attempt}"
+			self._price("A", [{"item": item, "price": 1}], time="11:00:00")
+			self._price("B", [{"item": item, "price": 2}], time="11:00:00")
+			self.assertEqual(slice_last(PRICE, "2026-03-01", {"item": item})[0]["price"], 2, attempt)
+			self.assertEqual(slice_first(PRICE, "2026-03-01", {"item": item})[0]["price"], 1, attempt)
+			frappe.db.delete(PRICE)
+		# the rows of one set differ too: the later row wins
+		self._price("C", [{"item": "Nut", "price": 1}, {"item": "Nut", "price": 2}], time="11:00:00")
+		self.assertEqual(slice_last(PRICE, "2026-03-01")[0]["price"], 2)
+		created = frappe.get_all(PRICE, pluck="creation", order_by="creation asc")
+		self.assertEqual(len(set(created)), 2)
+
 	def test_fallback_to_the_empty_value(self):
 		self._price("A", [{"item": "Bolt", "variant": "", "price": 10}], "2026-03-01")
 		self._price("B", [{"item": "Bolt", "variant": "Red", "price": 20}], "2026-03-10")

@@ -5,9 +5,11 @@
 
 from collections import defaultdict
 from contextlib import contextmanager
+from datetime import timedelta
 
 import frappe
 from frappe import _
+from frappe.utils import get_datetime
 from frappe.beeone.registers import rights, totals
 from frappe.beeone.registers.meta import get_register
 
@@ -91,6 +93,7 @@ class RecordSet:
 				system[reg.time_field] = self.moment.time
 
 		prepared = []
+		previous = None
 		for index, row in enumerate(rows, 1):
 			unknown = [key for key in row if not meta.has_field(key) and key not in frappe.model.default_fields]
 			if unknown:
@@ -109,6 +112,13 @@ class RecordSet:
 
 			doc = frappe.get_doc({"doctype": self.doctype, **values})
 			doc.set_user_and_timestamp()
+			# The doc is built from a dict, so it is not "new" and the standard code leaves creation empty.
+			# Slices break ties of one moment by creation: it must be set, with microseconds, never equal
+			# to the row before, so the row written later wins.
+			created = get_datetime(doc.modified)
+			if previous and created <= previous:
+				created = previous + timedelta(microseconds=1)
+			previous = doc.creation = created
 			doc.set_new_name()
 			doc._set_defaults()
 			doc.idx = doc.idx or index
