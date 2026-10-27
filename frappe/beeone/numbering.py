@@ -31,10 +31,6 @@ def period_label(reset: str, date=None) -> str:
 	return ""
 
 
-def series_key(ref_doctype: str, scope: str, period: str) -> str:
-	return f"NS:{ref_doctype}:{scope or ''}:{period or 'all'}"
-
-
 def next_name(
 	prefix: str,
 	digits: int = 6,
@@ -50,13 +46,15 @@ def next_name(
 	"""Take the next number of a series and return the full name.
 
 	`key` is the name of the counter in `Series`. Without it the key is built from the
-	document type, the scope and the period. A caller that moves an existing numbering to the
-	core passes its old key, so the counter goes on.
+	document type and the name stem (prefix, scope part, period), so settings that render the
+	same stem share one counter and never give the same name twice. A caller that moves an
+	existing numbering to the core passes its old key, so the counter goes on.
 	"""
 	period = period_label(reset, date)
-	number = getseries(key or series_key(ref_doctype, scope, period), int(digits))
-	parts = [prefix, (scope or "")[: int(scope_chars or 0)], period, number]
-	return (separator or "").join(p for p in parts if p)
+	glue = separator or ""
+	stem = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
+	number = getseries(key or f"NS:{ref_doctype}:{stem}", int(digits))
+	return glue.join(p for p in (stem, number) if p)
 
 
 def get_setting(ref_doctype: str, scope: str | None = None):
@@ -71,15 +69,16 @@ def get_setting(ref_doctype: str, scope: str | None = None):
 
 def name_for(doc) -> str | None:
 	"""Name of a new document from its Numbering Setting, or None when there is no setting."""
-	scoped = frappe.get_all(
-		DOCTYPE, filters={"ref_doctype": doc.doctype}, fields=["scope", "scope_field"], limit=100
-	)
-	if not scoped:
-		return None
 	scope = None
-	for row in scoped:
-		if row.scope and row.scope_field and doc.get(row.scope_field) == row.scope:
-			scope = row.scope
+	for scope_field in frappe.get_all(
+		DOCTYPE,
+		filters={"ref_doctype": doc.doctype, "scope": ("!=", "")},
+		pluck="scope_field",
+		distinct=True,
+	):
+		value = doc.get(scope_field) if scope_field else None
+		if value and frappe.db.exists(DOCTYPE, {"ref_doctype": doc.doctype, "scope": value}):
+			scope = value
 			break
 	setting = get_setting(doc.doctype, scope)
 	if not setting:

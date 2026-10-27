@@ -78,6 +78,28 @@ class TestBeeoneNumbering(IntegrationTestCase):
 		self.assertEqual(self.new(company="Other").name, "Z-0001")
 		self.assertEqual(self.new(company="Alpha Corp").name, "A-Alpha-0002")
 
+	def test_many_scopes_are_found(self):
+		for i in range(120):
+			setting(scope=f"Org{i:03d}", scope_field="company", prefix=f"P{i:03d}")
+		self.assertEqual(self.new(company="Org119").name, "P119-0001")
+		self.assertEqual(self.new(company="Org000").name, "P000-0001")
+
+	def test_scopes_with_same_stem_share_the_counter(self):
+		setting(scope="A", scope_field="company", prefix="Q")
+		setting(scope="B", scope_field="company", prefix="Q")
+		self.assertEqual(self.new(company="A").name, "Q-0001")
+		self.assertEqual(self.new(company="B").name, "Q-0002")
+
+	def test_same_pair_is_refused_by_the_key(self):
+		first = setting(scope="K")
+		self.assertEqual(first.name, f"{TEST_DOCTYPE}:K")
+		with self.assertRaises(frappe.DuplicateEntryError):
+			dup = frappe.get_doc(
+				{"doctype": "Numbering Setting", "ref_doctype": TEST_DOCTYPE, "scope": "K", "prefix": "Y", "digits": 4}
+			)
+			dup.name = first.name
+			dup.db_insert()
+
 	def test_no_setting_is_an_error(self):
 		with self.assertRaises(frappe.ValidationError):
 			self.new()

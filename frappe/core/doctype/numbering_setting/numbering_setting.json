@@ -24,14 +24,16 @@
    "in_list_view": 1,
    "label": "Document Type",
    "options": "DocType",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "description": "Value of the scope field (for example an organization). Empty: the setting is for all documents of the type.",
    "fieldname": "scope",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Scope"
+   "label": "Scope",
+   "set_only_once": 1
   },
   {
    "description": "Field of the document that holds the scope value.",
