@@ -179,10 +179,114 @@ def turnover(register: str, start, end, filters=None, group_by=None, resources=N
 	return _aggregate(reg, query, _check_group_by(reg, group_by), _resources(reg, resources))
 
 
+def balance_and_turnover(
+	register: str,
+	start,
+	end,
+	filters=None,
+	group_by=None,
+	resources=None,
+) -> list[dict]:
+	"""Opening balance, inflows, outflows, and closing balance of the resources from `start` to `end`."""
+	reg = get_register(register)
+	if not supports_balance(reg):
+		frappe.throw(_("Register {0} has no balance").format(reg.name))
+	frappe.has_permission(reg.register_doctype, "read", throw=True)
+	start, end = getdate(start), getdate(end)
+	if start > end:
+		frappe.throw(_("The start of the period is after its end"))
+
+	from frappe.utils import add_days, flt
+
+	res_list = _resources(reg, resources)
+	grp_list = _check_group_by(reg, group_by)
+	base_query = _check_filters(reg, filters)
+
+	# 1. Opening balance on day before start
+	prev_day = add_days(start, -1)
+	opening_query = [*base_query, [reg.register_doctype, reg.date_field, "<=", prev_day]]
+	opening_rows = _aggregate(reg, opening_query, grp_list, res_list)
+
+	# 2. Period turnovers: inflows (> 0) and outflows (< 0)
+	period_query = [*base_query, [reg.register_doctype, reg.date_field, "between", [start, end]]]
+
+	def row_key(row):
+		return tuple(row.get(g) for g in grp_list)
+
+	results = {}
+	for r in opening_rows:
+		k = row_key(r)
+		results[k] = {g: r.get(g) for g in grp_list}
+		for res in res_list:
+			val = flt(r.get(res) or 0, 2)
+			results[k][f"opening_{res}"] = val
+			results[k][f"inflow_{res}"] = 0.0
+			results[k][f"outflow_{res}"] = 0.0
+			if len(res_list) == 1:
+				results[k]["opening"] = val
+				results[k]["inflow"] = 0.0
+				results[k]["outflow"] = 0.0
+
+	for res in res_list:
+		inflow_query = [*period_query, [reg.register_doctype, res, ">", 0]]
+		inflow_rows = _aggregate(reg, inflow_query, grp_list, [res])
+		for r in inflow_rows:
+			k = row_key(r)
+			if k not in results:
+				results[k] = {g: r.get(g) for g in grp_list}
+				for other_res in res_list:
+					results[k][f"opening_{other_res}"] = 0.0
+					results[k][f"inflow_{other_res}"] = 0.0
+					results[k][f"outflow_{other_res}"] = 0.0
+				if len(res_list) == 1:
+					results[k]["opening"] = 0.0
+					results[k]["inflow"] = 0.0
+					results[k]["outflow"] = 0.0
+			val = flt(r.get(res) or 0, 2)
+			results[k][f"inflow_{res}"] = val
+			if len(res_list) == 1:
+				results[k]["inflow"] = val
+
+		outflow_query = [*period_query, [reg.register_doctype, res, "<", 0]]
+		outflow_rows = _aggregate(reg, outflow_query, grp_list, [res])
+		for r in outflow_rows:
+			k = row_key(r)
+			if k not in results:
+				results[k] = {g: r.get(g) for g in grp_list}
+				for other_res in res_list:
+					results[k][f"opening_{other_res}"] = 0.0
+					results[k][f"inflow_{other_res}"] = 0.0
+					results[k][f"outflow_{other_res}"] = 0.0
+				if len(res_list) == 1:
+					results[k]["opening"] = 0.0
+					results[k]["inflow"] = 0.0
+					results[k]["outflow"] = 0.0
+			val = flt(abs(flt(r.get(res) or 0)), 2)
+			results[k][f"outflow_{res}"] = val
+			if len(res_list) == 1:
+				results[k]["outflow"] = val
+
+	out = []
+	for k, data in results.items():
+		for res in res_list:
+			op = data.get(f"opening_{res}", 0.0)
+			inf = data.get(f"inflow_{res}", 0.0)
+			outf = data.get(f"outflow_{res}", 0.0)
+			data[f"closing_{res}"] = flt(op + inf - outf, 2)
+		if len(res_list) == 1:
+			op = data.get("opening", 0.0)
+			inf = data.get("inflow", 0.0)
+			outf = data.get("outflow", 0.0)
+			data["closing"] = flt(op + inf - outf, 2)
+		out.append(data)
+	return out
+
+
 def current_balance(register: str, filters=None, lock: bool = False, resources=None) -> list[dict]:
 	"""Current balance of the resources from the current totals table.
 
 	When `lock` is True, takes a FOR UPDATE row lock on the matching keys in sorted order.
+	Row-level User Permissions (restrict_rows) are enforced on restricting dimensions.
 	"""
 	reg = get_register(register)
 	if not totals.has_current(reg):
@@ -191,9 +295,33 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 	dims = totals.dimensions(reg)
 	res = _resources(reg, resources)
 	table = totals.current_table(reg.name)
-	for fieldname in (filters or {}):
+
+	effective_filters = dict(filters or {})
+	for fieldname in effective_filters:
 		if fieldname not in dims:
 			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+
+	from frappe.beeone.registers import rights
+
+	allowed = rights.allowed_values(reg.register_doctype)
+	for fieldname, valid in allowed.items():
+		if valid is None:
+			continue
+		if not valid:
+			return []
+		if fieldname in effective_filters:
+			val = effective_filters[fieldname]
+			if isinstance(val, list | tuple):
+				common = [v for v in val if v in valid]
+				if not common:
+					return []
+				effective_filters[fieldname] = common
+			else:
+				if val not in valid:
+					return []
+		else:
+			effective_filters[fieldname] = valid
+
 	from frappe.beeone import db
 
-	return db.select_current(table, dims, res, filters=filters, lock=lock)
+	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)

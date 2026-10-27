@@ -242,8 +242,16 @@ def select_current(
 	where, params = [], []
 	for k, v in (filters or {}).items():
 		if k in key_columns:
-			where.append(f"{q(k)} = %s")
-			params.append(v)
+			if isinstance(v, list | tuple):
+				if not v:
+					where.append("1 = 0")
+				else:
+					marks = ", ".join(["%s"] * len(v))
+					where.append(f"{q(k)} IN ({marks})")
+					params.extend(v)
+			else:
+				where.append(f"{q(k)} = %s")
+				params.append(v)
 	where_clause = f" WHERE {' AND '.join(where)}" if where else ""
 	order_clause = f" ORDER BY {', '.join(q(c) for c in key_columns)}" if key_columns else ""
 	lock_clause = " FOR UPDATE" if lock else ""

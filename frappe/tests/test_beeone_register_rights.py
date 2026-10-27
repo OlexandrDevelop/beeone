@@ -145,6 +145,19 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		self.assertEqual(balance[0]["qty"], 10)
 		turnover = query.turnover(LEDGER, "2026-03-01", "2026-03-31", group_by=["unit"])
 		self.assertEqual([(r.unit, r.qty) for r in turnover], [(OWN, 10)])
+		bat = query.balance_and_turnover(LEDGER, "2026-03-01", "2026-03-31", group_by=["unit"])
+		self.assertEqual([(r["unit"], r["inflow"]) for r in bat], [(OWN, 10)])
+		self.assertEqual(query.balance_and_turnover(LEDGER, "2026-03-01", "2026-03-31", filters={"unit": OTHER}), [])
+
+	def test_current_balance_respects_permissions(self):
+		frappe.set_user(USER_ONE)
+		cur = query.current_balance(LEDGER)
+		self.assertEqual([(r["unit"], r["qty"]) for r in cur], [(OWN, 10)])
+		self.assertEqual(query.current_balance(LEDGER, filters={"unit": OTHER}), [])
+		cur_own = query.current_balance(LEDGER, filters={"unit": OWN})
+		self.assertEqual([(r["unit"], r["qty"]) for r in cur_own], [(OWN, 10)])
+		api_res = frappe.call("frappe.beeone.api.registers.current_balance", register=LEDGER)
+		self.assertEqual([(r["unit"], r["qty"]) for r in api_res], [(OWN, 10)])
 
 	def test_filter_by_foreign_value_is_empty(self):
 		frappe.set_user(USER_ONE)
