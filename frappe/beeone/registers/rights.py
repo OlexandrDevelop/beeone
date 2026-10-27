@@ -67,6 +67,18 @@ def _strict() -> bool:
 	return bool(frappe.get_system_settings("apply_strict_user_permissions"))
 
 
+def restrictions(doctype: str, user: str | None = None) -> dict[str, tuple[list[str], bool]]:
+	"""For every dimension the user is limited on: the allowed values and whether an empty value is allowed.
+
+	The same rule as `query_conditions`, for queries that do not go through `frappe.get_list`.
+	"""
+	return {
+		fieldname: (docs, not _strict())
+		for fieldname, docs in allowed_values(doctype, user).items()
+		if docs
+	}
+
+
 def query_conditions(doctype: str, user: str | None = None) -> str:
 	"""SQL condition for `frappe.get_list` that keeps the allowed rows of a register."""
 	conditions = []

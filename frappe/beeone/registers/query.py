@@ -332,25 +332,6 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)
 
 
-def _row_rights(reg, filters: dict) -> dict | None:
-	"""The filters narrowed to the dimension values the user may read. None when nothing is left."""
-	from frappe.beeone.registers import rights
-
-	filters = dict(filters)
-	for fieldname, valid in rights.allowed_values(reg.register_doctype).items():
-		if valid is None:
-			continue
-		if fieldname in filters:
-			val = filters[fieldname]
-			common = [v for v in val if v in valid] if isinstance(val, list | tuple) else ([val] if val in valid else [])
-			if not common:
-				return None
-			filters[fieldname] = common if isinstance(val, list | tuple) else val
-		else:
-			filters[fieldname] = valid
-	return filters
-
-
 def slice_last(
 	register: str,
 	at=None,
@@ -386,21 +367,33 @@ def slice_last(
 		if fieldname not in dims:
 			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
 	meta = frappe.get_meta(reg.register_doctype)
+	permitted = set(meta.get_permitted_fieldnames())
 	for fieldname in fields or []:
 		if not meta.has_field(fieldname):
 			frappe.throw(_("{0} is not a field of register {1}").format(fieldname, reg.name))
+		if fieldname not in permitted:
+			frappe.throw(
+				_("You have no permission to read field {0} of register {1}").format(fieldname, reg.name),
+				frappe.PermissionError,
+			)
 
-	allowed = _row_rights(reg, filters or {})
-	if allowed is None:
-		return []
+	from frappe.beeone.registers import rights
 
+	restrict = rights.restrictions(reg.register_doctype)
+	# columns of a higher permission level are left out, as `frappe.get_list` does
 	columns = [
-		*group_by,
-		reg.date_field,
-		*([reg.time_field] if reg.time_field else []),
-		*[row.fieldname for row in reg.fields if row.role != "Dimension"],
-		*(fields or []),
+		c
+		for c in (
+			*group_by,
+			reg.date_field,
+			*([reg.time_field] if reg.time_field else []),
+			*[row.fieldname for row in reg.fields if row.role != "Dimension"],
+			*(fields or []),
+		)
+		if c in permitted
 	]
+	if not columns:
+		return []
 	day = getdate(at)
 
 	from frappe.beeone import db
@@ -415,6 +408,7 @@ def slice_last(
 			reg.time_field,
 			flt_values,
 			first,
+			restrict,
 		)
 
 	def with_fallback(flt_values: dict, pending: list[str]) -> list[dict]:
@@ -429,7 +423,7 @@ def slice_last(
 		found.update({_key(row, group_by, field): row for row in rows})
 		return [found[key] for key in sorted(found, key=lambda key: tuple(cstr(part) for part in key))]
 
-	return with_fallback(allowed, fallback_empty)
+	return with_fallback(dict(filters or {}), fallback_empty)
 
 
 def _key(row: dict, group_by: list[str], skip: str) -> tuple:

@@ -278,11 +278,12 @@ def select_last(
 	time_column: str | None = None,
 	filters: dict | None = None,
 	first: bool = False,
+	restrict: dict | None = None,
 ) -> list[dict]:
 	"""For every key, the row with the latest period on or before `at` (the earliest on or after it when `first`).
 
 	Rows of one key with the same date are ordered by time, then by creation and name, so the result is stable.
-	`filters` maps a column to a value or to a list of values. The result has `columns` of the chosen rows,
+	`filters` maps a column to a value or to a list of values; `restrict` limits columns to allowed values. The result has `columns` of the chosen rows,
 	keys in sorted order.
 	"""
 	q = quote
@@ -300,6 +301,14 @@ def select_last(
 		else:
 			where.append(f"{q(k)} = %s")
 			params.append(v)
+	# `restrict` maps a column to (allowed values, empty value allowed): rows outside it are not ranked
+	for k, (values, allow_empty) in (restrict or {}).items():
+		marks = ", ".join(["%s"] * len(values))
+		condition = f"{q(k)} IN ({marks})"
+		if allow_empty:
+			condition = f"({dialect().text_key(q(k))} = '' OR {condition})"
+		where.append(condition)
+		params.extend(values)
 	way = "ASC" if first else "DESC"
 	order = [f"{q(date_column)} {way}"]
 	if time_column:
