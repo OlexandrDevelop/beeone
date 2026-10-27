@@ -133,6 +133,20 @@ class TestBeeoneSliceRights(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		self.assertEqual(rows, [])
 
+	def test_a_hidden_key_column_does_not_break_the_query(self):
+		frappe.db.set_value("DocField", {"parent": SETTING, "fieldname": "unit"}, "permlevel", 1)
+		frappe.clear_cache(doctype=SETTING)
+		try:
+			frappe.set_user(USER)
+			rows = slice_last(SETTING, "2026-06-01")
+			frappe.set_user("Administrator")
+			self.assertTrue(rows)
+			self.assertTrue(all("unit" not in row and "value" in row for row in rows))
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.set_value("DocField", {"parent": SETTING, "fieldname": "unit"}, "permlevel", 0)
+			frappe.clear_cache(doctype=SETTING)
+
 	def test_fields_of_a_higher_permission_level_are_hidden(self):
 		frappe.set_user(USER)
 		try:

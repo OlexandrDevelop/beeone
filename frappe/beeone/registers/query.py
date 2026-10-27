@@ -380,20 +380,15 @@ def slice_last(
 	from frappe.beeone.registers import rights
 
 	restrict = rights.restrictions(reg.register_doctype)
-	# columns of a higher permission level are left out, as `frappe.get_list` does
+	# the query needs the key columns; those of a higher permission level are cut from the rows at the end
 	columns = [
-		c
-		for c in (
-			*group_by,
-			reg.date_field,
-			*([reg.time_field] if reg.time_field else []),
-			*[row.fieldname for row in reg.fields if row.role != "Dimension"],
-			*(fields or []),
-		)
-		if c in permitted
+		*group_by,
+		reg.date_field,
+		*([reg.time_field] if reg.time_field else []),
+		*[row.fieldname for row in reg.fields if row.role != "Dimension"],
+		*(fields or []),
 	]
-	if not columns:
-		return []
+	hidden = {c for c in columns if c not in permitted}
 	day = getdate(at)
 
 	from frappe.beeone import db
@@ -423,7 +418,11 @@ def slice_last(
 		found.update({_key(row, group_by, field): row for row in rows})
 		return [found[key] for key in sorted(found, key=lambda key: tuple(cstr(part) for part in key))]
 
-	return with_fallback(dict(filters or {}), fallback_empty)
+	rows = with_fallback(dict(filters or {}), fallback_empty)
+	for row in rows:
+		for fieldname in hidden:
+			row.pop(fieldname, None)
+	return rows
 
 
 def _key(row: dict, group_by: list[str], skip: str) -> tuple:
