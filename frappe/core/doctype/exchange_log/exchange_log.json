@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "autoname": "EXL-.######",
+ "creation": "2026-10-28 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["handler", "rule", "direction", "status", "started", "user", "file_name", "reference", "created", "updated", "errors", "details"],
+ "fields": [
+  {"fieldname": "handler", "fieldtype": "Data", "in_list_view": 1, "label": "Handler", "read_only": 1, "reqd": 1},
+  {"fieldname": "rule", "fieldtype": "Link", "label": "Rule", "options": "Exchange Rule", "read_only": 1},
+  {"fieldname": "direction", "fieldtype": "Select", "in_list_view": 1, "label": "Direction", "options": "Import\nExport", "read_only": 1, "reqd": 1},
+  {"fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Success\nPartial\nFailed", "read_only": 1, "reqd": 1},
+  {"fieldname": "started", "fieldtype": "Datetime", "in_list_view": 1, "label": "Time", "read_only": 1},
+  {"fieldname": "user", "fieldtype": "Link", "label": "User", "options": "User", "read_only": 1},
+  {"fieldname": "file_name", "fieldtype": "Data", "label": "File", "read_only": 1},
+  {"description": "Free reference of the caller, for example an organization.", "fieldname": "reference", "fieldtype": "Data", "label": "Reference", "read_only": 1},
+  {"fieldname": "created", "fieldtype": "Int", "label": "Created", "read_only": 1},
+  {"fieldname": "updated", "fieldtype": "Int", "label": "Updated", "read_only": 1},
+  {"fieldname": "errors", "fieldtype": "Int", "label": "Errors", "read_only": 1},
+  {"fieldname": "details", "fieldtype": "Code", "label": "Details", "options": "JSON", "read_only": 1}
+ ],
+ "links": [],
+ "modified": "2026-10-28 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Core",
+ "name": "Exchange Log",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {"export": 1, "read": 1, "report": 1, "role": "System Manager"}
+ ],
+ "read_only": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

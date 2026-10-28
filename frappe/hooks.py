@@ -281,6 +281,7 @@ scheduler_events = {
 		"frappe.integrations.doctype.google_calendar.google_calendar.sync",
 	],
 	"hourly": [
+		"frappe.beeone.exchange.run_due",  # beeone: scheduled exchange rules
 		"frappe.automation_engine.scheduler.process_date_based",
 	],
 	# Maintenance queue happen roughly once an hour but don't align with wall-clock time of *:00

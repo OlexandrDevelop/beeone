@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "autoname": "field:rule_name",
+ "creation": "2026-10-28 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["rule_name", "handler", "direction", "enabled", "column_break_1", "schedule", "last_run", "last_status", "options_section", "options", "mapping_section", "mappings"],
+ "fields": [
+  {"fieldname": "rule_name", "fieldtype": "Data", "in_list_view": 1, "label": "Rule Name", "reqd": 1, "unique": 1},
+  {"description": "Name of a handler that an app gives in the hook beeone_exchange_handlers.", "fieldname": "handler", "fieldtype": "Data", "in_list_view": 1, "label": "Handler", "reqd": 1},
+  {"default": "Import", "fieldname": "direction", "fieldtype": "Select", "in_list_view": 1, "label": "Direction", "options": "Import\nExport", "reqd": 1},
+  {"default": "1", "fieldname": "enabled", "fieldtype": "Check", "in_list_view": 1, "label": "Enabled"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "Manual", "fieldname": "schedule", "fieldtype": "Select", "in_list_view": 1, "label": "Schedule", "options": "Manual\nHourly\nDaily\nWeekly"},
+  {"fieldname": "last_run", "fieldtype": "Datetime", "label": "Last Run", "read_only": 1},
+  {"fieldname": "last_status", "fieldtype": "Data", "label": "Last Status", "read_only": 1},
+  {"fieldname": "options_section", "fieldtype": "Section Break", "label": "Options"},
+  {"description": "JSON object passed to the handler. Keys with names like password or token are never written to the log.", "fieldname": "options", "fieldtype": "Code", "label": "Options", "options": "JSON"},
+  {"fieldname": "mapping_section", "fieldtype": "Section Break", "label": "Field Mapping"},
+  {"fieldname": "mappings", "fieldtype": "Table", "label": "Mappings", "options": "Exchange Field Mapping"}
+ ],
+ "links": [],
+ "modified": "2026-10-28 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Core",
+ "name": "Exchange Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
