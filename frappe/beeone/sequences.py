@@ -42,6 +42,7 @@ BOUNDARY_FIELDS = [
 	"key_hash",
 	"status",
 	"version",
+	"serial",
 	"job_queued",
 	"boundary_date",
 	"boundary_time",
@@ -158,6 +159,7 @@ def _ensure_row(sequence: str, key: tuple) -> str:
 			"key_hash": key_hash(key),
 			"status": "Actual",
 			"version": 0,
+			"serial": 0,
 			"job_queued": 0,
 		},
 	)
@@ -166,10 +168,12 @@ def _ensure_row(sequence: str, key: tuple) -> str:
 
 def _lock_row(name: str):
 	"""The boundary row, locked until the end of the transaction and read fresh."""
-	return db.lock_row("Sequence Boundary", name, BOUNDARY_FIELDS)
+	return db.lock_row("Sequence Boundary", name, BOUNDARY_FIELDS, change_field="serial")
 
 
 def _save(name: str, position=KEEP, **values):
+	# every write raises the serial: a transaction with an older snapshot sees it in `_lock_row`
+	values["serial"] = (frappe.db.get_value("Sequence Boundary", name, "serial") or 0) + 1
 	if position is not KEEP:
 		pos = position
 		values.update(

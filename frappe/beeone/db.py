@@ -279,18 +279,24 @@ def insert_missing(doctype: str, row: dict) -> None:
 	frappe.db.sql(dialect().insert_missing_sql("tab" + doctype, columns), [row[c] for c in columns])
 
 
-def lock_row(doctype: str, name: str, fields: list[str]):
+def lock_row(doctype: str, name: str, fields: list[str], change_field: str | None = None):
 	"""Read a row of the DocType and lock it until the end of the transaction. Waits for another writer.
 
-	On PostgreSQL a transaction keeps its snapshot, so a row that another transaction changed
-	meanwhile cannot be locked: the error is a QueryDeadlockError and the caller tries again.
+	A transaction reads one snapshot of the data. When another transaction changed the row after our
+	snapshot, what we read earlier is old and the caller must start again: the error is a
+	QueryDeadlockError. `change_field` is a number that every writer of the row raises; without it
+	only PostgreSQL tells the conflict.
 	"""
+	seen = frappe.db.get_value(doctype, name, change_field) if change_field else None
 	try:
-		return frappe.db.get_value(doctype, name, fields, as_dict=True, for_update=True)
+		row = frappe.db.get_value(doctype, name, fields, as_dict=True, for_update=True)
 	except Exception as error:
 		if dialect().is_lock_conflict(error):
 			raise frappe.QueryDeadlockError(_("Another user changes the same data. Try again.")) from error
 		raise
+	if change_field and row and row.get(change_field) != seen:
+		raise frappe.QueryDeadlockError(_("Another user changes the same data. Try again."))
+	return row
 
 
 def try_lock(name: str) -> bool:

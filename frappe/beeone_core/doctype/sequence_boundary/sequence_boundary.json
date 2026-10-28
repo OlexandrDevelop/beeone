@@ -9,6 +9,7 @@
   "key_hash",
   "status",
   "version",
+  "serial",
   "job_queued",
   "error",
   "section_boundary",
@@ -55,6 +56,13 @@
    "fieldname": "version",
    "fieldtype": "Int",
    "label": "Version",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial",
+   "fieldtype": "Int",
+   "label": "Serial",
    "default": "0",
    "read_only": 1
   },
