@@ -480,3 +480,36 @@ class TestBeeoneSequenceBackground(SequenceCase):
 		self.assertEqual(self._take(), [self.d0.name])
 		self.assertEqual(sequences.run_job(SEQUENCE, key_hash(("A",))), "done")
 		self.assertEqual(self._boundary()["status"], "Actual")
+
+
+class TestBeeoneSequenceParallel(SequenceCase):
+	def test_two_backdated_posts_of_one_key_wait_for_each_other(self):
+		self._sequence()
+		first, last = self._doc(1, 1), self._doc(5, 1000)
+		frappe.db.commit()
+		self._take()
+
+		def post(day, qty):
+			def run():
+				return self._doc(day, qty).name
+
+			return run
+
+		barrier, result = threading.Barrier(2), [None, None]
+		threads = [
+			threading.Thread(target=_in_thread, args=(self.site, barrier, result, i, post(*args)))
+			for i, args in enumerate([(2, 10), (3, 100)])
+		]
+		for thread in threads:
+			thread.start()
+		for thread in threads:
+			thread.join(120)
+		self.assertTrue(all(isinstance(r, str) for r in result), result)
+		frappe.db.rollback()
+		by_day = {frappe.db.get_value(DOCUMENT, name, "posting_date"): name for name in result}
+		numbers = [
+			frappe.db.get_value(LEDGER, {"voucher_no": name}, "before")
+			for name in (first.name, by_day[_day(2)], by_day[_day(3)], last.name)
+		]
+		self.assertEqual(numbers, [0, 1, 11, 111])
+		self.assertEqual(self._boundary()["moment"].name, last.name)
