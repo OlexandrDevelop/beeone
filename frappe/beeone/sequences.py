@@ -381,7 +381,10 @@ def restore_sequence(sequence: str, key: tuple = (), until=None, trigger=None) -
 
 
 def move_boundary_back(sequence: str, key: tuple, moment) -> None:
-	"""Entries after the moment are not correct. Restores at once, or queues a job, as the mode says."""
+	"""The entries from the moment on, the document of the moment too, are not correct.
+
+	Restores at once, or queues a job, as the mode of the sequence says.
+	"""
 	seq = get_sequence(sequence)
 	key = tuple(key)
 	bname = _ensure_row(sequence, key)

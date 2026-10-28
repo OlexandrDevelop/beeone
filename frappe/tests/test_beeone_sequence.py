@@ -460,8 +460,8 @@ class TestBeeoneSequenceBackground(SequenceCase):
 
 		with patch.object(sequences, "repost", spy), patch("frappe.enqueue"):
 			self.assertEqual(sequences.run_job(SEQUENCE, key_hash(("A",))), "done")
-		# after the move back the worker restarts from the new boundary
-		self.assertEqual(self._take(), [self.d0.name, self.d0.name, self.d2.name, self.d3.name])
+		# the moment of a document is included: the worker restarts from the document d1
+		self.assertEqual(self._take(), [self.d0.name, self.d1.name, self.d0.name, self.d2.name, self.d3.name])
 		self.assertEqual(self._boundary()["version"], 2)
 
 	def test_a_failing_repost_marks_the_key_failed(self):
