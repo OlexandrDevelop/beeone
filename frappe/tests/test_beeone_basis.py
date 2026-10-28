@@ -64,6 +64,19 @@ class TestBasisRegistry(IntegrationTestCase):
 			result = basis.make_on_basis("ToDo", self.todo.name, NOTE, "Note")
 		self.assertEqual(result["title"], self.todo.name)
 
+	def test_field_placeholders(self):
+		self.todo.db_set("priority", "High")
+		args = {"a": "{doc.priority}", "b": "p={doc.priority}/{name}", "c": ["{doc.priority}"]}
+		self.assertEqual(
+			basis.fill_args(args, self.todo.name, "ToDo"),
+			{"a": "High", "b": f"p=High/{self.todo.name}", "c": ["High"]},
+		)
+
+	def test_conditions_are_passed_to_the_client(self):
+		entry = dict(ENTRY, when={"status": ["Open"]}, unless={"priority": ["Low"]})
+		with hooks(entry):
+			self.assertEqual(basis.get_entries("ToDo"), [entry])
+
 	def test_unregistered_command_is_refused(self):
 		with hooks(ENTRY):
 			self.assertRaises(frappe.ValidationError, basis.make_on_basis, "ToDo", self.todo.name, "frappe.client.delete")

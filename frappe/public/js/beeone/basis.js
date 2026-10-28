@@ -12,7 +12,9 @@ beeone.basis.entries = function (frm) {
 	const list = (frappe.boot.beeone_basis || {})[frm.doctype] || [];
 	return list.filter((entry) => {
 		if (entry.submitted && frm.doc.docstatus !== 1) return false;
-		if (entry.exclude_status && entry.exclude_status.includes(frm.doc.status)) return false;
+		const value = (field) => frm.doc[field] ?? "";
+		for (const [field, values] of Object.entries(entry.when || {})) if (!values.includes(value(field))) return false;
+		for (const [field, values] of Object.entries(entry.unless || {})) if (values.includes(value(field))) return false;
 		if (entry.onload_flag) {
 			let value = frm.doc.__onload;
 			for (const key of entry.onload_flag) value = value && value[key];
@@ -28,13 +30,17 @@ beeone.basis.create = function (frm, entry) {
 		frappe.msgprint(__("Submit the document first"));
 		return Promise.resolve();
 	}
-	const make = () =>
-		frappe.call({
-			method: MAPPER,
-			args: { source_doctype: frm.doctype, source_name: frm.doc.name, method: entry.method, target: entry.target },
-			freeze: true,
-		});
-	return make().then((r) => beeone.basis.open(r.message));
+	// the command works on the saved document: unsaved edits are saved first
+	const saved = frm.is_dirty() ? frm.save() : Promise.resolve();
+	return Promise.resolve(saved)
+		.then(() =>
+			frappe.call({
+				method: MAPPER,
+				args: { source_doctype: frm.doctype, source_name: frm.doc.name, method: entry.method, target: entry.target },
+				freeze: true,
+			})
+		)
+		.then((r) => beeone.basis.open(r.message));
 };
 
 // Syncs a document dict of the server as a new local document and opens its form.
@@ -44,6 +50,8 @@ beeone.basis.open = function (data) {
 	if (!doc.name) doc.name = frappe.model.make_new_doc_and_get_name(doc.doctype, true);
 	const meta = frappe.get_meta(doc.doctype);
 	if (meta) {
+		if (frappe.meta.has_field(doc.doctype, "posting_date") && !doc.posting_date) doc.posting_date = frappe.datetime.get_today();
+		if (frappe.meta.has_field(doc.doctype, "posting_time") && !doc.posting_time) doc.posting_time = frappe.datetime.now_time();
 		meta.fields
 			.filter((df) => frappe.model.table_fields.includes(df.fieldtype))
 			.forEach((df) =>

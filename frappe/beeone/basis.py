@@ -11,10 +11,11 @@ An app lists the commands of its documents in the hook `basis_map` of its hooks.
 			"target": "Sales Invoice",  # the type that the method returns (checked for the create right)
 			"label": "Sales invoice",  # the menu text (translated on the client)
 			"method": "my_app.api.make_sales_invoice",  # a whitelisted method that returns an unsaved document
-			"args": {"source_name": "{name}"},  # "{name}" and "{doctype}" are replaced; lists and dicts are walked
+			"args": {"source_name": "{name}"},  # "{name}", "{doctype}" and "{doc.field}" are replaced; lists and dicts are walked
 			"submitted": True,  # optional: only a submitted basis; the button is hidden otherwise
 			"submit_first": True,  # optional: like `submitted`, but the button shows a hint on a draft
-			"exclude_status": ["Closed"],  # optional: hide the command in these values of `status`
+			"when": {"status": ["Confirmed"]},  # optional: show the command only when each field has one of the values
+			"unless": {"status": ["Closed"]},  # optional: hide the command when a field has one of the values
 			"onload_flag": ["order_scheme", "receipt"],  # optional: path in `doc.__onload` that must be true
 		},
 	]
@@ -24,11 +25,13 @@ the method of the app. The method returns the same dict as before. The client ha
 `beeone.basis.create` (frappe/public/js/beeone/basis.js), and adds the buttons by itself.
 """
 
+import re
+
 import frappe
 from frappe import _
 
 HOOK = "basis_map"
-KEYS = ("source", "target", "label", "method", "args", "submitted", "submit_first", "exclude_status", "onload_flag")
+KEYS = ("source", "target", "label", "method", "args", "submitted", "submit_first", "when", "unless", "onload_flag")
 
 
 def get_entries(source: str | None = None) -> list[dict]:
@@ -56,9 +59,16 @@ def boot_session(bootinfo):
 	bootinfo.beeone_basis = registry
 
 
+FIELD = re.compile(r"\{doc\.(\w+)\}")
+
+
 def fill_args(template, name: str, doctype: str):
-	"""Arguments of the method: the placeholders of the template replaced by the basis name and type."""
+	"""Arguments of the method: the placeholders of the template replaced by the basis name, type and fields."""
 	if isinstance(template, str):
+		whole = FIELD.fullmatch(template)
+		if whole:
+			return frappe.db.get_value(doctype, name, whole.group(1))
+		template = FIELD.sub(lambda m: str(frappe.db.get_value(doctype, name, m.group(1)) or ""), template)
 		return template.replace("{name}", name).replace("{doctype}", doctype)
 	if isinstance(template, dict):
 		return {k: fill_args(v, name, doctype) for k, v in template.items()}
