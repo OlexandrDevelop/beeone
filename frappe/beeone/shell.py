@@ -301,6 +301,12 @@ def get_layout(user: str | None = None) -> dict | None:
 
 
 @frappe.whitelist()
+def get_saved_layout() -> dict | None:
+	"""The saved layout of the session user, cleaned, or None."""
+	return get_layout(frappe.session.user)
+
+
+@frappe.whitelist()
 def save_layout(layout) -> dict:
 	"""Save the layout of the session user. The data is cleaned first."""
 	if frappe.session.user == "Guest":
@@ -497,6 +503,7 @@ def _report(source: dict) -> dict:
 
 
 def boot_session(bootinfo):
+	"""Sections and the widget catalog. Frappe caches this part of the boot data per user."""
 	if frappe.session.user == "Guest":
 		return
 	user = frappe.session.user
@@ -504,6 +511,12 @@ def boot_session(bootinfo):
 	bootinfo.beeone_shell = {
 		"enabled": bool(sections),
 		"sections": sections,
-		"layout": get_layout(user) if sections else None,
 		"widgets": widget_catalog(user) if sections else None,
 	}
+
+
+def extend_bootinfo(bootinfo):
+	"""The layout changes all the time, so it is read on every boot, not taken from the cache."""
+	data = bootinfo.get("beeone_shell")
+	if data and data.get("enabled"):
+		data["layout"] = get_layout(frappe.session.user)

@@ -1445,28 +1445,14 @@ html:not([data-bo-sidebar="collapsed"]) .bo-sb-item[data-bo-tip]::after {
 		transform: translateY(6px);
 	}
 }
+/* a skeleton is static: no shimmer (docs/platform/SHELL.md §6.5, budget) */
 .bo-skel {
 	display: block;
 	height: 10px;
 	border-radius: 5px;
-	background: linear-gradient(90deg, var(--bo-surface-3) 0%, var(--bo-surface-2) 40%, var(--bo-surface-3) 80%);
-	background-size: 300% 100%;
-	animation: bo-shimmer 1.4s ease-in-out infinite;
-}
-@keyframes bo-shimmer {
-	from {
-		background-position: 100% 0;
-	}
-	to {
-		background-position: 0 0;
-	}
+	background: var(--bo-surface-3);
 }
 @media (prefers-reduced-motion: reduce) {
-	.bo-skel,
-	.bo-btn.is-loading::after {
-		animation-duration: 0s;
-		animation-iteration-count: 1;
-	}
 	.bo-btn.is-loading::after {
 		animation: none;
 	}
