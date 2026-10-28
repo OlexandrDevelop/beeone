@@ -364,6 +364,9 @@ def _restore(seq, key: tuple, bname: str, until: Position | None = None, trigger
 			entry = entries[0]
 			if not (trigger and (entry.document_type, entry.document_name) == (trigger.doctype, trigger.name)):
 				_repost_entry(seq, entry)
+				if _lock_row(bname).version != row.version:
+					# the boundary moved back while the document was reposted: start again from the new one
+					continue
 			_save(bname, _entry_position(entry))
 			if commit:
 				frappe.db.commit()
