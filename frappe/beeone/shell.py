@@ -295,9 +295,8 @@ def _clean_links(items, limit) -> list[dict]:
 
 def get_layout(user: str | None = None) -> dict | None:
 	user = user or frappe.session.user
-	rows = frappe.db.sql(
-		"select data from `__UserSettings` where `user`=%s and `doctype`=%s", (user, SETTINGS_KEY)
-	)
+	table = frappe.qb.Table("__UserSettings")
+	rows = frappe.qb.from_(table).select(table.data).where((table.user == user) & (table.doctype == SETTINGS_KEY)).run()
 	if not rows or not rows[0][0]:
 		return None
 	try:
@@ -327,9 +326,8 @@ def save_layout(layout) -> dict:
 
 @frappe.whitelist()
 def reset_layout() -> dict:
-	frappe.db.sql(
-		"delete from `__UserSettings` where `user`=%s and `doctype`=%s", (frappe.session.user, SETTINGS_KEY)
-	)
+	table = frappe.qb.Table("__UserSettings")
+	frappe.qb.from_(table).delete().where((table.user == frappe.session.user) & (table.doctype == SETTINGS_KEY)).run()
 	return default_layout()
 
 
