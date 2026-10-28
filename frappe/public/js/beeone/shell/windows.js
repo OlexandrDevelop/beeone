@@ -41,10 +41,17 @@ export function route_key(route) {
 }
 
 // routes that show the desktop and open no window; apps add the routes of their former home pages
-export const desktop_routes = ["", "desk", "home", "workspaces", "beeone-desktop"];
+export const desktop_routes = ["", "home", "workspaces", "beeone-desktop"];
 export function is_window_route(route) {
 	if (!route || !route.length) return false;
-	return !desktop_routes.includes(String(route[0]).toLowerCase());
+	const head = String(route[0]).toLowerCase();
+	// beeone: /desk alone or /desk/ shows the desktop; /desk/something checks if something is a window route
+	if (head === "desk") {
+		if (route.length === 1) return false; // route = ["desk"], show desktop
+		const target = String(route[1]).toLowerCase();
+		return !desktop_routes.includes(target);
+	}
+	return !desktop_routes.includes(head);
 }
 
 const desk_el = () => document.getElementById("bo-wins");
@@ -147,7 +154,7 @@ function make_el(win) {
 		`<div class="bo-win-btns">` +
 		`<button type="button" data-act="min" title="${esc(__("Minimize"))} (Alt M)" aria-label="${esc(__("Minimize"))}">${icon("minus")}</button>` +
 		`<button type="button" data-act="max" title="${esc(__("Maximize"))} (Alt ↑)" aria-label="${esc(__("Maximize"))}">${icon("square")}</button>` +
-		`<button type="button" data-act="close" class="is-close" title="${esc(__("Close"))} (Alt Q)" aria-label="${esc(__("Close"))}">${icon("x")}</button>` +
+		`<button type="button" data-act="close" class="is-close" title="${esc(__("Close"))} (Alt Q)" aria-label="${esc(__("Window: close"))}">${icon("x")}</button>` +
 		`</div></header><div class="bo-win-body"></div>` +
 		["n", "s", "e", "w", "ne", "nw", "se", "sw"].map((d) => `<i class="bo-rz bo-rz-${d}" data-d="${d}"></i>`).join("");
 	win.el = el;
@@ -194,7 +201,10 @@ export function create(route, opts = {}) {
 	wins.map.set(key, win);
 	wins.order.push(key);
 	wins.z.push(key);
-	if (win.parked) show_placeholder(win);
+	if (win.parked) {
+		win.el.classList.add("is-parked");
+		show_placeholder(win);
+	}
 	if (win.state === "minimized") win.el.classList.add("is-min");
 	beeone.shell.taskbar.render();
 	return win;
@@ -587,7 +597,7 @@ function confirm_close(win) {
 	focus(win.key);
 	if (win.el.querySelector(".bo-sheet")) return;
 	const sheet = document.createElement("div");
-	sheet.className = "bo-sheet";
+	sheet.className = "bo-sheet bo-dialog";
 	sheet.innerHTML =
 		`<div class="bo-sheet-box" role="alertdialog"><h3>${esc(__("Save changes?"))}</h3>` +
 		`<p>${esc(__('"{0}" has changes. If you close it without saving, the changes will be lost.', [win.title]))}</p>` +
