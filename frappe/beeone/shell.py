@@ -15,6 +15,7 @@ from frappe.beeone import db
 from frappe.utils import add_days, add_months, cint, get_first_day, get_last_day, getdate, nowdate
 
 SETTINGS_KEY = "beeone_shell"
+DESKTOP_PAGE = "beeone-desktop"
 COLUMNS = ("docs", "refs", "reps", "svc")
 COMMAND_TYPES = ("doctype", "tree", "single", "report", "page", "route", "new")
 CORE_WIDGETS = ("beeone.count", "beeone.number", "beeone.report", "beeone.recent")
@@ -135,7 +136,7 @@ def get_sections(user: str | None = None) -> list[dict]:
 def _widget_config(user: str) -> dict:
 	"""Merged hook data: sources by id, own types by name, defaults by role."""
 	sources, types, defaults = {}, {}, {}
-	for result in _call_hooks("beeone_widgets", user):
+	for result in _call_hooks("beeone_widgets"):
 		result = result or {}
 		for source in result.get("sources") or []:
 			if source.get("id"):
@@ -182,10 +183,15 @@ def widget_catalog(user: str | None = None) -> dict:
 		for t in config["types"].values()
 	]
 	roles = set(frappe.get_roles(user))
-	default = []
+	default, seen = [], set()
 	for role, widgets in config["defaults"].items():
-		if role in roles:
-			default.extend(widgets)
+		if role not in roles:
+			continue
+		for widget in widgets:
+			ident = (widget.get("type"), widget.get("source"))
+			if ident not in seen:
+				seen.add(ident)
+				default.append(widget)
 	return {"sources": sources, "types": types, "default": default[:MAX_WIDGETS]}
 
 
@@ -361,6 +367,8 @@ def widget_data(widgets) -> dict:
 		except Exception:
 			frappe.log_error(title="beeone widget data")
 			result[wid] = {"error": _("Could not load data")}
+		# a widget never opens a message box on the desk: its state is on the card
+		frappe.clear_messages()
 	return result
 
 
@@ -399,7 +407,7 @@ def _count(source: dict) -> dict:
 		data = _report(source)
 		return {"count": len(data["rows"]), "label": source.get("label")}
 	rows = frappe.get_list(
-		source["doctype"], filters=_filters(source), fields=["count(name) as count"], limit_page_length=0
+		source["doctype"], filters=_filters(source), fields=[{"COUNT": "name", "as": "count"}], limit_page_length=0
 	)
 	return {"count": cint(rows[0]["count"]) if rows else 0, "doctype": source["doctype"], "label": source.get("label")}
 
@@ -427,7 +435,7 @@ def _number(source: dict, period: str) -> dict:
 	meta = frappe.get_meta(source["doctype"])
 	if not meta.has_field(field) and field != "name":
 		raise frappe.PermissionError
-	expr = f"sum(`{field}`) as total" if field != "name" else "count(name) as total"
+	expr = {"SUM": field, "as": "total"} if field != "name" else {"COUNT": "name", "as": "total"}
 
 	def total(shift):
 		start, end = _period_range(period, shift)
@@ -478,10 +486,23 @@ def _recent(source: dict) -> dict:
 	}
 
 
+def _filter_values(filters: dict) -> dict:
+	"""Report filters of a source. A date can be a word: today, month_start, quarter_start, year_start."""
+	today = getdate(nowdate())
+	words = {
+		"today": today,
+		"month_start": get_first_day(today),
+		"month_end": get_last_day(today),
+		"quarter_start": _period_range("quarter")[0],
+		"year_start": today.replace(month=1, day=1),
+	}
+	return {key: str(words[value]) if value in words else value for key, value in (filters or {}).items()}
+
+
 def _report(source: dict) -> dict:
 	from frappe.desk.query_report import run
 
-	out = run(source["report"], filters=source.get("report_filters") or {}, ignore_prepared_report=True)
+	out = run(source["report"], filters=_filter_values(source.get("report_filters")), ignore_prepared_report=True)
 	columns = out.get("columns") or []
 	rows = (out.get("result") or [])[:REPORT_ROWS]
 	cols = [
@@ -513,6 +534,9 @@ def boot_session(bootinfo):
 		"sections": sections,
 		"widgets": widget_catalog(user) if sections else None,
 	}
+	if sections:
+		# the desk of the shell is the home page: Frappe's own desktop is not built
+		bootinfo["home_page"] = DESKTOP_PAGE
 
 
 def extend_bootinfo(bootinfo):
