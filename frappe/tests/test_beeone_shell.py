@@ -96,7 +96,8 @@ class TestBeeoneShell(IntegrationTestCase):
 
 	def tearDown(self):
 		frappe.set_user("Administrator")
-		frappe.db.sql("delete from `__UserSettings` where `doctype`=%s", shell.SETTINGS_KEY)
+		table = frappe.qb.Table("__UserSettings")
+		frappe.qb.from_(table).delete().where(table.doctype == shell.SETTINGS_KEY).run()
 
 	# ------------------------------------------------------------ sections
 
@@ -180,8 +181,14 @@ class TestBeeoneShell(IntegrationTestCase):
 		self.assertEqual(shell.get_layout(OTHER_USER)["windows"], [])
 		# saving again replaces the row, it does not add one
 		shell.save_layout({"accent": "teal"})
-		rows = frappe.db.sql("select count(*) from `__UserSettings` where `user`=%s and `doctype`=%s", (OTHER_USER, shell.SETTINGS_KEY))
-		self.assertEqual(rows[0][0], 1)
+		table = frappe.qb.Table("__UserSettings")
+		rows = (
+			frappe.qb.from_(table)
+			.select(table.data)
+			.where((table.user == OTHER_USER) & (table.doctype == shell.SETTINGS_KEY))
+			.run()
+		)
+		self.assertEqual(len(rows), 1)
 
 	def test_guest_cannot_save_a_layout(self):
 		frappe.set_user("Guest")
