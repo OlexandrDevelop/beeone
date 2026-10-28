@@ -327,6 +327,14 @@ Object.assign(frappe.utils, {
 	) {
 		if (frappe.flags.disable_auto_scroll) return;
 
+		// beeone: inside a desktop window the window body scrolls, without jQuery animation
+		if (window.beeone?.shell?.active && !element_to_be_scrolled) {
+			const body = window.beeone.shell.scroll_parent(element);
+			if (body) {
+				element_to_be_scrolled = $(body);
+				animate = false;
+			}
+		}
 		element_to_be_scrolled = element_to_be_scrolled || $("html, body");
 		let scroll_top = 0;
 		if (element) {
