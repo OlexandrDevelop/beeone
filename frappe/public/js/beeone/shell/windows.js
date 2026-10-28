@@ -42,16 +42,25 @@ export function route_key(route) {
 
 // routes that show the desktop and open no window; apps add the routes of their former home pages
 export const desktop_routes = ["", "desk", "home", "workspaces", "beeone-desktop"];
+// pages that should show desktop, not open as windows
+const desktop_pages = ["home", "ua-home", "workspaces", "beeone-desktop"];
 export function is_window_route(route) {
 	if (!route || !route.length) return false;
 	const head = String(route[0]).toLowerCase();
-	// beeone: /desk/something - check if something looks like a window route (Form/List/query-report/Tree)
+	// beeone: /desk/something - check if it's a known desktop page or a window route type
 	if (head === "desk" && route.length > 1) {
 		const second = String(route[1]).toLowerCase();
 		// Explicit window route types
 		if (["form", "list", "tree", "query-report"].includes(second)) return true;
-		// Everything else on /desk/* shows the desktop (e.g., /desk/ua-home, /desk/home)
-		return false;
+		// Shell prefixes: /desk/ua-core/ua-sales-invoice/... is a form in the ua-core shell
+		if (route.length > 2) {
+			const third = String(route[2]).toLowerCase();
+			if (["form", "list", "tree"].includes(third)) return true;
+		}
+		// Known desktop pages
+		if (desktop_pages.includes(second)) return false;
+		// Unknown /desk/* routes are treated as custom pages = window routes (e.g., /desk/ua-osv, /desk/ua-account-card)
+		return true;
 	}
 	return !desktop_routes.includes(head);
 }
