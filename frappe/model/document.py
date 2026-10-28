@@ -1486,11 +1486,13 @@ class Document(BaseDocument):
 		if self._action == "save":
 			self.run_method("on_update")
 		elif self._action == "submit":
+			# beeone: lock_sequences ran in _save before document writes
 			self.run_method("on_update")
 			self.post_movements()  # beeone: write the registers of the document
 			self.run_method("on_submit")
 			self.mark_sequences()  # beeone: move the boundary back and restore the sequences
 		elif self._action == "cancel":
+			# beeone: lock_sequences ran in _save before document writes
 			self.unpost_movements()  # beeone: delete the register rows of the document
 			self.run_method("on_cancel")
 			self.check_no_back_links_exist()
