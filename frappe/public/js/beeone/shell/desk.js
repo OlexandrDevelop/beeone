@@ -106,16 +106,17 @@ export const desk = {
 			this.commit(list);
 			beeone.ui.toast({
 				title: __("Widget removed"),
-				action: { label: __("Undo") },
+				type: "info",
+				action: {
+					label: __("Undo"),
+					on_click: () => {
+						const now = this.widgets().slice();
+						now.splice(i, 0, gone);
+						this.commit(now);
+					},
+				},
 				duration: 4000,
 			});
-			const undo = document.querySelector(".bo-toast:last-child .bo-toast-action button");
-			if (undo)
-				undo.addEventListener("click", () => {
-					const now = this.widgets().slice();
-					now.splice(i, 0, gone);
-					this.commit(now);
-				});
 		}
 	},
 
