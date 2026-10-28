@@ -41,7 +41,7 @@ export function route_key(route) {
 }
 
 // routes that show the desktop and open no window; apps add the routes of their former home pages
-export const desktop_routes = ["", "desk", "home", "workspaces", "beeone-desktop"];
+export const desktop_routes = ["", "desk", "home", "workspaces", "beeone-desktop", "ua-home", "ut-home"];
 // pages that should show desktop, not open as windows
 const desktop_pages = ["home", "ua-home", "workspaces", "beeone-desktop"];
 export function is_window_route(route) {
@@ -435,6 +435,11 @@ export function focus(key, opts = {}) {
 	wins.desktop_hidden = null;
 	paint_state();
 	if (changed || was_min) beeone.shell.announce(__("Window opened: {0}", [win.title]));
+	// beeone: ensure page is shown when window becomes active (fix for hidden report pages)
+	if (win.page && (changed || was_min)) {
+		$(win.page).show();
+		$(win.page).trigger("show");
+	}
 	if (was_min) restore_anim(win, sync);
 	else if (opts.animate === true && win.page) open_anim(win);
 	if (!was_min) sync();
