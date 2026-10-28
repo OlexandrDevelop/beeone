@@ -1,0 +1,255 @@
+/*
+ * Design tokens of the accounting desk (T-433, from design/mockups/assets/tokens.css).
+ * Palette "Ink & Cobalt": cool ink neutrals + one cobalt accent.
+ * Light = default, dark = html[data-theme="dark"] (set by Frappe). Scope: body.bo-shell.
+ * Every component reads only these variables. Tokens only: no component rules here.
+ * The font is Frappe's local InterVariable (no web fonts).
+ */
+
+
+body.bo-shell {
+	color-scheme: light;
+
+	/* neutrals */
+	--bo-bg: #f6f7f9;
+	--bo-surface: #ffffff;
+	--bo-surface-2: #f2f4f7;
+	--bo-surface-3: #e9ecf1;
+	--bo-surface-raised: #ffffff;
+	--bo-border: #e4e7ec;
+	--bo-border-strong: #d0d5dd;
+	--bo-text: #0e1525;
+	--bo-text-2: #475467;
+	--bo-text-3: #8a94a6;
+	--bo-text-on-accent: #ffffff;
+
+	/* accent: cobalt */
+	--bo-accent: #2f54eb;
+	--bo-accent-hover: #2343d6;
+	--bo-accent-press: #1d39b8;
+	--bo-accent-soft: #edf1fe;
+	--bo-accent-soft-2: #dde5fd;
+	--bo-accent-text: #2343d6;
+
+	/* second accent: violet (favourites, highlights only) */
+	--bo-violet: #7a5af8;
+	--bo-violet-soft: #f1edff;
+
+	/* status */
+	--bo-success: #0f9f8f;
+	--bo-success-soft: #e3f6f3;
+	--bo-success-text: #0b7a6e;
+	--bo-danger: #e5484d;
+	--bo-danger-soft: #fdecec;
+	--bo-danger-text: #c62a2f;
+	--bo-warning: #e8590c;
+	--bo-warning-soft: #fff0e6;
+	--bo-warning-text: #c2410c;
+	--bo-neutral-soft: #eef0f3;
+	--bo-neutral-text: #475467;
+
+	/* data surfaces */
+	--bo-row-hover: #f6f8fd;
+	--bo-row-selected: #eef2fe;
+	--bo-row-selected-border: #c7d3fb;
+	--bo-group-row: #fafbfc;
+	--bo-th-bg: #fbfbfc;
+
+	/* overlay */
+	--bo-backdrop: rgb(14 21 37 / 0.32);
+	--bo-backdrop-soft: rgb(14 21 37 / 0.1);
+	--bo-focus-ring: 0 0 0 3px rgb(47 84 235 / 0.22);
+
+	/* shadow */
+	--bo-shadow-xs: 0 1px 2px rgb(16 24 40 / 0.05);
+	--bo-shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
+	--bo-shadow-md: 0 4px 8px -2px rgb(16 24 40 / 0.08), 0 2px 4px -2px rgb(16 24 40 / 0.05);
+	--bo-shadow-lg: 0 12px 24px -6px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
+	--bo-shadow-xl: 0 24px 48px -12px rgb(16 24 40 / 0.24);
+	--bo-shadow-sticky: 0 1px 0 var(--bo-border), 0 4px 8px -6px rgb(16 24 40 / 0.12);
+}
+
+html[data-theme="dark"] body.bo-shell {
+	color-scheme: dark;
+
+	--bo-bg: #0b0d12;
+	--bo-surface: #12151c;
+	--bo-surface-2: #181c25;
+	--bo-surface-3: #20252f;
+	--bo-surface-raised: #1a1e28;
+	--bo-border: #252a35;
+	--bo-border-strong: #343b48;
+	--bo-text: #e8ecf3;
+	--bo-text-2: #a6afbf;
+	--bo-text-3: #6e7889;
+	--bo-text-on-accent: #ffffff;
+
+	--bo-accent: #5b7bff;
+	--bo-accent-hover: #7590ff;
+	--bo-accent-press: #4a69f0;
+	--bo-accent-soft: rgb(91 123 255 / 0.14);
+	--bo-accent-soft-2: rgb(91 123 255 / 0.24);
+	--bo-accent-text: #8da3ff;
+
+	--bo-violet: #9b84ff;
+	--bo-violet-soft: rgb(155 132 255 / 0.14);
+
+	--bo-success: #2ec4a9;
+	--bo-success-soft: rgb(46 196 169 / 0.13);
+	--bo-success-text: #4fd8bf;
+	--bo-danger: #ff6b6f;
+	--bo-danger-soft: rgb(255 107 111 / 0.13);
+	--bo-danger-text: #ff8a8d;
+	--bo-warning: #ff8a3d;
+	--bo-warning-soft: rgb(255 138 61 / 0.13);
+	--bo-warning-text: #ffa266;
+	--bo-neutral-soft: rgb(166 175 191 / 0.12);
+	--bo-neutral-text: #b4bccb;
+
+	--bo-row-hover: #161a23;
+	--bo-row-selected: rgb(91 123 255 / 0.12);
+	--bo-row-selected-border: rgb(91 123 255 / 0.4);
+	--bo-group-row: #141820;
+	--bo-th-bg: #141820;
+
+	--bo-backdrop: rgb(0 0 0 / 0.55);
+	--bo-backdrop-soft: rgb(0 0 0 / 0.25);
+	--bo-focus-ring: 0 0 0 3px rgb(91 123 255 / 0.35);
+
+	--bo-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.4);
+	--bo-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+	--bo-shadow-md: 0 4px 10px -2px rgb(0 0 0 / 0.5);
+	--bo-shadow-lg: 0 14px 28px -6px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.04);
+	--bo-shadow-xl: 0 28px 56px -12px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.05);
+	--bo-shadow-sticky: 0 1px 0 var(--bo-border), 0 6px 10px -6px rgb(0 0 0 / 0.6);
+}
+
+body.bo-shell {
+	/* type */
+	--bo-font: "InterVariable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--bo-font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+	--bo-fs-11: 11px;
+	--bo-fs-12: 12px;
+	--bo-fs-13: 13px;
+	--bo-fs-14: 14px;
+	--bo-fs-16: 16px;
+	--bo-fs-20: 20px;
+	--bo-fs-24: 24px;
+	--bo-fs-30: 30px;
+	--bo-lh-tight: 1.25;
+	--bo-lh: 1.45;
+	--bo-fw-regular: 400;
+	--bo-fw-medium: 500;
+	--bo-fw-semibold: 600;
+	--bo-fw-bold: 700;
+
+	/* space (4px grid) */
+	--bo-s-1: 4px;
+	--bo-s-2: 8px;
+	--bo-s-3: 12px;
+	--bo-s-4: 16px;
+	--bo-s-5: 20px;
+	--bo-s-6: 24px;
+	--bo-s-8: 32px;
+	--bo-s-10: 40px;
+	--bo-s-12: 48px;
+
+	/* size */
+	--bo-h-control-sm: 28px;
+	--bo-h-control: 32px;
+	--bo-h-control-lg: 40px;
+	--bo-h-row: 36px;
+	--bo-h-row-dense: 32px;
+	--bo-h-topbar: 52px;
+	--bo-w-sidebar: 232px;
+	--bo-w-sidebar-collapsed: 60px;
+	--bo-w-fpanel: 980px;
+
+	/* radius */
+	--bo-r-xs: 4px;
+	--bo-r-sm: 6px;
+	--bo-r-md: 8px;
+	--bo-r-lg: 12px;
+	--bo-r-xl: 16px;
+	--bo-r-pill: 999px;
+
+	/* motion */
+	--bo-dur-instant: 80ms;
+	--bo-dur-fast: 120ms;
+	--bo-dur-base: 180ms;
+	--bo-dur-slow: 240ms;
+	--bo-dur-slower: 320ms;
+	--bo-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--bo-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--bo-ease-in: cubic-bezier(0.4, 0, 1, 1);
+	--bo-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+	--bo-stagger: 18ms;
+
+	/* layers */
+	--bo-z-sticky: 10;
+	--bo-z-sidebar: 30;
+	--bo-z-fpanel: 40;
+	--bo-z-dropdown: 50;
+	--bo-z-drawer: 60;
+	--bo-z-dialog: 70;
+	--bo-z-toast: 80;
+	--bo-z-tooltip: 90;
+}
+
+/* Reduced motion: the system setting turns every duration off. */
+@media (prefers-reduced-motion: reduce) {
+	body.bo-shell {
+		--bo-dur-instant: 0ms;
+		--bo-dur-fast: 0ms;
+		--bo-dur-base: 0ms;
+		--bo-dur-slow: 0ms;
+		--bo-dur-slower: 0ms;
+		--bo-stagger: 0ms;
+	}
+}
+
+/* shell: desk, rail, windows (docs/platform/SHELL.md §7) */
+body.bo-shell {
+	--bo-desk: #eef0f4;
+	--bo-rail: #111827;
+	--bo-rail-text: #aab3c5;
+	--bo-rail-hover: rgb(255 255 255 / 0.08);
+	--bo-shadow-win: 0 18px 40px -12px rgb(16 24 40 / 0.28);
+	--bo-shadow-win-idle: 0 4px 12px -4px rgb(16 24 40 / 0.14);
+	--bo-r-field: 6px;
+	--bo-r-btn: 8px;
+	--bo-r-win: 12px;
+	--bo-r-dialog: 14px;
+}
+
+html[data-theme="dark"] body.bo-shell {
+	--bo-desk: #0d1016;
+	--bo-rail: #07090d;
+	--bo-shadow-win: 0 22px 44px -12px rgb(0 0 0 / 0.75);
+	--bo-shadow-win-idle: 0 4px 12px -4px rgb(0 0 0 / 0.5);
+}
+
+/* the second accent of the user: teal */
+body.bo-shell[data-bo-accent="teal"] {
+	--bo-accent: #0e7c66;
+	--bo-accent-hover: #0b6a57;
+	--bo-accent-press: #095747;
+	--bo-accent-soft: #e6f4f0;
+	--bo-accent-soft-2: #cdeae2;
+	--bo-accent-text: #0b6a57;
+	--bo-row-selected: #e6f4f0;
+	--bo-row-selected-border: #b4ddd2;
+	--bo-focus-ring: 0 0 0 3px rgb(14 124 102 / 0.22);
+}
+
+html[data-theme="dark"] body.bo-shell[data-bo-accent="teal"] {
+	--bo-accent: #2ec4a9;
+	--bo-accent-hover: #4fd8bf;
+	--bo-accent-press: #22a38c;
+	--bo-accent-soft: rgb(46 196 169 / 0.14);
+	--bo-accent-soft-2: rgb(46 196 169 / 0.24);
+	--bo-accent-text: #5fe0c8;
+	--bo-row-selected: rgb(46 196 169 / 0.12);
+	--bo-row-selected-border: rgb(46 196 169 / 0.4);
+	--bo-focus-ring: 0 0 0 3px rgb(46 196 169 / 0.35);
+}

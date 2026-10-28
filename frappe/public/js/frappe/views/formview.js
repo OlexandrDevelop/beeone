@@ -4,14 +4,22 @@
 frappe.provide("frappe.views.formview");
 
 frappe.views.FormFactory = class FormFactory extends frappe.views.Factory {
+	// beeone: in the desktop shell every document has its own page and form (window)
+	page_key(doctype_layout, name) {
+		return window.beeone?.shell?.active ? `Form/${doctype_layout}/${name}` : doctype_layout;
+	}
+
 	make(route) {
 		var doctype = route[1],
-			doctype_layout = frappe.router.doctype_layout || doctype;
+			doctype_layout = frappe.router.doctype_layout || doctype,
+			key = this.page_key(doctype_layout, route.slice(2).join("/"));
 
-		if (!frappe.views.formview[doctype_layout]) {
+		if (key !== doctype_layout) beeone.shell.adopt_renamed(key, route);
+
+		if (!frappe.views.formview[key]) {
 			frappe.model.with_doctype(doctype, () => {
-				this.page = frappe.container.add_page(doctype_layout);
-				frappe.views.formview[doctype_layout] = this.page;
+				this.page = frappe.container.add_page(key);
+				frappe.views.formview[key] = this.page;
 				this.make_and_show(doctype, route);
 			});
 		} else {
@@ -113,8 +121,9 @@ frappe.views.FormFactory = class FormFactory extends frappe.views.Factory {
 
 	render(doctype_layout, name) {
 		this.clear_attachment_preview_state();
-		frappe.container.change_to(doctype_layout);
-		frappe.views.formview[doctype_layout].frm.refresh(name);
+		const key = this.page_key(doctype_layout, name);
+		frappe.container.change_to(key);
+		frappe.views.formview[key].frm.refresh(name);
 	}
 
 	clear_attachment_preview_state() {

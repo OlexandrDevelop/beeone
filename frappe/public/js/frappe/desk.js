@@ -52,6 +52,7 @@ frappe.Application = class Application {
 		// page container
 		this.make_page_container();
 		this.setup_tours();
+		window.beeone?.shell?.init(); // beeone: the desktop shell takes the pages before the first route
 		this.set_route();
 
 		// trigger app startup

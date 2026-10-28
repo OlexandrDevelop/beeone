@@ -5,10 +5,11 @@ frappe.provide("frappe.views.pageview");
 frappe.provide("frappe.standard_pages");
 
 frappe.views.pageview = {
-	with_page: function (name, callback) {
+	with_page: function (name, callback, page_name) {
 		if (frappe.standard_pages[name]) {
-			if (!frappe.pages[name]) {
-				frappe.standard_pages[name]();
+			// beeone: page_name is a page of its own for this route (one report per window)
+			if (!frappe.pages[page_name || name]) {
+				frappe.standard_pages[name](page_name);
 			}
 			callback();
 			return;
@@ -51,15 +52,24 @@ frappe.views.pageview = {
 		if (!name) {
 			name = frappe.boot ? frappe.boot.home_page : window.page_name;
 		}
+		// beeone: in the desktop shell every report has its own page
+		const page_name =
+			window.beeone?.shell?.active && name === "query-report" && frappe.get_route()[1]
+				? frappe.get_route().slice(0, 2).join("/")
+				: undefined;
 		frappe.model.with_doctype("Page", function () {
-			frappe.views.pageview.with_page(name, function (r) {
+			frappe.views.pageview.with_page(
+				name,
+				function (r) {
 				if (r && r.exc) {
 					if (!r["403"]) frappe.show_not_found(name);
-				} else if (!frappe.pages[name]) {
+				} else if (!frappe.pages[page_name || name]) {
 					new frappe.views.Page(name);
 				}
-				frappe.container.change_to(name);
-			});
+				frappe.container.change_to(page_name || name);
+			},
+				page_name
+			);
 		});
 	},
 };
