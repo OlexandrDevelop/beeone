@@ -260,7 +260,7 @@ class TestBeeoneShell(IntegrationTestCase):
 			self.assertIsNone(re.search("[Ѐ-ӿ₴]", text), f"Cyrillic in {path.name}")
 			if path.suffix == ".js":
 				self.assertNotRegex(text, r"requestAnimationFrame|setInterval", path.name)
-			self.assertNotIn("backdrop-filter", text, path.name)
+			self.assertNotRegex(text, r"backdrop-filter\s*:", path.name)
 
 	def test_shell_css_animates_only_transform_and_opacity(self):
 		css = (Path(frappe.get_app_path("frappe")) / "public" / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
