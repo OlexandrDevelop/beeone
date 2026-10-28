@@ -604,6 +604,9 @@ class Document(BaseDocument):
 
 		self.set_docstatus()
 
+		if self._action in ("submit", "cancel"):
+			self.lock_sequences()  # beeone: lock the boundary before parent and child writes
+
 		# parent
 		if self.meta.issingle:
 			self.update_single(self.get_valid_dict())
@@ -1483,13 +1486,11 @@ class Document(BaseDocument):
 		if self._action == "save":
 			self.run_method("on_update")
 		elif self._action == "submit":
-			self.lock_sequences()  # beeone: lock the boundary of the sequences before any write
 			self.run_method("on_update")
 			self.post_movements()  # beeone: write the registers of the document
 			self.run_method("on_submit")
 			self.mark_sequences()  # beeone: move the boundary back and restore the sequences
 		elif self._action == "cancel":
-			self.lock_sequences()  # beeone: lock the boundary of the sequences before any write
 			self.unpost_movements()  # beeone: delete the register rows of the document
 			self.run_method("on_cancel")
 			self.check_no_back_links_exist()

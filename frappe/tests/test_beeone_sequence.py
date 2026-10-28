@@ -193,6 +193,22 @@ class SequenceCase(IntegrationTestCase):
 
 
 class TestBeeoneSequence(SequenceCase):
+	def test_submit_and_cancel_lock_boundary_before_document_update(self):
+		self._sequence()
+		doc = self._doc(2, 1, submit=False)
+		original = Document.db_update
+		seen = []
+
+		def checked_update(current):
+			if current.doctype == DOCUMENT and current.name == doc.name:
+				seen.append((current._action, bool(current.flags.get("beeone_sequence_keys"))))
+			return original(current)
+
+		with patch.object(Document, "db_update", checked_update):
+			doc.submit()
+			doc.cancel()
+		self.assertEqual(seen, [("submit", True), ("cancel", True)])
+
 	def test_backdated_document_moves_the_boundary_and_reposts_later_ones(self):
 		self._sequence()
 		d1, d2, d3 = self._doc(1, 1), self._doc(3, 10), self._doc(5, 100)
@@ -355,6 +371,26 @@ def _in_thread(site, barrier, result, index, function):
 
 
 class TestBeeoneSequenceBackground(SequenceCase):
+	def test_timed_out_workers_enqueue_one_successor_for_a_key(self):
+		self._backdated()
+		key = key_hash(("A",))
+		lock_name = f"{SEQUENCE}:{key}"
+		frappe.db.set_value("Sequence Boundary", boundary_name(SEQUENCE, ("A",)), "job_queued", 0)
+		frappe.db.commit()
+		holder = Holder(self.site, lock_name)
+		holder.start()
+		holder.acquired.wait(30)
+		try:
+			self.assertTrue(holder.ok)
+			with patch("frappe.enqueue") as enqueue:
+				self.assertEqual(sequences.run_job(SEQUENCE, key, wait=0.01), "busy")
+				self.assertEqual(sequences.run_job(SEQUENCE, key, wait=0.01), "busy")
+				self.assertEqual(enqueue.call_count, 1)
+			self.assertEqual(self._boundary()["job_queued"], 1)
+		finally:
+			holder.release.set()
+			holder.join(30)
+
 	def _backdated(self):
 		"""Three documents, then two backdated ones behind them; the data is committed."""
 		self._sequence(mode="Background")

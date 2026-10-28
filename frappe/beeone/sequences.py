@@ -463,7 +463,13 @@ def run_job(sequence: str, key_hash: str, wait: int = LOCK_WAIT) -> str:
 
 def _requeue(bname: str, sequence: str, khash: str):
 	frappe.db.rollback()
-	_lock_row(bname)
+	row = _lock_row(bname)
+	if row.job_queued or row.status not in ("Pending", "Running"):
+		frappe.db.commit()
+		return
+	if not _entries(sequence, khash, after=_after_params(_row_position(row)), limit=1):
+		frappe.db.commit()
+		return
 	_save(bname, job_queued=1)
 	frappe.db.commit()
 	_enqueue(sequence, khash)
