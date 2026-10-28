@@ -61,7 +61,7 @@ beeone.basis.sync = function (data) {
 			.filter((df) => frappe.model.table_fields.includes(df.fieldtype))
 			.forEach((df) =>
 				(doc[df.fieldname] || []).forEach((row) =>
-					Object.assign(row, { __islocal: 1, parentfield: df.fieldname, parenttype: doc.doctype })
+					Object.assign(row, { __islocal: 1, parent: doc.name, parentfield: df.fieldname, parenttype: doc.doctype })
 				)
 			);
 	}
