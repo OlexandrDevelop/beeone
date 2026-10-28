@@ -115,12 +115,11 @@ function _render_document_list(docs) {
 		const date_str = doc.posting_date ? ` • ${doc.posting_date}` : "";
 
 		html += `<div style="display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 3px; background-color: var(--bg-light);">
-			<div data-doctype="${doc.doctype}" data-name="${doc.name}" style="flex: 1; color: var(--primary); text-decoration: none;">
-				<span style="font-weight: 500;">${frappe.utils.get_indicator_color(status_label)[1]}</span>
-				<span>${doc.name}</span>
+			<div data-doctype="${doc.doctype}" data-name="${doc.name}" style="flex: 1; color: var(--primary); text-decoration: none; cursor: pointer;">
+				<span style="font-weight: 500;">${doc.name}</span>
 				<span style="font-size: 11px; color: var(--text-muted);">(${doc.doctype})${date_str}</span>
 			</div>
-			<span class="badge" style="background-color: ${_get_status_color(doc.docstatus)}">${status_label}</span>
+			<span style="padding: 2px 6px; border-radius: 2px; font-size: 11px; font-weight: 500; background-color: ${_get_status_color(doc.docstatus)}; color: white;">${status_label}</span>
 		</div>`;
 	}
 
