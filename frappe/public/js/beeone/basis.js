@@ -45,7 +45,12 @@ beeone.basis.create = function (frm, entry) {
 
 // Syncs a document dict of the server as a new local document and opens its form.
 beeone.basis.open = function (data) {
-	if (!data) return;
+	if (!data) return Promise.resolve();
+	// the rows need the meta of the new document: load it before the sync
+	return new Promise((resolve) => frappe.model.with_doctype(data.doctype, resolve)).then(() => beeone.basis.sync(data));
+};
+
+beeone.basis.sync = function (data) {
 	const doc = Object.assign({ __islocal: 1, docstatus: 0 }, data);
 	if (!doc.name) doc.name = frappe.model.make_new_doc_and_get_name(doc.doctype, true);
 	const meta = frappe.get_meta(doc.doctype);
