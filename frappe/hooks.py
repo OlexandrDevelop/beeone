@@ -32,6 +32,7 @@ app_include_js = [
 	"telemetry.bundle.js",
 	"beeone_registers.bundle.js",  # beeone: movement viewer and register lists
 	"beeone_basis.bundle.js",  # beeone: create-on-basis commands
+	"beeone_subordination.bundle.js",  # beeone: subordination tree on document forms
 ]
 
 app_include_css = [
