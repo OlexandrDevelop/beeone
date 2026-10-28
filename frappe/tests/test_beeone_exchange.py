@@ -35,10 +35,19 @@ def probe_import(rule, **kwargs):
 	}
 
 
+SEEN = []
+
+
+def on_logged(doc):
+	SEEN.append((doc.handler, doc.status))
+
+
 def hooks_with_probe(real):
 	def get_hooks(hook=None, *args, **kwargs):
 		if hook == exchange.HOOK:
 			return {HANDLER: [PATH]}
+		if hook == exchange.LOGGED_HOOK:
+			return ["frappe.tests.test_beeone_exchange.on_logged"]
 		return real(hook, *args, **kwargs)
 
 	return get_hooks
@@ -100,6 +109,18 @@ class TestExchange(IntegrationTestCase):
 			with self.assertRaises(exchange.ExchangeError) as ctx:
 				exchange.map_row(rule, {"Code": "x"})
 		self.assertIn("code", str(ctx.exception))
+
+	def test_number_mapping_rejects_text(self):
+		rule = frappe.get_doc(exchange.RULE, RULE)
+		with self.assertRaises(exchange.ExchangeError):
+			exchange.map_row(rule, {"Code": "x", "Amount": "abc"})
+
+	def test_logged_hook_sees_runs_and_failures(self):
+		SEEN.clear()
+		exchange.run_rule(RULE, rows=[])
+		with self.assertRaises(exchange.ExchangeError):
+			exchange.run_rule(RULE, explode=True)
+		self.assertEqual(SEEN, [(HANDLER, "Success"), (HANDLER, "Failed")])
 
 	def test_rule_without_mapping_passes_row(self):
 		rule = frappe.get_doc(exchange.RULE, RULE)

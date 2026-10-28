@@ -26,11 +26,12 @@ from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.beeone.providers import redact
-from frappe.utils import cint, flt, get_datetime, getdate, now_datetime
+from frappe.utils import cint, get_datetime, getdate, now_datetime
 
 RULE = "Exchange Rule"
 LOG = "Exchange Log"
 HOOK = "beeone_exchange_handlers"
+LOGGED_HOOK = "beeone_exchange_logged"  # functions called with the journal row of a run (run_rule, run_logged failure)
 
 IMPORT = "Import"
 EXPORT = "Export"
@@ -82,7 +83,8 @@ def _convert(value, transform):
 	if transform == "Lower":
 		return str(value).strip().lower()
 	if transform == "Number":
-		return flt(str(value).replace(" ", "").replace(",", "."))
+		# flt() turns garbage into 0: a value that is not a number must be an error
+		return float(str(value).replace(" ", "").replace(",", "."))
 	if transform == "Integer":
 		return cint(str(value).strip())
 	if transform == "Date":
@@ -160,6 +162,14 @@ def write_log(
 	return doc.name
 
 
+def journal(*args, **kwargs):
+	"""`write_log()` for a framework run, then the hooks `beeone_exchange_logged(log_doc)` of the apps."""
+	name = write_log(*args, **kwargs)
+	for path in frappe.get_hooks(LOGGED_HOOK) or []:
+		frappe.get_attr(path)(frappe.get_doc(LOG, name))
+	return name
+
+
 def rule_for(handler: str):
 	"""The rule of a handler, or None. A disabled rule stops its handler."""
 	name = frappe.db.get_value(RULE, {"handler": handler}, "name")
@@ -186,7 +196,7 @@ def run_logged(handler, direction, fn, *, rule=None, file_name=None, reference=N
 		if log:
 			frappe.db.rollback()
 			errors = getattr(e, "errors", None) or [{"message": _clean_error(str(e))}]
-			write_log(
+			journal(
 				handler,
 				direction,
 				FAILED,
@@ -216,7 +226,7 @@ def run_rule(rule, **kwargs) -> dict:
 	errors = result.get("errors") or []
 	created, updated = cint(result.get("created")), cint(result.get("updated"))
 	status = status_of(errors, created, updated)
-	result["log"] = write_log(
+	result["log"] = journal(
 		rule.handler,
 		rule.direction,
 		status,
