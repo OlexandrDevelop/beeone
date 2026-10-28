@@ -22,14 +22,14 @@ def boot_session(bootinfo):
 	bootinfo.beeone_registers = registers
 	bootinfo.beeone_movements = meta.movement_doctypes()
 
-	# Load subordination tree documents list from apps
+	# Load subordination tree documents list from apps (filtered by user read permissions)
 	import frappe
 	documents = []
 	for doc_list in frappe.get_hooks("beeone_documents") or []:
-		if isinstance(doc_list, list):
-			documents.extend(doc_list)
-		else:
-			documents.append(doc_list)
+		docs = doc_list if isinstance(doc_list, list) else [doc_list]
+		for doctype in docs:
+			if frappe.has_permission(doctype, "read"):
+				documents.append(doctype)
 	bootinfo.beeone_documents = documents
 
 	user = bootinfo.get("user")
