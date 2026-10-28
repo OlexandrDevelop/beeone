@@ -33,12 +33,14 @@ app_include_js = [
 	"beeone_registers.bundle.js",  # beeone: movement viewer and register lists
 	"beeone_basis.bundle.js",  # beeone: create-on-basis commands
 	"beeone_subordination.bundle.js",  # beeone: subordination tree on document forms
+	"beeone_shell.bundle.js",  # beeone: desktop shell and UI kit
 ]
 
 app_include_css = [
 	"desk.bundle.css",
 	"report.bundle.css",
 	"beeone_registers.bundle.css",  # beeone: movement viewer and register lists
+	"beeone_shell.bundle.css",  # beeone: desktop shell and UI kit
 ]
 app_include_icons = [
 	"/assets/frappe/icons/lucide/icons.svg",
@@ -531,6 +533,7 @@ boot_session = [
 	"frappe.beeone.shell.boot_session",  # beeone: multi-window desktop shell
 	"frappe.beeone.boot.boot_session",
 	"frappe.beeone.basis.boot_session",  # beeone: create-on-basis registry
+	"frappe.beeone.shell.boot_session",  # beeone: desktop shell
 ]
 
 export_python_type_annotations = True

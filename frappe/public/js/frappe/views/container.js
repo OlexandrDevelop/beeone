@@ -70,23 +70,30 @@ frappe.views.Container = class Container {
 			}
 		}
 
-		// hide current
-		if (this.page && this.page != page) {
-			$(this.page).hide();
-			$(this.page).trigger("hide");
-		}
-
-		// show new
-		if (!this.page || this.page != page) {
+		if (window.beeone?.shell?.active) {
+			// beeone: the desktop shell keeps every page alive in its own window
 			this.page = page;
-			// $(this.page).fadeIn(300);
-			$(this.page).show();
+			beeone.shell.host(page);
+		} else {
+			// hide current
+			if (this.page && this.page != page) {
+				$(this.page).hide();
+				$(this.page).trigger("hide");
+			}
+
+			// show new
+			if (!this.page || this.page != page) {
+				this.page = page;
+				// $(this.page).fadeIn(300);
+				$(this.page).show();
+			}
 		}
 
 		$(document).trigger("page-change", this.page);
 		this.page._route = frappe.router.get_sub_path();
 		$(this.page).trigger("show");
-		!this.page.disable_scroll_to_top && frappe.utils.scroll_to(0);
+		// beeone: a window keeps its own scroll position
+		!this.page.disable_scroll_to_top && !window.beeone?.shell?.active && frappe.utils.scroll_to(0);
 		frappe.breadcrumbs.update();
 		this.toggle_sidebar();
 		return this.page;
