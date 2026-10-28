@@ -1,2 +1,2 @@
 // Bundle entry for subordination tree module
-import "./subordination.js";
+import "./beeone/subordination.js";
