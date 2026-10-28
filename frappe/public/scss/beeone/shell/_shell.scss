@@ -291,7 +291,9 @@ body.bo-shell .sticky-top.navbar {
 	display: flex;
 	flex-direction: column;
 	pointer-events: auto;
-	contain: strict;
+	/* size + layout + style, not paint: with border-radius, paint containment makes a rounded clip of the whole window
+	   on every frame (measured: 36-42 fps instead of 56 at 4x CPU throttle) */
+	contain: size layout style;
 	background: var(--bo-surface);
 	border: 1px solid var(--bo-border-strong);
 	border-radius: var(--bo-r-win);
@@ -303,8 +305,13 @@ body.bo-shell .sticky-top.navbar {
 	box-shadow: var(--bo-shadow-win);
 }
 
-.bo-win.is-max {
+.bo-win.is-max,
+.bo-win.is-max .bo-win-bar,
+.bo-win.is-max .bo-win-body {
 	border-radius: 0;
+}
+
+.bo-win.is-max {
 	border-width: 0;
 }
 
@@ -324,6 +331,7 @@ body.bo-shell .sticky-top.navbar {
 }
 
 .bo-win-bar {
+	border-radius: calc(var(--bo-r-win) - 1px) calc(var(--bo-r-win) - 1px) 0 0;
 	flex: none;
 	height: 44px;
 	display: flex;
@@ -426,6 +434,7 @@ body.bo-shell .sticky-top.navbar {
 }
 
 .bo-win-body {
+	border-radius: 0 0 calc(var(--bo-r-win) - 1px) calc(var(--bo-r-win) - 1px);
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
@@ -1173,11 +1182,16 @@ body.bo-compact #bo-panel {
 	bottom: 44px;
 }
 
+body.bo-compact .bo-win,
+body.bo-compact .bo-win .bo-win-bar,
+body.bo-compact .bo-win .bo-win-body {
+	border-radius: 0;
+}
+
 body.bo-compact .bo-win {
 	transform: none !important;
 	width: 100% !important;
 	height: 100% !important;
-	border-radius: 0;
 	border-width: 0;
 }
 
@@ -1208,7 +1222,7 @@ body.bo-compact .bo-search kbd {
 	body.bo-shell *,
 	body.bo-shell *::before,
 	body.bo-shell *::after {
-		transition-duration: 0s !important;
-		animation-duration: 0s !important;
+		transition: none !important;
+		animation: none !important;
 	}
 }
