@@ -173,10 +173,8 @@ has_website_permission = {"Address": "frappe.contacts.doctype.address.address.ha
 jinja = {
 	"methods": [
 		"frappe.utils.jinja_globals",
-		"frappe.beeone.print.uk_money",  # beeone: print helpers
-		"frappe.beeone.print.uk_date",  # beeone: print helpers
-		"frappe.beeone.print.title_of",  # beeone: print helpers
-		"frappe.beeone.print.person_name",  # beeone: print helpers
+		"frappe.beeone.print.title_of",  # beeone: country-neutral print helper
+		"frappe.beeone.localization.amount_in_words",  # beeone: language-specific hook
 	],
 	"filters": [
 		"frappe.utils.data.global_date_format",

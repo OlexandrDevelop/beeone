@@ -1,24 +1,13 @@
 # Copyright (c) 2026 beeone authors
 # License: MIT. See LICENSE
 
-"""Print utilities for Jinja templates: formatting numbers and dates, querying records."""
+"""Print utilities for Jinja templates: batch PDF download (country-neutral)."""
 
 import json
 
 import frappe
 from frappe import _
-from frappe.utils import getdate
 from frappe.utils.print_format import download_multi_pdf as frappe_download_multi_pdf
-
-
-def uk_money(value):
-	"""Format a number as money: 1300 → '1 300,00' (Ukrainian style)."""
-	return f"{float(value or 0):,.2f}".replace(",", " ").replace(".", ",")
-
-
-def uk_date(value):
-	"""Format a date as Ukrainian: date object → 'dd.mm.yyyy'."""
-	return getdate(value).strftime("%d.%m.%Y") if value else ""
 
 
 def title_of(doctype, name):
@@ -28,22 +17,6 @@ def title_of(doctype, name):
 	field = frappe.get_meta(doctype).title_field
 	value = frappe.db.get_value(doctype, name, field) if field else None
 	return value or name
-
-
-def person_name(person):
-	"""Get a person's name from a person record."""
-	return title_of("UA Person", person) if person else ""
-
-
-def bank_info(account):
-	"""Bank account details: IBAN, bank name, МФО (if available)."""
-	if not account:
-		return frappe._dict()
-	row = frappe.db.get_value("UA Bank Account", account, ["iban", "bank", "currency"], as_dict=True) or frappe._dict()
-	bank = frappe.db.get_value("UA Bank", row.bank, ["bank_name", "mfo"], as_dict=True) if row.bank else None
-	row.bank_name = bank.bank_name if bank else ""
-	row.mfo = bank.mfo if bank else ""
-	return row
 
 
 def _names(name):
@@ -60,5 +33,5 @@ def download_multi_pdf(doctype, name, format=None, no_letterhead=False, letterhe
 	if isinstance(doctype, str):
 		for docname in _names(name):
 			if not frappe.db.exists(doctype, docname):
-				frappe.throw(_("{0} {1} не знайдено").format(_(doctype), docname), frappe.DoesNotExistError)
+				frappe.throw(_("{0} {1} not found").format(_(doctype), docname), frappe.DoesNotExistError)
 	return frappe_download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options)
