@@ -525,6 +525,7 @@ after_job = [
 extend_bootinfo = [
 	"frappe.utils.telemetry.add_bootinfo",
 	"frappe.core.doctype.user_permission.user_permission.send_user_permissions",
+	"frappe.beeone.shell.extend_bootinfo",  # beeone: the saved layout of the desktop shell
 ]
 
 # beeone: register list and movement viewer data for the desk
