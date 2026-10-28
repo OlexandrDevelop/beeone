@@ -189,11 +189,11 @@ body.bo-shell {
 	--bo-z-sticky: 10;
 	--bo-z-sidebar: 30;
 	--bo-z-fpanel: 40;
-	--bo-z-dropdown: 50;
-	--bo-z-drawer: 60;
-	--bo-z-dialog: 70;
-	--bo-z-toast: 80;
-	--bo-z-tooltip: 90;
+	--bo-z-dropdown: 1060; /* above Frappe dialogs (1050): menus and dialogs are over the desk (z 100) */
+	--bo-z-drawer: 1065;
+	--bo-z-dialog: 1070;
+	--bo-z-toast: 1080;
+	--bo-z-tooltip: 1090;
 }
 
 /* Reduced motion: the system setting turns every duration off. */
