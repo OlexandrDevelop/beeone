@@ -405,7 +405,8 @@ def _count(source: dict) -> dict:
 		data = _report(source)
 		return {"count": len(data["rows"]), "label": source.get("label")}
 	rows = frappe.get_list(
-		source["doctype"], filters=_filters(source), fields=[{"COUNT": "name", "as": "count"}], limit_page_length=0
+		source["doctype"], filters=_filters(source), fields=[{"COUNT": "name", "as": "count"}], limit_page_length=0,
+		order_by=None,  # an aggregate query has no default sort (PostgreSQL refuses it)
 	)
 	return {"count": cint(rows[0]["count"]) if rows else 0, "doctype": source["doctype"], "label": source.get("label")}
 
@@ -438,7 +439,7 @@ def _number(source: dict, period: str) -> dict:
 	def total(shift):
 		start, end = _period_range(period, shift)
 		extra = [source["doctype"], date_field, "between", [str(start), str(end)]]
-		rows = frappe.get_list(source["doctype"], filters=[*_filters(source), extra], fields=[expr], limit_page_length=0)
+		rows = frappe.get_list(source["doctype"], filters=[*_filters(source), extra], fields=[expr], limit_page_length=0, order_by=None)
 		return float(rows[0]["total"] or 0) if rows else 0.0
 
 	current, previous = total(0), total(-1)
