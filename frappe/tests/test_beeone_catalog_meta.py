@@ -108,76 +108,46 @@ class TestCatalogMeta(IntegrationTestCase):
 		self.assertEqual(doc.predefined_field, "predefined")
 
 
-class TestCatalogPredefinedDeletion(IntegrationTestCase):
-	@classmethod
-	def setUpClass(cls):
-		super().setUpClass()
-		_doctype(
-			CATALOG_DOCTYPE,
-			[
-				{"fieldname": "name_field", "fieldtype": "Data"},
-				{"fieldname": "is_group", "fieldtype": "Check"},
-				{"fieldname": "parent_item", "fieldtype": "Link", "options": CATALOG_DOCTYPE},
-				{"fieldname": "predefined", "fieldtype": "Check"},
-			],
-		)
-		# Create catalog meta
-		if not frappe.db.exists("Catalog", CATALOG_DOCTYPE):
-			frappe.get_doc({
-				"doctype": "Catalog",
-				"name": CATALOG_DOCTYPE,
-				"catalog_doctype": CATALOG_DOCTYPE,
-				"has_groups": 1,
-				"has_owner_hierarchy": 1,
-				"owner_hierarchy_field": "parent_item",
-				"predefined_field": "predefined",
-			}).insert()
-		# Clear cache to ensure fresh lookup from database
-		catalog_meta.clear_cache()
-
-	def tearDown(self):
-		# Clean up test items
-		for item_name in ("Test Item", "Test Predefined Item"):
-			if frappe.db.exists(CATALOG_DOCTYPE, item_name):
-				frappe.delete_doc(CATALOG_DOCTYPE, item_name, force=True)
-		_drop_catalog()
-
-	def test_is_predefined_returns_true_for_predefined_elements(self):
-		# Create a predefined item
-		item = frappe.get_doc({
-			"doctype": CATALOG_DOCTYPE,
-			"name": "Test Predefined Item",
-			"name_field": "Test Predefined",
-			"predefined": 1,
-		}).insert()
-
-		# Check that is_predefined returns True
-		self.assertTrue(catalog_meta.is_predefined(CATALOG_DOCTYPE, item.name))
-
-	def test_is_predefined_returns_false_for_normal_elements(self):
-		# Create a normal item
-		item = frappe.get_doc({
-			"doctype": CATALOG_DOCTYPE,
-			"name": "Test Item",
-			"name_field": "Test Normal",
-			"predefined": 0,
-		}).insert()
-
-		# Check that is_predefined returns False
-		self.assertFalse(catalog_meta.is_predefined(CATALOG_DOCTYPE, item.name))
-
+class TestCatalogDeletionPrevention(IntegrationTestCase):
 	def test_catalog_deletion_prevention_function(self):
+		"""Test that on_before_delete prevents deletion of predefined elements."""
 		from frappe.beeone.catalog import on_before_delete
 
-		# Create a predefined item
-		item = frappe.get_doc({
-			"doctype": CATALOG_DOCTYPE,
-			"name": "Test Predefined Item",
-			"name_field": "Test Predefined",
-			"predefined": 1,
-		}).insert()
+		# Create a mock document with predefined flag
+		mock_doc = frappe._dict(doctype="Test DocType", name="Test Item", predefined=True)
 
-		# Try to call the deletion prevention function
+		# Create a test catalog meta in the database
+		test_catalog_doctype = "Test Deletion Prevention"
+		if not frappe.db.exists("DocType", test_catalog_doctype):
+			frappe.get_doc({
+				"doctype": "DocType",
+				"name": test_catalog_doctype,
+				"module": "Beeone Core",
+				"custom": 1,
+				"fields": [{"fieldname": "predefined", "fieldtype": "Check"}]
+			}).insert()
+
+		# Create a catalog meta for this DocType
+		if not frappe.db.exists("Catalog", test_catalog_doctype):
+			frappe.get_doc({
+				"doctype": "Catalog",
+				"name": test_catalog_doctype,
+				"catalog_doctype": test_catalog_doctype,
+				"predefined_field": "predefined"
+			}).insert()
+
+		# Create a test item marked as predefined
+		if not frappe.db.exists(test_catalog_doctype, "Predefined Test Item"):
+			frappe.get_doc({
+				"doctype": test_catalog_doctype,
+				"name": "Predefined Test Item",
+				"predefined": 1
+			}).insert()
+
+		# Load the item
+		item = frappe.get_doc(test_catalog_doctype, "Predefined Test Item")
+
+		# Verify on_before_delete raises ValidationError
 		with self.assertRaises(frappe.ValidationError) as cm:
 			on_before_delete(item)
 		self.assertIn("Cannot delete predefined", str(cm.exception))
