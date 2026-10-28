@@ -108,6 +108,10 @@ class Dialect:
 		"""One INSERT of a row that does nothing when the row `name` is already there."""
 		raise NotImplementedError
 
+	def is_lock_conflict(self, error: Exception) -> bool:
+		"""The error of a locking read of a row that another transaction changed after our snapshot."""
+		return False
+
 	def try_lock(self, name: str) -> bool:
 		"""Take a lock of the session without waiting. The lock stays over commit and rollback."""
 		raise NotImplementedError
@@ -191,6 +195,10 @@ class Postgres(Dialect):
 			f"VALUES ({', '.join(['%s'] * len(columns))}) ON CONFLICT ({q('name')}) DO NOTHING"
 		)
 
+	def is_lock_conflict(self, error: Exception) -> bool:
+		# serialization_failure: the transaction sees one snapshot and the row changed since
+		return getattr(error, "pgcode", None) == "40001"
+
 	@staticmethod
 	def _lock_key(name: str) -> int:
 		# an advisory lock is a signed 64 bit number
@@ -269,6 +277,20 @@ def insert_missing(doctype: str, row: dict) -> None:
 	"""
 	columns = list(row)
 	frappe.db.sql(dialect().insert_missing_sql("tab" + doctype, columns), [row[c] for c in columns])
+
+
+def lock_row(doctype: str, name: str, fields: list[str]):
+	"""Read a row of the DocType and lock it until the end of the transaction. Waits for another writer.
+
+	On PostgreSQL a transaction keeps its snapshot, so a row that another transaction changed
+	meanwhile cannot be locked: the error is a QueryDeadlockError and the caller tries again.
+	"""
+	try:
+		return frappe.db.get_value(doctype, name, fields, as_dict=True, for_update=True)
+	except Exception as error:
+		if dialect().is_lock_conflict(error):
+			raise frappe.QueryDeadlockError(_("Another user changes the same data. Try again.")) from error
+		raise
 
 
 def try_lock(name: str) -> bool:

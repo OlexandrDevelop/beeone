@@ -166,7 +166,7 @@ def _ensure_row(sequence: str, key: tuple) -> str:
 
 def _lock_row(name: str):
 	"""The boundary row, locked until the end of the transaction and read fresh."""
-	return frappe.db.get_value("Sequence Boundary", name, BOUNDARY_FIELDS, as_dict=True, for_update=True)
+	return db.lock_row("Sequence Boundary", name, BOUNDARY_FIELDS)
 
 
 def _save(name: str, position=KEEP, **values):

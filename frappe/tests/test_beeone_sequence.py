@@ -491,7 +491,13 @@ class TestBeeoneSequenceParallel(SequenceCase):
 
 		def post(day, qty):
 			def run():
-				return self._doc(day, qty).name
+				# on PostgreSQL the second writer is told to try again, as a user does
+				for attempt in range(5):
+					try:
+						return self._doc(day, qty).name
+					except frappe.QueryDeadlockError:
+						frappe.db.rollback()
+				raise AssertionError("no luck")
 
 			return run
 
