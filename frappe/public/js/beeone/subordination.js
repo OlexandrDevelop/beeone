@@ -22,11 +22,10 @@ frappe.ui.form.on("*", {
 function _is_subordination_supported(doctype) {
 	// Check if subordination is enabled for this doctype
 	// The apps register supported types through beeone_documents hook
-	const beeone_docs = frappe.boot.beeone_documents || {};
+	const beeone_docs = frappe.boot.beeone_documents || [];
 	if (Array.isArray(beeone_docs)) {
 		return beeone_docs.includes(doctype);
 	}
-	// If beeone_documents is not available, fall back to checking if there's data
 	return false;
 }
 
