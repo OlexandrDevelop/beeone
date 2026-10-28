@@ -31,6 +31,7 @@ app_include_js = [
 	"report.bundle.js",
 	"telemetry.bundle.js",
 	"beeone_registers.bundle.js",  # beeone: movement viewer and register lists
+	"beeone_basis.bundle.js",  # beeone: create-on-basis commands
 ]
 
 app_include_css = [
@@ -524,7 +525,10 @@ extend_bootinfo = [
 ]
 
 # beeone: register list and movement viewer data for the desk
-boot_session = ["frappe.beeone.boot.boot_session"]
+boot_session = [
+	"frappe.beeone.boot.boot_session",
+	"frappe.beeone.basis.boot_session",  # beeone: create-on-basis registry
+]
 
 export_python_type_annotations = True
 
