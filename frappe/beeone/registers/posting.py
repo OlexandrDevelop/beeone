@@ -13,6 +13,49 @@ from frappe.beeone.registers.record_set import RecordSet, register_write
 from frappe.utils import get_datetime, getdate, get_time
 
 
+def check_period_lock(doc) -> None:
+	"""Check if the document's date is locked by Period Lock.
+
+	Calls the hook beeone_lock_date to get the lock date from the application.
+	Raises an error if the document date is on or before the lock date and the user's
+	role is not in the exception list. Context flag beeone_period_closure bypasses the check.
+	"""
+	if frappe.flags.get("beeone_period_closure"):
+		return
+
+	hook_result = frappe.get_hooks("beeone_lock_date")
+	if not hook_result:
+		return
+
+	for hook_method in hook_result:
+		lock_date = frappe.call(hook_method, doc=doc)
+		if not lock_date:
+			continue
+
+		doc_date = getdate(doc.get("posting_date") or doc.get("transaction_date") or doc.creation)
+		if doc_date > lock_date:
+			continue
+
+		period_lock = frappe.db.get_value(
+			"Period Lock",
+			{"organization": doc.get("organization") or "", "lock_date": lock_date},
+			["name", "roles"]
+		)
+
+		if not period_lock:
+			continue
+
+		user_roles = {role.role for role in frappe.get_user().get_roles()}
+		exception_roles = {row["role"] for row in frappe.db.get_list(
+			"Period Lock Role",
+			filters={"parent": period_lock[0]},
+			fields=["role"]
+		)}
+
+		if not user_roles & exception_roles:
+			frappe.throw(_("Cannot edit locked period"))
+
+
 class Moment(NamedTuple):
 	"""Position of a document in time. Tuples compare field by field, so they sort right."""
 
@@ -76,8 +119,10 @@ class Movements:
 		self._rows(register)[:] = rows
 
 
-def post(doc) -> None:
+def post(doc, _check_period=True) -> None:
 	"""Call `doc.make_movements` and write the rows of every register of the document."""
+	if _check_period:
+		check_period_lock(doc)
 	registers = movement_registers(doc.doctype)
 	if not registers:
 		return
@@ -101,7 +146,8 @@ def unpost(doc) -> None:
 
 def repost(doc) -> None:
 	"""Unpost and post again. The docstatus does not change."""
+	check_period_lock(doc)
 	if doc.docstatus != 1:
 		frappe.throw(_("Only a submitted document can be reposted"))
 	unpost(doc)
-	post(doc)
+	post(doc, _check_period=False)

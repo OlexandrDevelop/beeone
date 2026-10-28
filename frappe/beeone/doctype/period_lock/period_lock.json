@@ -1,0 +1,60 @@
+{
+  "autoname": "format:{organization}-{lock_date}",
+  "creation": "2026-10-28",
+  "doctype": "DocType",
+  "document_type": "Document",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "organization",
+    "lock_date",
+    "roles"
+  ],
+  "fields": [
+    {
+      "fieldname": "organization",
+      "fieldtype": "Link",
+      "label": "Organization",
+      "options": "Organization"
+    },
+    {
+      "fieldname": "lock_date",
+      "fieldtype": "Date",
+      "label": "Lock Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "roles",
+      "fieldtype": "Table",
+      "label": "Exception Roles",
+      "options": "Period Lock Role"
+    }
+  ],
+  "index_web_pages_as_search_results": 0,
+  "istable": 0,
+  "links": [],
+  "modified": "2026-10-28",
+  "modified_by": "Administrator",
+  "module": "Beeone Core",
+  "name": "Period Lock",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "submit": 0,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}
