@@ -234,6 +234,8 @@ export function host(page) {
 	if (win.page !== page) {
 		if (win.page) destroy_page(win, true);
 		win.body.textContent = "";
+		// beeone: ensure page is visible before appending to window, as Frappe may need visibility for initialization
+		$(page).show();
 		win.body.appendChild(page);
 		win.page = page;
 		win.parked = false;
