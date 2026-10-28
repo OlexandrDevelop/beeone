@@ -132,6 +132,8 @@ class TestCatalogPredefinedDeletion(IntegrationTestCase):
 				"owner_hierarchy_field": "parent_item",
 				"predefined_field": "predefined",
 			}).insert()
+		# Clear cache to ensure fresh lookup from database
+		catalog_meta.clear_cache()
 
 	def tearDown(self):
 		# Clean up test items
