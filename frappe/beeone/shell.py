@@ -433,7 +433,7 @@ def _number(source: dict, period: str) -> dict:
 	if not source.get("doctype") or not date_field:
 		raise frappe.PermissionError
 	meta = frappe.get_meta(source["doctype"])
-	if not meta.has_field(field) and field != "name":
+	if field != "name" and not meta.has_field(field) and field not in frappe.model.default_fields:
 		raise frappe.PermissionError
 	expr = {"SUM": field, "as": "total"} if field != "name" else {"COUNT": "name", "as": "total"}
 
