@@ -41,15 +41,17 @@ export function route_key(route) {
 }
 
 // routes that show the desktop and open no window; apps add the routes of their former home pages
-export const desktop_routes = ["", "home", "workspaces", "beeone-desktop"];
+export const desktop_routes = ["", "desk", "home", "workspaces", "beeone-desktop"];
 export function is_window_route(route) {
 	if (!route || !route.length) return false;
 	const head = String(route[0]).toLowerCase();
-	// beeone: /desk alone or /desk/ shows the desktop; /desk/something checks if something is a window route
-	if (head === "desk") {
-		if (route.length === 1) return false; // route = ["desk"], show desktop
-		const target = String(route[1]).toLowerCase();
-		return !desktop_routes.includes(target);
+	// beeone: /desk/something - check if something looks like a window route (Form/List/query-report/Tree)
+	if (head === "desk" && route.length > 1) {
+		const second = String(route[1]).toLowerCase();
+		// Explicit window route types
+		if (["form", "list", "tree", "query-report"].includes(second)) return true;
+		// Everything else on /desk/* shows the desktop (e.g., /desk/ua-home, /desk/home)
+		return false;
 	}
 	return !desktop_routes.includes(head);
 }
