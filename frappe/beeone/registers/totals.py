@@ -37,6 +37,12 @@ def resources(reg) -> list[str]:
 	return [row.fieldname for row in reg.fields if row.role == "Resource"]
 
 
+def key_lengths(reg) -> dict[str, int]:
+	"""Length of the key columns of the totals tables: the length set on the field of the register DocType."""
+	meta = frappe.get_meta(reg.register_doctype)
+	return {f: df.length for f in dimensions(reg) if (df := meta.get_field(f)) and df.length}
+
+
 def has_totals(reg) -> bool:
 	# a register with its own totals DocType keeps them in the application
 	return (reg.totals or TOTALS_NONE) != TOTALS_NONE and not reg.totals_doctype
@@ -65,7 +71,7 @@ def ensure_totals_tables(reg):
 			if db.table_columns(table) == [*key, *res]:
 				continue
 			db.drop_table(table)
-		db.create_totals_table(table, key, res)
+		db.create_totals_table(table, key, res, key_lengths(reg))
 		rebuild = True
 	if rebuild:
 		rebuild_totals(reg)

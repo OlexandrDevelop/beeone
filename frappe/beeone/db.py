@@ -50,10 +50,16 @@ class Dialect:
 	def _table_options(self) -> str:
 		return ""
 
-	def create_totals_table(self, table: str, key_columns: list[str], resources: list[str]):
+	def create_totals_table(
+		self, table: str, key_columns: list[str], resources: list[str], lengths: dict[str, int] | None = None
+	):
+		"""`lengths` narrows a key column (default 140): a long key of many dimensions must fit the index limit."""
 		q = self.quote
+		lengths = lengths or {}
 		columns = [
-			f"{q(col)} DATE NOT NULL" if col == "period" else f"{q(col)} VARCHAR(140) NOT NULL DEFAULT ''"
+			f"{q(col)} DATE NOT NULL"
+			if col == "period"
+			else f"{q(col)} VARCHAR({lengths.get(col) or 140}) NOT NULL DEFAULT ''"
 			for col in key_columns
 		]
 		columns += [f"{q(col)} DECIMAL(21,9) NOT NULL DEFAULT 0" for col in resources]
@@ -179,8 +185,8 @@ def table_columns(table: str) -> list[str]:
 	return dialect().table_columns(table)
 
 
-def create_totals_table(table: str, key_columns: list[str], resources: list[str]):
-	dialect().create_totals_table(table, key_columns, resources)
+def create_totals_table(table: str, key_columns: list[str], resources: list[str], lengths: dict[str, int] | None = None):
+	dialect().create_totals_table(table, key_columns, resources, lengths)
 
 
 def drop_table(table: str):

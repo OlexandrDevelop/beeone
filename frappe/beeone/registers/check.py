@@ -255,7 +255,7 @@ def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 	for table, monthly, _check in _tables(reg, from_month):
 		columns = _table_columns(reg, monthly)
 		if not db.table_exists(table):
-			db.create_totals_table(table, columns, res)
+			db.create_totals_table(table, columns, res, totals.key_lengths(reg))
 		count = 0
 		for key, have_key, want, _have in _diff(reg, table, monthly, from_month, batch):
 			if _nonzero(want):

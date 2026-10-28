@@ -137,6 +137,17 @@ class TestBeeoneDb(IntegrationTestCase):
 		db.drop_table(TABLE)
 		self.assertFalse(db.table_exists(TABLE))
 
+	def test_key_columns_take_the_given_length(self):
+		# seven keys of the default length are over the index limit of MariaDB
+		keys = [f"k{i}" for i in range(7)]
+		db.drop_table(TABLE)
+		self.addCleanup(db.drop_table, TABLE)
+		db.create_totals_table(TABLE, keys, ["qty"], {key: 40 for key in keys})
+		long_key = "x" * 40
+		db.upsert(TABLE, keys, ["qty"], [(tuple([long_key] * 7), [5])])
+		db.upsert(TABLE, keys, ["qty"], [(tuple([long_key] * 7), [2])])
+		self.assertEqual(frappe.db.sql(f"SELECT qty FROM {db.quote(TABLE)}")[0][0], 7)
+
 	def test_key_case_follows_database(self):
 		db.drop_table(TABLE)
 		self.addCleanup(db.drop_table, TABLE)
