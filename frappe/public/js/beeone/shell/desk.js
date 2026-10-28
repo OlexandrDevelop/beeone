@@ -37,7 +37,7 @@ export const desk = {
 		const hour = new Date().getHours();
 		const hello = hour < 5 ? __("Good night, {0}", [first_name()]) : hour < 12 ? __("Good morning, {0}", [first_name()]) : hour < 18 ? __("Good afternoon, {0}", [first_name()]) : __("Good evening, {0}", [first_name()]);
 		host.innerHTML =
-			`<div class="bo-desk-hello"><h1>${esc(hello)}</h1><p>${esc(__("Documents, lists and reports open as windows."))}</p></div>` +
+			`<div class="bo-desk-hello"><div class="bo-desk-title">${esc(hello)}</div><p>${esc(__("Documents, lists and reports open as windows."))}</p></div>` +
 			`<section class="bo-widgets" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
 			`<button type="button" class="bo-btn bo-btn--sm bo-btn--ghost" data-w="add">${icon("plus", "bo-i-sm")}${esc(__("Add widget"))}</button>` +
 			`<button type="button" class="bo-btn bo-btn--sm" data-w="edit">${esc(editing ? __("Done") : __("Customize"))}</button></div></div>` +
@@ -210,6 +210,8 @@ export const desk = {
 	// called when a window changes: refresh only when the desktop becomes visible
 	on_visibility() {
 		const visible = ![...wins.map.values()].some((w) => w.state === "maximized") && !(document.body.classList.contains("bo-compact") && wins.active);
+		const host = document.getElementById("bo-desk-bg");
+		if (host) host.hidden = !visible;
 		if (visible && !was_visible) this.refresh(false);
 		was_visible = visible;
 	},
