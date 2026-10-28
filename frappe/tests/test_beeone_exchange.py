@@ -238,11 +238,12 @@ class TestExchange(IntegrationTestCase):
 		self.assertFalse(frappe.has_permission(exchange.LOG, "write", name))
 		self.assertFalse(frappe.has_permission(exchange.LOG, "delete", name))
 		self.assertFalse(frappe.has_permission(exchange.LOG, "create"))
-		self.make_user(["Desk User", "Blogger"])
+		self.make_user(["Desk User"])
 		frappe.clear_cache(user=USER)
 		frappe.set_user(USER)
 		self.assertFalse(frappe.has_permission(exchange.LOG, "read", name))
-		self.assertEqual(frappe.get_all(exchange.LOG, filters={"handler": HANDLER}), [])
+		with self.assertRaises(frappe.PermissionError):
+			frappe.get_list(exchange.LOG, filters={"handler": HANDLER})
 		with self.assertRaises(frappe.PermissionError):
 			frappe.get_doc(exchange.LOG, name).check_permission("read")
 		self.assertFalse(frappe.has_permission(exchange.RULE, "read"))
@@ -253,7 +254,7 @@ class TestExchange(IntegrationTestCase):
 		doc.update({"handler": HANDLER, "direction": "Import", "status": "Success"})
 		with self.assertRaises(frappe.PermissionError):
 			doc.insert(ignore_permissions=True)
-		with self.assertRaises(frappe.PermissionError):
+		with patch.dict(frappe.flags, {"in_test": False}), self.assertRaises(frappe.PermissionError):
 			frappe.delete_doc(exchange.LOG, self.last_log().name, ignore_permissions=True, force=True)
 
 	# -------------------------------------------------------------- source
