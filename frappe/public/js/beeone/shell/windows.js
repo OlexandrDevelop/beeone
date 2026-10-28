@@ -365,12 +365,19 @@ function visible_top() {
 function apply_z() {
 	wins.z.forEach((k, i) => {
 		const w = wins.map.get(k);
-		w.el.style.zIndex = 10 + i;
+		if (w.zi !== i) {
+			w.zi = i;
+			w.el.style.zIndex = 10 + i;
+		}
 	});
 }
 
 function paint_state() {
+	// only what changed is written: a class on one window is cheap, a class on the body is not
 	wins.map.forEach((w) => {
+		const sig = (w.key === wins.active ? "a" : "") + w.state;
+		if (w.sig === sig) return;
+		w.sig = sig;
 		w.el.classList.toggle("is-active", w.key === wins.active);
 		w.el.classList.toggle("is-max", w.state === "maximized");
 		w.el.classList.toggle("is-min", w.state === "minimized");
@@ -378,10 +385,8 @@ function paint_state() {
 		const label = w.state === "maximized" ? __("Restore size") : __("Maximize");
 		max_btn.setAttribute("aria-label", label);
 		max_btn.title = label + " (Alt ↑)";
-		max_btn.innerHTML = icon(w.state === "maximized" ? "restore" : "square");
+		max_btn.firstElementChild.firstElementChild.setAttribute("href", w.state === "maximized" ? "#bo-i-restore" : "#bo-i-square");
 	});
-	const covered = [...wins.map.values()].some((w) => w.state === "maximized");
-	document.body.classList.toggle("bo-has-max", covered);
 	apply_z();
 	beeone.shell.taskbar.render();
 }
@@ -390,12 +395,15 @@ export function focus(key, opts = {}) {
 	const win = wins.map.get(key);
 	if (!win) return;
 	const was_min = win.state === "minimized";
+	// Frappe refreshes the page of a route: that work waits until the animation is over
+	const sync = () => {
+		if (opts.route !== false && wins.map.get(key) === win && wins.active === key) route_to(win);
+	};
 	if (was_min) {
 		win.state = win.prev === "maximized" ? "maximized" : "normal";
 		win.prev = null;
 		place(win);
 		win.el.classList.remove("is-min");
-		restore_anim(win);
 	}
 	wins.z = wins.z.filter((k) => k !== key).concat(key);
 	const changed = wins.active !== key;
@@ -404,8 +412,9 @@ export function focus(key, opts = {}) {
 	wins.desktop_hidden = null;
 	paint_state();
 	if (changed || was_min) beeone.shell.announce(__("Window opened: {0}", [win.title]));
-	if (opts.route !== false) route_to(win);
-	if (opts.animate === true && !was_min && win.page) open_anim(win);
+	if (was_min) restore_anim(win, sync);
+	else if (opts.animate === true && win.page) open_anim(win);
+	if (!was_min) sync();
 	beeone.shell.track(win);
 	beeone.shell.save_soon();
 	if (changed) beeone.shell.desk.on_visibility();
@@ -443,14 +452,14 @@ function open_anim(win) {
 	anim(win.el, [{ transform: tf(g.x, g.y, 0.96), opacity: 0 }, { transform: tf(g.x, g.y, 1), opacity: 1 }], 180);
 }
 
-function restore_anim(win) {
+function restore_anim(win, done) {
 	const g = geometry(win);
 	const r = task_rect(win.key);
 	const base = desk_el().getBoundingClientRect();
-	if (!r) return open_anim(win);
+	if (!r) return anim(win.el, [{ transform: tf(g.x, g.y, 0.96), opacity: 0 }, { transform: tf(g.x, g.y, 1), opacity: 1 }], 180, done);
 	const fx = r.left + r.width / 2 - base.left - (g.x + g.w / 2);
 	const fy = r.top - base.top - (g.y + g.h / 2);
-	anim(win.el, [{ transform: tf(g.x + fx, g.y + fy, 0.2), opacity: 0 }, { transform: tf(g.x, g.y, 1), opacity: 1 }], 240);
+	anim(win.el, [{ transform: tf(g.x + fx, g.y + fy, 0.2), opacity: 0 }, { transform: tf(g.x, g.y, 1), opacity: 1 }], 240, done);
 }
 
 export function minimize(key) {

@@ -188,29 +188,55 @@ export const taskbar = {
 	},
 };
 
+const task_btns = new Map(); // key -> {el, sig}
+
+// buttons are kept and only the ones that changed are written (no innerHTML of the whole bar on every change)
 function paint_taskbar() {
 	const host = document.getElementById("bo-task-list");
 	if (!host) return;
 	const items = list();
-	host.innerHTML = items
-		.map((w, i) => {
+	const keep = new Set(items.map((w) => w.key));
+	task_btns.forEach((b, key) => {
+		if (!keep.has(key)) {
+			b.el.remove();
+			task_btns.delete(key);
+		}
+	});
+	items.forEach((w, i) => {
+		let b = task_btns.get(w.key);
+		if (!b) {
+			const el = document.createElement("button");
+			el.type = "button";
+			el.dataset.key = w.key;
+			b = { el, sig: "" };
+			task_btns.set(w.key, b);
+		}
+		const sig = [w.key === wins.active, w.state === "minimized", w.parked, w.dirty, w.title, i, w.kind].join("|");
+		if (b.sig !== sig) {
+			b.sig = sig;
 			const cls = ["bo-task-btn"];
 			if (w.key === wins.active) cls.push("is-active");
 			if (w.state === "minimized") cls.push("is-min");
 			if (w.parked) cls.push("is-parked");
-			const tip = w.parked ? __("Unloaded from memory, will open again") : w.title;
-			return (
-				`<button type="button" class="${cls.join(" ")}" data-key="${esc(w.key)}" title="${esc(tip)}${i < 9 ? ` (Alt ${i + 1})` : ""}" ` +
-				`aria-pressed="${w.key === wins.active}">${icon(w.kind === "form" ? "file" : w.kind === "list" ? "book" : w.kind === "report" ? "chart" : "layout")}` +
-				`<span>${esc(w.title)}</span>${w.dirty ? '<i class="bo-task-dirty"></i>' : ""}</button>`
-			);
-		})
-		.join("");
+			b.el.className = cls.join(" ");
+			b.el.title = (w.parked ? __("Unloaded from memory, will open again") : w.title) + (i < 9 ? ` (Alt ${i + 1})` : "");
+			b.el.setAttribute("aria-pressed", w.key === wins.active);
+			b.el.innerHTML =
+				icon(w.kind === "form" ? "file" : w.kind === "list" ? "book" : w.kind === "report" ? "chart" : "layout") +
+				`<span>${esc(w.title)}</span>${w.dirty ? '<i class="bo-task-dirty"></i>' : ""}`;
+		}
+		if (host.children[i] !== b.el) host.insertBefore(b.el, host.children[i] || null);
+	});
 	const n = items.length;
 	document.getElementById("bo-task-count").textContent = n ? (n === 1 ? __("1 window") : __("{0} windows", [n])) : "";
-	const on = host.querySelector(".is-active");
-	if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "nearest" });
+	// the active button comes into view once the animations are over: scrolling reads the layout of the whole page
+	clearTimeout(task_scroll);
+	task_scroll = setTimeout(() => {
+		const on = host.querySelector(".is-active");
+		if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "nearest" });
+	}, 400);
 }
+let task_scroll = null;
 
 export function init_taskbar() {
 	document.getElementById("bo-task-list").addEventListener("click", (e) => {
