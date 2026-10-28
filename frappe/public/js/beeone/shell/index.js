@@ -167,7 +167,9 @@ Object.assign(beeone.shell, {
 		// restore the saved windows: only the active one loads, the others wait parked
 		const active = W.restore(layout, sh.readable);
 		const first = frappe.get_route();
-		if (active && !W.is_window_route(first)) {
+		// beeone: only restore active window on empty landing pages (/desk or /app, not /desk/something)
+		const landing = first.length === 0 || (first[0] === "desk" && first.length === 1) || (first[0] === "app" && first.length === 1);
+		if (active && landing) {
 			setTimeout(() => frappe.set_route(...active.route), 0);
 		}
 		frappe.realtime && frappe.realtime.on("notification", refresh_bell);
