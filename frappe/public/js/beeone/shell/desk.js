@@ -211,7 +211,8 @@ export const desk = {
 	on_visibility() {
 		const visible = ![...wins.map.values()].some((w) => w.state === "maximized") && !(document.body.classList.contains("bo-compact") && wins.active);
 		const host = document.getElementById("bo-desk-bg");
-		if (host) host.hidden = !visible;
+		// beeone: hide desktop only when a window is maximized (covers it completely)
+		if (host) host.hidden = [...wins.map.values()].some((w) => w.state === "maximized");
 		if (visible && !was_visible) this.refresh(false);
 		was_visible = visible;
 	},
