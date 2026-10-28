@@ -24,6 +24,7 @@ IMPORTABLE_DOCTYPES = [
 	# beeone: register meta records come after every DocType of the app
 	("beeone_core", "register"),
 	("beeone_core", "document_movements"),
+	("beeone_core", "sequence"),
 	("core", "page"),
 	("core", "report"),
 	("desk", "dashboard_chart_source"),
@@ -173,7 +174,7 @@ def sync_for(app_name, force=0, reset_permissions=False):
 
 
 # beeone: register meta record folders, in the order they must be imported
-REGISTER_META_FOLDERS = ("register", "document_movements")
+REGISTER_META_FOLDERS = ("register", "document_movements", "sequence")
 
 
 def order_register_meta_files(files):

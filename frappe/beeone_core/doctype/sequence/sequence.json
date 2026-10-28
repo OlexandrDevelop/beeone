@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "autoname": "field:sequence_name",
+ "creation": "2026-10-28 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sequence_name",
+  "mode",
+  "key_fields",
+  "restore_method",
+  "section_documents",
+  "documents",
+  "section_registers",
+  "registers"
+ ],
+ "fields": [
+  {
+   "fieldname": "sequence_name",
+   "fieldtype": "Data",
+   "label": "Sequence Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Synchronous\nBackground",
+   "default": "Synchronous",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "key_fields",
+   "fieldtype": "Data",
+   "label": "Key Fields",
+   "description": "Header fields of the documents that make the key, separated by comma. Empty: one key for all."
+  },
+  {
+   "fieldname": "restore_method",
+   "fieldtype": "Data",
+   "label": "Restore Method",
+   "description": "Dotted path of a function that restores the sequence instead of reposting documents."
+  },
+  {
+   "fieldname": "section_documents",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents",
+   "options": "Sequence Document",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_registers",
+   "fieldtype": "Section Break",
+   "label": "Registers"
+  },
+  {
+   "fieldname": "registers",
+   "fieldtype": "Table",
+   "label": "Registers",
+   "options": "Sequence Register"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Beeone Core",
+ "name": "Sequence",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "sequence_name"
+}

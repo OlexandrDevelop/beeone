@@ -104,6 +104,17 @@ class Dialect:
 		"""A totals key as the database compares it."""
 		return tuple(cstr(part) for part in key)
 
+	def insert_missing_sql(self, table: str, columns: list[str]) -> str:
+		"""One INSERT of a row that does nothing when the row `name` is already there."""
+		raise NotImplementedError
+
+	def try_lock(self, name: str) -> bool:
+		"""Take a lock of the session without waiting. The lock stays over commit and rollback."""
+		raise NotImplementedError
+
+	def release_lock(self, name: str) -> None:
+		raise NotImplementedError
+
 
 class MariaDB(Dialect):
 	name = "mariadb"
@@ -123,6 +134,24 @@ class MariaDB(Dialect):
 		else:
 			update = ", ".join(f"{q(f)} = VALUES({q(f)})" for f in value_columns)
 		return f"ON DUPLICATE KEY UPDATE {update}"
+
+	def insert_missing_sql(self, table: str, columns: list[str]) -> str:
+		q = self.quote
+		return (
+			f"INSERT INTO {q(table)} ({', '.join(q(c) for c in columns)}) "
+			f"VALUES ({', '.join(['%s'] * len(columns))}) ON DUPLICATE KEY UPDATE {q('name')} = {q('name')}"
+		)
+
+	@staticmethod
+	def _lock_name(name: str) -> str:
+		# a lock name has 64 characters at most
+		return "beeone_" + hashlib.sha1(name.encode()).hexdigest()[:40]
+
+	def try_lock(self, name: str) -> bool:
+		return bool(frappe.db.sql("SELECT GET_LOCK(%s, 0)", self._lock_name(name))[0][0])
+
+	def release_lock(self, name: str) -> None:
+		frappe.db.sql("SELECT RELEASE_LOCK(%s)", self._lock_name(name))
 
 	def month_start(self, expr: str) -> str:
 		return f"DATE_FORMAT({expr}, '%%Y-%%m-01')"
@@ -154,6 +183,24 @@ class Postgres(Dialect):
 		else:
 			update = ", ".join(f"{q(f)} = EXCLUDED.{q(f)}" for f in value_columns)
 		return f"ON CONFLICT ({key}) DO UPDATE SET {update}"
+
+	def insert_missing_sql(self, table: str, columns: list[str]) -> str:
+		q = self.quote
+		return (
+			f"INSERT INTO {q(table)} ({', '.join(q(c) for c in columns)}) "
+			f"VALUES ({', '.join(['%s'] * len(columns))}) ON CONFLICT ({q('name')}) DO NOTHING"
+		)
+
+	@staticmethod
+	def _lock_key(name: str) -> int:
+		# an advisory lock is a signed 64 bit number
+		return int.from_bytes(hashlib.sha1(name.encode()).digest()[:8], "big", signed=True)
+
+	def try_lock(self, name: str) -> bool:
+		return bool(frappe.db.sql("SELECT pg_try_advisory_lock(%s)", self._lock_key(name))[0][0])
+
+	def release_lock(self, name: str) -> None:
+		frappe.db.sql("SELECT pg_advisory_unlock(%s)", self._lock_key(name))
 
 	def month_start(self, expr: str) -> str:
 		return f"CAST(DATE_TRUNC('month', {expr}) AS DATE)"
@@ -213,6 +260,80 @@ def text_key(expr: str) -> str:
 
 def key_norm(key: tuple) -> tuple:
 	return dialect().key_norm(key)
+
+
+def insert_missing(doctype: str, row: dict) -> None:
+	"""Insert a row of the DocType when its `name` is not there yet. An existing row stays as it is.
+
+	Two sessions that insert the same name do not fail: one of them inserts, the other does nothing.
+	"""
+	columns = list(row)
+	frappe.db.sql(dialect().insert_missing_sql("tab" + doctype, columns), [row[c] for c in columns])
+
+
+def try_lock(name: str) -> bool:
+	"""Take the named lock of this database session without waiting. False when another session holds it.
+
+	The lock belongs to the connection: commit and rollback keep it, a closed connection frees it.
+	"""
+	return dialect().try_lock(name)
+
+
+def release_lock(name: str) -> None:
+	dialect().release_lock(name)
+
+
+def _lex(columns: list[str], values: list, op: str, or_equal: bool = False) -> tuple[str, list]:
+	"""The condition that the tuple of `columns` is `op` (< or >) than `values`, compared field by field."""
+	q = quote
+	parts, params = [], []
+	for index, column in enumerate(columns):
+		term = [f"{q(c)} = %s" for c in columns[:index]] + [f"{q(column)} {op} %s"]
+		parts.append("(" + " AND ".join(term) + ")")
+		params += [*values[:index], values[index]]
+	if or_equal:
+		parts.append("(" + " AND ".join(f"{q(c)} = %s" for c in columns) + ")")
+		params += list(values)
+	return "(" + " OR ".join(parts) + ")", params
+
+
+def select_range(
+	doctype: str,
+	columns: list[str],
+	order: list[str],
+	filters: dict | None = None,
+	after: tuple | None = None,
+	until: tuple | None = None,
+	before: tuple | None = None,
+	descending: bool = False,
+	limit: int | None = None,
+	lock: bool = False,
+) -> list[dict]:
+	"""Rows of a DocType ordered by the columns `order`.
+
+	`after`, `until` and `before` are values of the `order` columns: rows after (>), up to and
+	with (<=) and before (<) that position. `lock` reads the latest committed rows and locks them.
+	"""
+	q = quote
+	where, params = [], []
+	for column, value in (filters or {}).items():
+		where.append(f"{q(column)} = %s")
+		params.append(value)
+	for position, op, or_equal in ((after, ">", False), (until, "<", True), (before, "<", False)):
+		if position is not None:
+			condition, values = _lex(order, list(position), op, or_equal)
+			where.append(condition)
+			params += values
+	way = "DESC" if descending else "ASC"
+	sql = f"SELECT {', '.join(q(c) for c in columns)} FROM {q('tab' + doctype)}"
+	if where:
+		sql += " WHERE " + " AND ".join(where)
+	sql += f" ORDER BY {', '.join(f'{q(c)} {way}' for c in order)}"
+	if limit:
+		sql += f" LIMIT {int(limit)}"
+	if lock:
+		sql += " FOR UPDATE"
+	return frappe.db.sql(sql, params, as_dict=True)
 
 
 def upsert(table: str, key_columns: list[str], value_columns: list[str], rows: list[tuple], add: bool = True):

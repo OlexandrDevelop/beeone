@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "creation": "2026-10-28 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sequence",
+  "key",
+  "key_hash",
+  "status",
+  "version",
+  "job_queued",
+  "error",
+  "section_boundary",
+  "boundary_date",
+  "boundary_time",
+  "boundary_creation",
+  "boundary_name",
+  "boundary_doctype"
+ ],
+ "fields": [
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Link",
+   "label": "Sequence",
+   "options": "Sequence",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "key",
+   "fieldtype": "Small Text",
+   "label": "Key",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "key_hash",
+   "fieldtype": "Data",
+   "label": "Key Hash",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Actual\nPending\nRunning\nFailed",
+   "default": "Actual",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "Version",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_queued",
+   "fieldtype": "Check",
+   "label": "Job Queued",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_boundary",
+   "fieldtype": "Section Break",
+   "label": "Boundary"
+  },
+  {
+   "fieldname": "boundary_date",
+   "fieldtype": "Date",
+   "label": "Boundary Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "boundary_time",
+   "fieldtype": "Time",
+   "label": "Boundary Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "boundary_creation",
+   "fieldtype": "Datetime",
+   "label": "Boundary Creation",
+   "read_only": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "boundary_name",
+   "fieldtype": "Data",
+   "label": "Boundary Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "boundary_doctype",
+   "fieldtype": "Data",
+   "label": "Boundary Doctype",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Beeone Core",
+ "name": "Sequence Boundary",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

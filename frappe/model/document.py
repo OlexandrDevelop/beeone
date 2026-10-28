@@ -1462,6 +1462,16 @@ class Document(BaseDocument):
 
 		unpost(self)
 
+	def lock_sequences(self):  # beeone:
+		from frappe.beeone.sequences import lock_sequences
+
+		lock_sequences(self)
+
+	def mark_sequences(self):  # beeone:
+		from frappe.beeone.sequences import mark_sequences
+
+		mark_sequences(self)
+
 	def run_post_save_methods(self):
 		"""Run standard methods after `INSERT` or `UPDATE`. Standard Methods are:
 
@@ -1473,13 +1483,17 @@ class Document(BaseDocument):
 		if self._action == "save":
 			self.run_method("on_update")
 		elif self._action == "submit":
+			self.lock_sequences()  # beeone: lock the boundary of the sequences before any write
 			self.run_method("on_update")
 			self.post_movements()  # beeone: write the registers of the document
 			self.run_method("on_submit")
+			self.mark_sequences()  # beeone: move the boundary back and restore the sequences
 		elif self._action == "cancel":
+			self.lock_sequences()  # beeone: lock the boundary of the sequences before any write
 			self.unpost_movements()  # beeone: delete the register rows of the document
 			self.run_method("on_cancel")
 			self.check_no_back_links_exist()
+			self.mark_sequences()  # beeone: move the boundary back and restore the sequences
 		elif self._action == "update_after_submit":
 			self.run_method("on_update_after_submit")
 

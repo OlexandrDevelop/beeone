@@ -1,0 +1,90 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-28 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sequence",
+  "key_hash",
+  "key",
+  "posting_date",
+  "posting_time",
+  "doc_creation",
+  "document_type",
+  "document_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Link",
+   "label": "Sequence",
+   "options": "Sequence",
+   "reqd": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "key_hash",
+   "fieldtype": "Data",
+   "label": "Key Hash",
+   "read_only": 1
+  },
+  {
+   "fieldname": "key",
+   "fieldtype": "Small Text",
+   "label": "Key",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "doc_creation",
+   "fieldtype": "Datetime",
+   "label": "Doc Creation",
+   "read_only": 1,
+   "precision": "6"
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "document_name",
+   "fieldtype": "Data",
+   "label": "Document Name",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-28 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Beeone Core",
+ "name": "Sequence Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

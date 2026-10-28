@@ -13,7 +13,7 @@ from frappe.beeone import db
 from frappe.tests import IntegrationTestCase
 
 FORBIDDEN = re.compile(
-	r"`|ON DUPLICATE KEY|SHOW COLUMNS|SHOW TABLES|ON CONFLICT|EXCLUDED\.|DATE_FORMAT|IFNULL|INFORMATION_SCHEMA",
+	r"`|ON DUPLICATE KEY|SHOW COLUMNS|SHOW TABLES|ON CONFLICT|EXCLUDED\.|DATE_FORMAT|IFNULL|INFORMATION_SCHEMA|GET_LOCK|RELEASE_LOCK|pg_try_advisory|pg_advisory|INSERT IGNORE",
 	re.IGNORECASE,
 )
 TABLE = "__beeone_test_dialect"
@@ -55,6 +55,30 @@ class TestBeeoneDb(IntegrationTestCase):
 		self.assertEqual(d.month_start("`d`"), "DATE_FORMAT(`d`, '%%Y-%%m-01')")
 		self.assertEqual(d.text_key("`x`"), "IFNULL(`x`, '')")
 		self.assertEqual(d.key_norm(("Nut ", 1)), ("nut", "1"))
+
+	def test_lock_and_insert_missing_sql(self):
+		maria, pg = db.MariaDB(), db.Postgres()
+		self.assertEqual(
+			maria.insert_missing_sql("t", ["name", "a"]),
+			"INSERT INTO `t` (`name`, `a`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `name` = `name`",
+		)
+		self.assertEqual(
+			pg.insert_missing_sql("t", ["name", "a"]),
+			'INSERT INTO "t" ("name", "a") VALUES (%s, %s) ON CONFLICT ("name") DO NOTHING',
+		)
+		self.assertLessEqual(len(maria._lock_name("x" * 500)), 64)
+		self.assertEqual(maria._lock_name("a"), maria._lock_name("a"))
+		self.assertNotEqual(maria._lock_name("a"), maria._lock_name("b"))
+		self.assertTrue(-(2**63) <= pg._lock_key("a") < 2**63)
+		self.assertEqual(pg._lock_key("a"), pg._lock_key("a"))
+
+	def test_lex_condition(self):
+		sql, params = db._lex(["a", "b"], [1, 2], ">")
+		self.assertEqual(params, [1, 1, 2])
+		self.assertEqual(sql.count("OR"), 1)
+		sql, params = db._lex(["a", "b"], [1, 2], "<", or_equal=True)
+		self.assertEqual(params, [1, 1, 2, 1, 2])
+		self.assertEqual(sql.count("OR"), 2)
 
 	def test_postgres_sql(self):
 		d = db.Postgres()
