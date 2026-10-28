@@ -265,3 +265,19 @@ def run_due(handler=None):
 			frappe.db.commit()
 			frappe.log_error(title=f"Exchange rule {name}")
 	return ran
+
+
+# ------------------------------------------------------------------ desk
+@frappe.whitelist(methods=["POST"])
+def run_now(rule: str) -> dict:
+	"""Run one rule at once. Only System Manager."""
+	frappe.only_for("System Manager")
+	result = run_rule(rule, scheduled=False)
+	return {k: result.get(k) for k in ("created", "updated", "errors", "log")}
+
+
+@frappe.whitelist()
+def list_handlers() -> list[str]:
+	"""Names of the handlers that apps give. Only System Manager."""
+	frappe.only_for("System Manager")
+	return sorted(handlers())

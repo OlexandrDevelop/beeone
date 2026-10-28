@@ -257,6 +257,16 @@ class TestExchange(IntegrationTestCase):
 		with patch.dict(frappe.flags, {"in_test": False}), self.assertRaises(frappe.PermissionError):
 			frappe.delete_doc(exchange.LOG, self.last_log().name, ignore_permissions=True, force=True)
 
+	def test_run_now_and_list_handlers_need_system_manager(self):
+		self.assertIn(HANDLER, exchange.list_handlers())
+		self.assertEqual(exchange.run_now(RULE)["created"], 0)
+		self.make_user(["Desk User"])
+		frappe.set_user(USER)
+		with self.assertRaises(frappe.PermissionError):
+			exchange.run_now(RULE)
+		with self.assertRaises(frappe.PermissionError):
+			exchange.list_handlers()
+
 	# -------------------------------------------------------------- source
 	def test_no_cyrillic_and_no_dialect_sql_in_the_core_code(self):
 		files = list(EXCHANGE_DIR.glob("*.py"))
