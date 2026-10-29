@@ -88,15 +88,19 @@ body.bo-shell .sticky-top.navbar {
 .bo-rail-btn {
 	position: relative;
 	width: 44px;
-	height: 40px;
+	height: auto;
 	border: 0;
 	border-radius: 10px;
 	background: transparent;
 	color: var(--bo-rail-text);
-	display: grid;
-	place-items: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
 	cursor: pointer;
 	flex: none;
+	padding: 4px 0;
 }
 
 .bo-rail-btn:hover {
@@ -123,6 +127,18 @@ body.bo-shell .sticky-top.navbar {
 .bo-rail-btn .bo-i {
 	width: 20px;
 	height: 20px;
+	flex: none;
+}
+
+.bo-rail-label {
+	font-size: 0.6rem;
+	line-height: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	width: 40px;
+	text-align: center;
+	flex: none;
 }
 
 .bo-avatar {
