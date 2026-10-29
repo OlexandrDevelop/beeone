@@ -9,8 +9,8 @@ frappe.provide("frappe.widget.utils");
 frappe.provide("frappe.views");
 frappe.provide("frappe.query_reports");
 
-frappe.standard_pages["query-report"] = function () {
-	var wrapper = frappe.container.add_page("query-report");
+frappe.standard_pages["query-report"] = function (page_name) {
+	var wrapper = frappe.container.add_page(page_name || "query-report");
 
 	frappe.ui.make_app_page({
 		parent: wrapper,
@@ -18,12 +18,15 @@ frappe.standard_pages["query-report"] = function () {
 		single_column: true,
 	});
 
-	frappe.query_report = new frappe.views.QueryReport({
+	const report = new frappe.views.QueryReport({
 		parent: wrapper,
 	});
+	frappe.query_report = report;
 
 	$(wrapper).bind("show", function () {
-		frappe.query_report.show();
+		// beeone: every window has its own report; the shown one is the current report
+		frappe.query_report = report;
+		report.show();
 	});
 };
 
