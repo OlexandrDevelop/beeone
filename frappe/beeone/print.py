@@ -35,4 +35,8 @@ def download_multi_pdf(doctype, name, format=None, no_letterhead=False, letterhe
 		for docname in _names(name):
 			if not frappe.db.exists(doctype, docname):
 				frappe.throw(_("{0} {1} not found").format(_(doctype), docname), frappe.DoesNotExistError)
-	return frappe_download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options)
+	if isinstance(name, str) and not name.strip().startswith("["):
+		name = json.dumps([name])
+	elif isinstance(name, list):
+		name = json.dumps(name)
+	return frappe.utils.print_format.download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options)
