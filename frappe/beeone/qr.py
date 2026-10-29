@@ -46,7 +46,7 @@ def _render_png(q, scale: int) -> str:
 
 
 @frappe.whitelist()
-def get_qr_code(data: str = "", scale: int = 3, format: str = "png") -> str:
+def get_qr_code(data: str | None = "", scale: int | None = 3, format: str | None = "png") -> str:
 	"""Generate a QR code data URI for arbitrary payload (country-neutral).
 
 	:param data: String payload (URL, invoice identification, etc.)
@@ -71,6 +71,6 @@ def get_qr_code(data: str = "", scale: int = 3, format: str = "png") -> str:
 	return _render_png(q, scale_val)
 
 
-def qr_code(data: str = "", scale: int = 3, format: str = "png") -> str:
+def qr_code(data: str | None = "", scale: int | None = 3, format: str | None = "png") -> str:
 	"""Jinja helper wrapper for get_qr_code."""
 	return get_qr_code(data=data, scale=scale, format=format)
