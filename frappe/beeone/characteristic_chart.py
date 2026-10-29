@@ -11,12 +11,18 @@ can be marked predefined and then cannot be deleted. Country neutral.
 
 import frappe
 from frappe import _
-from frappe.utils import cint, cstr, flt, getdate, get_datetime
+from frappe.utils import cint, cstr, getdate, get_datetime
 
 CHARTS_KEY = "beeone_characteristic_chart_doctypes"
 VALUE_TYPE_DOCTYPE = "Characteristic Value Type"
 
 PRIMITIVES = ("Data", "Int", "Float", "Currency", "Date", "Datetime", "Check")
+
+
+def _whole(value: float) -> int:
+	if value != int(value):
+		raise ValueError
+	return int(value)
 
 
 def _check_primitive(value_type: str, value):
@@ -25,13 +31,13 @@ def _check_primitive(value_type: str, value):
 			raise TypeError
 		return value
 	if value_type == "Int":
-		if isinstance(value, bool) or not isinstance(value, (int, float, str)) or flt(value) != int(flt(value)):
-			raise ValueError
-		return int(flt(value))
+		if isinstance(value, bool):
+			raise TypeError
+		return int(value) if isinstance(value, (int, str)) else _whole(float(value))
 	if value_type in ("Float", "Currency"):
 		if isinstance(value, bool):
 			raise TypeError
-		return float(value)
+		return float(value)  # raises ValueError for text that is not a number
 	if value_type == "Date":
 		return getdate(value)
 	if value_type == "Datetime":
