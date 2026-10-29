@@ -186,6 +186,7 @@ standard_queries = {"User": "frappe.core.doctype.user.user.user_query"}
 
 doc_events = {
 	"*": {
+		"validate": ["frappe.beeone.characteristic_chart.validate_element"],  # beeone: chart of characteristic types
 		"on_update": [
 			"frappe.desk.notifications.clear_doctype_notifications",
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
@@ -210,6 +211,7 @@ doc_events = {
 			"frappe.desk.notifications.clear_doctype_notifications",
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
 			"frappe.search.sqlite_search.delete_doc_index",
+			"frappe.beeone.characteristic_chart.on_trash",  # beeone: chart of characteristic types
 		],
 		"on_update_after_submit": [
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
