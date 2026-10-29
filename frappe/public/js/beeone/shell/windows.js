@@ -250,10 +250,6 @@ export function host(page) {
 		win.parked = false;
 		win.el.classList.remove("is-parked");
 		if (win.kind === "form" || win.kind === "list") page.dataset.boKey = key;
-		// beeone: trigger show for report pages to initialize content rendering
-		if (win.kind === "report") {
-			$(page).trigger("show");
-		}
 	}
 	$(page).show();
 	win.route = route;
