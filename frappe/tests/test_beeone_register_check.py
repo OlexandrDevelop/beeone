@@ -35,9 +35,16 @@ class TestBeeoneRegisterCheck(IntegrationTestCase):
 
 	def test_clean_registers_have_no_issues(self):
 		result = check_registers()
-		self.assertEqual(result["issues"], [])
-		self.assertEqual(sorted(result["checked"]), sorted([LEDGER, EMPTY_LEDGER]))
-		self.assertIn("discrepancies: 0", format_report(result))
+		test_registers = {LEDGER, EMPTY_LEDGER}
+
+		# Filter to only check test registers (site may have other registers from installed apps)
+		checked = [r for r in result["checked"] if r in test_registers]
+		issues = [i for i in result["issues"] if i.register in test_registers]
+
+		self.assertEqual(issues, [])
+		self.assertEqual(sorted(checked), sorted([LEDGER, EMPTY_LEDGER]))
+		filtered_result = {"issues": issues, "skipped": result["skipped"], "fixed": result["fixed"], "checked": checked}
+		self.assertIn("discrepancies: 0", format_report(filtered_result))
 
 	def test_wrong_turnover_is_found_and_fixed(self):
 		frappe.db.sql(f"update `{totals_table(LEDGER)}` set qty = qty + 7 where item = 'Nut'")
