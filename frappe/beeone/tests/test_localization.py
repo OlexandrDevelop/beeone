@@ -53,6 +53,22 @@ class TestAmountInWordsHook(unittest.TestCase):
 				mock_handler.assert_called_once()
 				self.assertEqual(result, 'Thousand')
 
+	def test_amount_in_words_with_doc_print_language(self):
+		"""amount_in_words() resolves language from doc.default_print_language."""
+		with patch('frappe.get_hooks') as mock_hooks:
+			with patch('frappe.get_attr') as mock_get_attr:
+				mock_handler = MagicMock(return_value='Five hundred')
+				mock_get_attr.return_value = mock_handler
+				mock_hooks.return_value = {'uk': 'ua_accounting.accounting.utils.money_in_words'}
+
+				with patch.object(frappe, 'local', create=True) as mock_local:
+					mock_local.doc = {'default_print_language': 'uk'}
+					mock_local.lang = 'en'
+					result = amount_in_words(500, currency='UAH')
+
+					mock_handler.assert_called_once_with(500, 'UAH')
+					self.assertEqual(result, 'Five hundred')
+
 
 if __name__ == '__main__':
 	unittest.main()

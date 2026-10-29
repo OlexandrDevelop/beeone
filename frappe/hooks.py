@@ -176,6 +176,7 @@ jinja = {
 		"frappe.utils.jinja_globals",
 		"frappe.beeone.print.title_of",  # beeone: country-neutral print helper
 		"frappe.beeone.localization.amount_in_words",  # beeone: language-specific hook
+		"frappe.beeone.qr.qr_code",  # beeone: country-neutral qr code helper
 	],
 	"filters": [
 		"frappe.utils.data.global_date_format",

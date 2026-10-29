@@ -7,6 +7,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.beeone.qr import get_qr_code, qr_code
 from frappe.utils.print_format import download_multi_pdf as frappe_download_multi_pdf
 
 
