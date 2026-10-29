@@ -654,7 +654,9 @@ export function init_pointer() {
 	layer.addEventListener("click", (e) => {
 		const btn = e.target.closest("[data-act]");
 		if (!btn) return;
-		const win = wins.map.get(btn.closest(".bo-win").dataset.key);
+		const holder = btn.closest(".bo-win");
+		if (!holder) return; // an app button that has its own data-act, not a window button
+		const win = wins.map.get(holder.dataset.key);
 		if (!win) return;
 		const act = btn.dataset.act;
 		if (act === "min") minimize(win.key);
