@@ -95,7 +95,7 @@ function render_rail() {
 	list_el.innerHTML = (beeone.shell.sections || [])
 		.map(
 			(s) =>
-				`<button type="button" class="bo-rail-btn" data-section="${esc(s.id)}" title="${esc(s.label)}" aria-label="${esc(s.label)}">${icon(s.icon)}</button>`
+				`<button type="button" class="bo-rail-btn" data-section="${esc(s.id)}" title="${esc(s.label)}" aria-label="${esc(s.label)}">${icon(s.icon)}<span class="bo-rail-label">${esc(s.label)}</span></button>`
 		)
 		.join("");
 }
