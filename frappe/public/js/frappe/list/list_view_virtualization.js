@@ -41,6 +41,7 @@ export const list_view_virtualization = {
 			}
 			this.virtualization_state.raf = window.requestAnimationFrame(() => {
 				this.virtualization_state.raf = null;
+				this.maybe_load_more_virtual_rows();
 				this.render_virtual_rows();
 			});
 		};
@@ -78,6 +79,27 @@ export const list_view_virtualization = {
 			.on("hide.list-view-virtualization", () => {
 				this.teardown_virtualization_scroll_handler();
 			});
+	},
+
+	get_virtual_total_rows() {
+		return Math.max(this.data.length, Number.isFinite(this.total_count) ? this.total_count : this.data.length);
+	},
+
+	maybe_load_more_virtual_rows() {
+		if (this.virtual_load_inflight || this.data.length >= this.get_virtual_total_rows()) return;
+		const $container = this.$result.parent(".result-container");
+		if (!$container.length) return;
+		const viewport = $container.innerHeight() || window.innerHeight;
+		const loaded_height = this.get_virtual_spacer_height(0, this.data.length);
+		if (($container.scrollTop() || 0) + viewport * 2 < loaded_height) return;
+
+		this.virtual_load_inflight = true;
+		this.start = this.data.length;
+		this.page_length = this.virtual_page_size || 100;
+		this.refresh().finally(() => {
+			this.virtual_load_inflight = false;
+			this.maybe_load_more_virtual_rows();
+		});
 	},
 
 	teardown_virtualization_scroll_handler() {
@@ -196,12 +218,12 @@ export const list_view_virtualization = {
 	},
 
 	get_virtual_prefix_sum(index) {
-		const clamped_index = Math.max(0, Math.min(index, this.data.length));
+		const clamped_index = Math.max(0, Math.min(index, this.get_virtual_total_rows()));
 		if (!this.uses_accumulated_row_heights()) {
 			return clamped_index * this.get_virtual_row_height();
 		}
 
-		this.ensure_virtual_row_height_prefix_sums(this.data.length);
+		this.ensure_virtual_row_height_prefix_sums(this.get_virtual_total_rows());
 		return this.virtualization_state.row_height_prefix_sums[clamped_index] || 0;
 	},
 
@@ -352,7 +374,8 @@ export const list_view_virtualization = {
 			return;
 		}
 
-		const total_rows = this.data.length;
+		const total_rows = this.get_virtual_total_rows();
+		const loaded_rows = this.data.length;
 		if (!total_rows) {
 			$container.find(".list-virtual-spacer").remove();
 			this.$result.find('.list-row-container[data-virtual-row="1"]').remove();
@@ -394,7 +417,8 @@ export const list_view_virtualization = {
 		if (top_spacer_height > 0) {
 			window_html += `<div class="list-virtual-spacer" style="height:${top_spacer_height}px"></div>`;
 		}
-		for (let i = start; i < end; i++) {
+		const render_end = Math.min(end, loaded_rows);
+		for (let i = start; i < render_end; i++) {
 			const doc = this.data[i];
 			doc._idx = i;
 			window_html += this.get_list_row_html(doc, { virtual: true });
@@ -418,5 +442,6 @@ export const list_view_virtualization = {
 
 		// Step 8: column widths + bulk checkbox state for visible rows
 		this.finalize_virtual_rows();
+		this.maybe_load_more_virtual_rows();
 	},
 };
