@@ -5,7 +5,7 @@ from frappe.beeone.accounting_meta import validate_chart_of_accounts
 from frappe.model.document import Document
 
 
-class ChartOfAccounts(Document):
+class ChartofAccounts(Document):
 	def validate(self):
 		validate_chart_of_accounts(self)
 
