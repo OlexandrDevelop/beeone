@@ -20,6 +20,9 @@ after_app_uninstall = "frappe.utils.install.delete_desktop_icons_for_app"
 
 page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 
+# Platform-owned navigation; applications add their own sections alongside it.
+beeone_sections = ["frappe.beeone.shell.core_sections"]
+
 # website
 app_include_js = [
 	"libs.bundle.js",

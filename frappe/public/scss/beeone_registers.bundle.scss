@@ -101,3 +101,79 @@
 		text-align: center;
 	}
 }
+
+.beeone-register-explorer {
+	max-width: 1440px;
+	margin: 0 auto;
+	padding: var(--padding-xl);
+
+	.beeone-register-intro {
+		margin-bottom: var(--margin-lg);
+
+		h2 {
+			margin: 0 0 var(--margin-xs);
+		}
+
+		p {
+			margin: 0;
+			color: var(--text-muted);
+		}
+	}
+
+	.beeone-register-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: var(--margin-md);
+	}
+
+	.beeone-register-card {
+		padding: var(--padding-lg);
+		border: 1px solid var(--border-color);
+		border-radius: var(--border-radius-lg);
+		background: var(--card-bg);
+		box-shadow: var(--shadow-sm);
+
+		&-head {
+			display: flex;
+			justify-content: space-between;
+			gap: var(--margin-md);
+
+			h3 {
+				margin: 0 0 var(--margin-xs);
+				font-size: var(--text-lg);
+			}
+
+			span {
+				color: var(--text-muted);
+				font-size: var(--text-sm);
+			}
+		}
+
+		&-mark {
+			max-width: 42%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+
+	.beeone-register-fields {
+		min-height: 2.5em;
+		margin: var(--margin-md) 0;
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+	}
+
+	.beeone-register-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--margin-sm);
+	}
+
+	.beeone-register-loading,
+	.beeone-register-empty {
+		padding: var(--padding-xl);
+		color: var(--text-muted);
+		text-align: center;
+	}
+}

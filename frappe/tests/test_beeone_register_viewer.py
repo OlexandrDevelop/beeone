@@ -141,6 +141,14 @@ class TestBeeoneRegisterViewer(IntegrationTestCase):
 		self.assertEqual([c["fieldname"] for c in info["resources"]], ["qty", "amount"])
 		self.assertTrue(info["balance"] and info["turnover"])
 
+	def test_catalog_contains_only_readable_registers(self):
+		catalog = api.catalog()
+		row = next(item for item in catalog if item["register"] == LEDGER)
+		self.assertEqual(row["doctype"], LEDGER)
+		self.assertEqual(row["kind"], "Accumulation: Balance")
+		self.assertTrue(row["balance"] and row["turnover"])
+		self.assertEqual([c["fieldname"] for c in row["columns"]], ["warehouse", "item", "qty", "amount"])
+
 	def test_boot_marks_registers_and_movements(self):
 		info = frappe._dict(user=frappe._dict(can_create=[LEDGER, "ToDo"], can_write=[LEDGER], can_delete=[]))
 		boot.boot_session(info)
