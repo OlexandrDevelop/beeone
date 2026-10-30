@@ -411,8 +411,6 @@ export const list_view_virtualization = {
 		// Steps 4–6: spacers + rows + spacers, built as one string and
 		// inserted once — this runs on every window shift while scrolling
 		const top_spacer_height = this.get_virtual_spacer_height(0, start);
-		const bottom_spacer_height = this.get_virtual_spacer_height(end, total_rows);
-
 		let window_html = "";
 		if (top_spacer_height > 0) {
 			window_html += `<div class="list-virtual-spacer" style="height:${top_spacer_height}px"></div>`;
@@ -423,6 +421,9 @@ export const list_view_virtualization = {
 			doc._idx = i;
 			window_html += this.get_list_row_html(doc, { virtual: true });
 		}
+		// Include the not-yet-fetched range in the spacer as well. The scrollbar
+		// represents the complete filtered result, while rows are fetched lazily.
+		const bottom_spacer_height = this.get_virtual_spacer_height(render_end, total_rows);
 		if (bottom_spacer_height > 0) {
 			window_html += `<div class="list-virtual-spacer" style="height:${bottom_spacer_height}px"></div>`;
 		}
