@@ -377,7 +377,9 @@ class TestAccountingMeta(IntegrationTestCase):
 		frappe.get_doc(
 			{"doctype": self.ACCOUNT, "account_code": "offbalance", "is_group": 0, "off_balance": 1}
 		).insert()
-		self.assertEqual(normalize_accounting_entry(chart, debit="offbalance", amount=1)["debit"], "offbalance")
+		self.assertEqual(
+			normalize_accounting_entry(chart, debit="offbalance", amount=1)["debit"]["account"], "offbalance"
+		)
 		with self.assertRaises(frappe.ValidationError):
 			normalize_accounting_entry(chart, debit="offbalance", credit="balance", amount=1)
 

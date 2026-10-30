@@ -14,7 +14,9 @@ def _fieldnames(doctype):
 def _require_field(chart, doctype, fields, fieldname, label):
 	if not fieldname or fieldname not in fields:
 		frappe.throw(
-			_("Chart of Accounts {0}: {1} must name a field in DocType {2}").format(chart, label, doctype),
+			_("Chart of Accounts {0}: {1} field {2} must name a field in DocType {3}").format(
+				chart, label, fieldname, doctype
+			),
 			title=_("Invalid Chart of Accounts"),
 		)
 
@@ -117,6 +119,7 @@ def normalize_accounting_entry(chart, debit=None, credit=None, amount=0, quantit
 		account = accounts[account_name]
 		if account.get(chart.group_field):
 			frappe.throw(_("Account {0} is a group and cannot be posted").format(account_name), frappe.ValidationError)
+		rows[side]["account"] = account_name
 		rows[side]["quantity"] = quantity if account.get(chart.quantity_accounting_field) else 0
 		if account.get(chart.currency_accounting_field):
 			rows[side]["currency"] = currency or ""
