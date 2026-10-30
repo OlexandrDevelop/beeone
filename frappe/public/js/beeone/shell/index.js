@@ -131,7 +131,10 @@ Object.assign(beeone.shell, {
 	init() {
 		const boot = frappe.boot.beeone_shell;
 		if (!boot || !boot.enabled || beeone.shell.active) return;
-		if (frappe.boot.sysdefaults && !frappe.boot.sysdefaults.setup_complete) return;
+		// `boot.setup_complete` is the authoritative site-level flag. The legacy
+		// sysdefaults copy can remain 0 after automated/demo provisioning and
+		// must not disable the desktop shell when the desk is already usable.
+		if (frappe.boot.setup_complete === false) return;
 		const sh = beeone.shell;
 		sh.active = true;
 		sh.sections = boot.sections;
