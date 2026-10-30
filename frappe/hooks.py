@@ -528,6 +528,7 @@ extend_bootinfo = [
 
 # beeone: register list and movement viewer data for the desk
 boot_session = [
+	"frappe.beeone.shell.boot_session",  # beeone: multi-window desktop shell
 	"frappe.beeone.boot.boot_session",
 	"frappe.beeone.basis.boot_session",  # beeone: create-on-basis registry
 ]
