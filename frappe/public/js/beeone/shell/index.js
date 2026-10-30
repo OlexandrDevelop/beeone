@@ -179,6 +179,11 @@ Object.assign(beeone.shell, {
 	},
 });
 
+// Boot data can be populated by Frappe's startup sequence after Application
+// construction on cached desk pages. Retry once at startup; `active` keeps
+// this idempotent and preserves the fast path above.
+$(document).on("startup.beeone_shell", () => beeone.shell.init());
+
 function refresh_bell() {
 	frappe
 		.xcall("frappe.client.get_count", { doctype: "Notification Log", filters: { for_user: frappe.session.user, read: 0 } })
