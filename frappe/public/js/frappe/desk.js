@@ -328,7 +328,9 @@ frappe.Application = class Application {
 				frappe.dom.set_style(frappe.boot.print_css, "print-style");
 			}
 
-			frappe.boot.setup_complete = frappe.boot.sysdefaults["setup_complete"];
+			// Keep the server's authoritative site-level flag. Automated/demo
+			// provisioning may leave the legacy System Settings copy at 0.
+			frappe.boot.setup_complete = frappe.boot.setup_complete || frappe.boot.sysdefaults["setup_complete"];
 			frappe.user.name = frappe.boot.user.name;
 		} else {
 			this.set_as_guest();
