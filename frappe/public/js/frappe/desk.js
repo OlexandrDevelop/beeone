@@ -52,8 +52,8 @@ frappe.Application = class Application {
 		// page container
 		this.make_page_container();
 		this.setup_tours();
-		window.beeone?.shell?.init(); // beeone: the desktop shell takes the pages before the first route
-		this.set_route();
+		const first_route = window.beeone?.shell?.init?.();
+		this.set_route(first_route);
 
 		// trigger app startup
 		$(document).trigger("startup");
@@ -191,10 +191,12 @@ frappe.Application = class Application {
 		});
 	}
 
-	set_route() {
+	set_route(first_route) {
 		if (frappe.boot && localStorage.getItem("session_last_route")) {
 			frappe.set_route(localStorage.getItem("session_last_route"));
 			localStorage.removeItem("session_last_route");
+		} else if (first_route) {
+			frappe.set_route(...first_route);
 		} else {
 			// route to home page
 			frappe.router.route();
