@@ -24,6 +24,19 @@ class TestBootData(IntegrationTestCase):
 		self.assertEqual(bootinfo.beeone_documents, [])
 		has_permission.assert_not_called()
 
+	def test_subordination_hides_inaccessible_related_docs(self):
+		from unittest.mock import patch
+
+		from frappe.beeone.api.subordination import get_related
+
+		doc = frappe._dict(doctype="UT Stock Count", name="SC-1")
+		doc.check_permission = lambda permission: None
+		with (
+			patch("frappe.beeone.api.subordination.frappe.get_doc", return_value=doc),
+			patch("frappe.beeone.api.subordination.get_related_docs", side_effect=frappe.PermissionError),
+		):
+			self.assertEqual(get_related("UT Stock Count", "SC-1"), [])
+
 	def test_get_unseen_notes(self):
 		frappe.db.delete("Note")
 		frappe.db.delete("Note Seen By")
