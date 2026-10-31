@@ -66,6 +66,7 @@ function _load_subordination_data(frm) {
 	frappe.call({
 		// beeone: inaccessible related documents must not interrupt the host form.
 		silent: true,
+		error_handlers: { PermissionError: () => {} },
 		method: "frappe.beeone.api.subordination.get_related",
 		args: {
 			doctype: frm.doctype,
