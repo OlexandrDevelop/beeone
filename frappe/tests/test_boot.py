@@ -6,6 +6,24 @@ from frappe.tests import IntegrationTestCase
 
 
 class TestBootData(IntegrationTestCase):
+	def test_boot_skips_missing_subordination_doctypes(self):
+		from unittest.mock import patch
+
+		from frappe import _dict
+
+		bootinfo = _dict()
+		with (
+			patch("frappe.beeone.boot.meta.register_doctypes", return_value={}),
+			patch("frappe.beeone.boot.meta.movement_doctypes", return_value=[]),
+			patch("frappe.get_hooks", return_value=[["Missing DocType"]]),
+			patch("frappe.db.exists", return_value=False),
+			patch("frappe.has_permission") as has_permission,
+		):
+			frappe.beeone.boot.boot_session(bootinfo)
+
+		self.assertEqual(bootinfo.beeone_documents, [])
+		has_permission.assert_not_called()
+
 	def test_get_unseen_notes(self):
 		frappe.db.delete("Note")
 		frappe.db.delete("Note Seen By")
