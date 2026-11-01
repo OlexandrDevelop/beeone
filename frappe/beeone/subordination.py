@@ -59,6 +59,9 @@ def get_related(doc):
 	for other_doctype in supported_types:
 		if other_doctype == doc.doctype:
 			continue
+		# beeone: stale app hook entries must not break the host form; skip DocTypes that do not exist.
+		if not frappe.db.exists("DocType", other_doctype):
+			continue
 		if not frappe.has_permission(other_doctype, "read"):
 			continue
 
