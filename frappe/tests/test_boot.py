@@ -37,6 +37,15 @@ class TestBootData(IntegrationTestCase):
 		):
 			self.assertEqual(get_related("UT Stock Count", "SC-1"), [])
 
+	def test_subordination_skips_missing_doctypes(self):
+		from unittest.mock import patch
+
+		from frappe.beeone.subordination import get_related
+
+		doc = frappe.get_doc({"doctype": "Note", "title": "Subordination", "content": "x"})
+		with patch("frappe.beeone.subordination._get_supported_doctypes", return_value=["Missing DocType"]):
+			self.assertEqual(get_related(doc), [])
+
 	def test_get_unseen_notes(self):
 		frappe.db.delete("Note")
 		frappe.db.delete("Note Seen By")
