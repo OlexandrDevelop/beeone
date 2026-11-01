@@ -349,3 +349,82 @@ def acc_corr_turnover(register, begin, end, groups, organizations=(), currency=N
 				vec = out.setdefault((r["account"], r["corr"] or ""), [0.0, 0.0])
 				vec[0 if side == "debit" else 1] += flt(r["total"])
 	return out
+
+
+def acc_side_sums(register, side, account, date_from, date_to, organization, corr_like=(), corr_not=()):
+	"""Sums of one side of an account by the first analytic value: before `date_from` and from it to `date_to`.
+
+	`corr_like`: LIKE patterns of the corresponding account to take; `corr_not`: exact corresponding
+	accounts to leave out. Read from the entries. Returns {value of slot 1: [before, in the period]}.
+	"""
+	src = Source(register)
+	other = "credit" if side == "debit" else "debit"
+	m, date = src.m, src.date_field
+	slot = m["subconto"][side][0]
+	sql = (
+		f"SELECT {slot} AS sub_key, "
+		f"COALESCE(SUM(CASE WHEN {date} < %s THEN {m['amount']} END), 0) AS before_sum, "
+		f"COALESCE(SUM(CASE WHEN {date} >= %s THEN {m['amount']} END), 0) AS turn_sum "
+		f"FROM `{src.entries}` WHERE {m['organization']} = %s AND {m['account'][side]} = %s AND {date} <= %s"
+	)
+	values = [date_from, date_from, organization, account, date_to]
+	if corr_like:
+		sql += " AND (" + " OR ".join([f"{m['account'][other]} LIKE %s"] * len(corr_like)) + ")"
+		values += list(corr_like)
+	if corr_not:
+		sql += f" AND {m['account'][other]} NOT IN ({', '.join(['%s'] * len(corr_not))})"
+		values += list(corr_not)
+	sql += f" GROUP BY {slot}"
+	return {r[0] or "": [flt(r[1], 2), flt(r[2], 2)] for r in frappe.db.sql(sql, values)}
+
+
+def acc_entry_balances(register, organization, upto, accounts, type_fields=None):
+	"""Balance (debit minus credit) of every (account, analytics, currency) up to the day `upto` inclusive.
+
+	Read from the entries, so the analytic kinds written with the entry are kept. `type_fields` is
+	{"debit": [3 entry columns], "credit": [3 entry columns]} with the kind of each slot (blank when absent).
+	Returns dicts: account, types [3], subs [3], currency, amount, currency_amount, ordered by account and values.
+	"""
+	accounts = list(accounts)
+	if not accounts:
+		return []
+	src = Source(register)
+	m, date = src.m, src.date_field
+	parts, params = [], []
+	for side, other in (("debit", "credit"), ("credit", "debit")):
+		columns = ["account"]
+		select = [f"{m['account'][side]} AS account"]
+		for i in range(3):
+			kind = ((type_fields or {}).get(side) or [None] * 3)[i]
+			select.append(f"{kind or repr('')} AS t{i + 1}")
+			select.append(f"{m['subconto'][side][i]} AS s{i + 1}")
+		select.append(f"{m['currency'][side]} AS cur")
+		amount, currency_amount = m["amount"], m["currency_amount"][side]
+		if side == "debit":
+			select += [f"{amount} AS d", "0 AS c", f"{currency_amount} AS cd", "0 AS cc"]
+		else:
+			select += ["0 AS d", f"{amount} AS c", "0 AS cd", f"{currency_amount} AS cc"]
+		marks = ", ".join(["%s"] * len(accounts))
+		parts.append(
+			f"SELECT {', '.join(select)} FROM `{src.entries}` WHERE {m['organization']} = %s "
+			f"AND {date} <= %s AND {m['account'][side]} IN ({marks})"
+		)
+		params += [organization, getdate(upto), *accounts]
+	rows = frappe.db.sql(
+		"SELECT account, t1, s1, t2, s2, t3, s3, cur, SUM(d) - SUM(c) AS amount, SUM(cd) - SUM(cc) AS cur_amount "
+		f"FROM ({' UNION ALL '.join(parts)}) x GROUP BY account, t1, s1, t2, s2, t3, s3, cur "
+		"ORDER BY account, s1, s2, s3",
+		params,
+		as_dict=True,
+	)
+	return [
+		{
+			"account": r.account,
+			"types": [r.t1 or "", r.t2 or "", r.t3 or ""],
+			"subs": [r.s1 or "", r.s2 or "", r.s3 or ""],
+			"currency": r.cur or "",
+			"amount": r.amount,
+			"currency_amount": r.cur_amount,
+		}
+		for r in rows
+	]

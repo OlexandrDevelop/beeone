@@ -105,6 +105,28 @@ class TestAccountingQuery(base.TestAccountingTotals):
 		self.assertIn("account_dr", condition[0])
 		self.assertNotIn("account_cr", condition[0])
 
+	def test_side_sums(self):
+		self.seed()
+		sums = q.acc_side_sums(ENTRY, "debit", "SUB", date(2026, 3, 1), date(2026, 3, 31), "O1")
+		self.assertEqual(sums, {"P1": [30.0, 0.0], "P2": [0.0, 5.0]})
+		self.assertEqual(q.acc_side_sums(ENTRY, "credit", "SUB", date(2026, 2, 1), date(2026, 3, 31), "O1"), {"P1": [100.0, 0.0]})
+		self.assertEqual(q.acc_side_sums(ENTRY, "debit", "SUB", date(2026, 3, 1), date(2026, 3, 31), "O1", corr_like=["A%"]), sums)
+		self.assertEqual(q.acc_side_sums(ENTRY, "debit", "SUB", date(2026, 3, 1), date(2026, 3, 31), "O1", corr_not=["A1"]), {})
+		self.assertEqual(q.acc_side_sums(ENTRY, "debit", "SUB", date(2026, 3, 1), date(2026, 3, 31), "O2"), {})
+
+	def test_entry_balances(self):
+		self.seed()
+		rows = q.acc_entry_balances(ENTRY, "O1", date(2026, 3, 31), ["SUB", "A2"])
+		by = {(r["account"], tuple(r["subs"])): r for r in rows}
+		self.assertEqual(by[("SUB", ("P1", "", ""))]["amount"], 30.0)
+		self.assertEqual(by[("SUB", ("P2", "", ""))]["amount"], 5.0)
+		self.assertEqual(by[("SUB", ("P1", "X", "Doc|1"))]["amount"], -100.0)
+		self.assertEqual(by[("A2", ("", "", ""))]["amount"], -50.0)
+		self.assertEqual(by[("SUB", ("P2", "", ""))]["types"], ["", "", ""])
+		early = q.acc_entry_balances(ENTRY, "O1", date(2026, 1, 31), ["SUB"])
+		self.assertEqual([r["amount"] for r in early], [-100.0])
+		self.assertEqual(q.acc_entry_balances(ENTRY, "O1", date(2026, 3, 31), []), [])
+
 
 for _name in [n for n in dir(base.TestAccountingTotals) if n.startswith("test_")]:
 	if _name not in TestAccountingQuery.__dict__:
