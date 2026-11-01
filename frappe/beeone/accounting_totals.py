@@ -196,7 +196,7 @@ def rebuild(register: str, organization: str | None = None, from_period=None, ba
 		if last is not None:
 			filters["name"] = (">", last)
 		batch_rows = frappe.get_all(
-			reg.register_doctype, filters=filters, fields=["*"], order_by="name asc", limit_page_length=batch
+			reg.register_doctype, filters=filters, fields=["*"], order_by="name asc", limit=batch
 		)
 		if not batch_rows:
 			break

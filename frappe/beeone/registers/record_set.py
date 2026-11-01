@@ -26,8 +26,8 @@ def register_write():
 		frappe.flags.beeone_register_write = previous
 
 
-def record_set(register: str, recorder_type: str, recorder: str) -> "RecordSet":
-	return RecordSet(register, recorder_type, recorder)
+def record_set(register: str, recorder_type: str, recorder: str, keep_blank: bool = False) -> "RecordSet":
+	return RecordSet(register, recorder_type, recorder, keep_blank=keep_blank)
 
 
 class RecordSet:
@@ -37,11 +37,13 @@ class RecordSet:
 	the totals of the register in the same transaction.
 	"""
 
-	def __init__(self, register: str, recorder_type: str | None, recorder: str, moment=None):
+	def __init__(self, register: str, recorder_type: str | None, recorder: str, moment=None, keep_blank: bool = False):
 		self.reg = get_register(register)
 		self.recorder_type = recorder_type
 		self.recorder = recorder
 		self.moment = moment
+		# keep_blank: an empty string is written as it is, not as NULL (registers whose readers compare with '')
+		self.keep_blank = keep_blank
 
 	@property
 	def doctype(self) -> str:
@@ -113,7 +115,8 @@ class RecordSet:
 				frappe.throw(
 					_("Register {0}: row has unknown fields {1}").format(reg.name, ", ".join(unknown))
 				)
-			values = {**system, **{key: value for key, value in row.items() if value not in (None, "")}}
+			blank = (None,) if self.keep_blank else (None, "")
+			values = {**system, **{key: value for key, value in row.items() if value not in blank}}
 			if reg.line_no_field and values.get(reg.line_no_field) in (None, ""):
 				values[reg.line_no_field] = index
 			if reg.date_field and not values.get(reg.date_field) and reg.register_kind != "Information: Plain":
