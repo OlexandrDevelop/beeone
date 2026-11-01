@@ -67,6 +67,29 @@ def _page_allowed(page: str, user: str) -> bool:
 	return not roles or bool(roles & set(frappe.get_roles(user)))
 
 
+def core_sections(user: str | None = None) -> list[dict]:
+	"""Platform commands that are available independently of country applications."""
+	return [
+		{
+			"id": "registers",
+			"label": _("Registers"),
+			"description": _("Movements and balances"),
+			"icon": "list",
+			"order": 35,
+			"create": [],
+			"commands": [
+				{
+					"column": "reps",
+					"label": _("Register explorer"),
+					"type": "page",
+					"target": "beeone-registers",
+					"main": True,
+				}
+			],
+		}
+	]
+
+
 def _roles_ok(item: dict, user_roles: set) -> bool:
 	roles = item.get("roles")
 	return not roles or bool(set(roles) & user_roles)

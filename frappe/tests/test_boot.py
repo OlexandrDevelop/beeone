@@ -6,6 +6,46 @@ from frappe.tests import IntegrationTestCase
 
 
 class TestBootData(IntegrationTestCase):
+	def test_boot_skips_missing_subordination_doctypes(self):
+		from unittest.mock import patch
+
+		from frappe import _dict
+
+		bootinfo = _dict()
+		with (
+			patch("frappe.beeone.boot.meta.register_doctypes", return_value={}),
+			patch("frappe.beeone.boot.meta.movement_doctypes", return_value=[]),
+			patch("frappe.get_hooks", return_value=[["Missing DocType"]]),
+			patch("frappe.db.exists", return_value=False),
+			patch("frappe.has_permission") as has_permission,
+		):
+			frappe.beeone.boot.boot_session(bootinfo)
+
+		self.assertEqual(bootinfo.beeone_documents, [])
+		has_permission.assert_not_called()
+
+	def test_subordination_hides_inaccessible_related_docs(self):
+		from unittest.mock import patch
+
+		from frappe.beeone.api.subordination import get_related
+
+		doc = frappe._dict(doctype="UT Stock Count", name="SC-1")
+		doc.check_permission = lambda permission: None
+		with (
+			patch("frappe.beeone.api.subordination.frappe.get_doc", return_value=doc),
+			patch("frappe.beeone.api.subordination.get_related_docs", side_effect=frappe.PermissionError),
+		):
+			self.assertEqual(get_related("UT Stock Count", "SC-1"), [])
+
+	def test_subordination_skips_missing_doctypes(self):
+		from unittest.mock import patch
+
+		from frappe.beeone.subordination import get_related
+
+		doc = frappe.get_doc({"doctype": "Note", "title": "Subordination", "content": "x"})
+		with patch("frappe.beeone.subordination._get_supported_doctypes", return_value=["Missing DocType"]):
+			self.assertEqual(get_related(doc), [])
+
 	def test_get_unseen_notes(self):
 		frappe.db.delete("Note")
 		frappe.db.delete("Note Seen By")

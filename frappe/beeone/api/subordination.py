@@ -20,4 +20,8 @@ def get_related(doctype, name):
 	"""
 	doc = frappe.get_doc(doctype, name)
 	doc.check_permission("read")
-	return get_related_docs(doc)
+	try:
+		return get_related_docs(doc)
+	except frappe.PermissionError:
+		# beeone: relation visibility is best-effort; inaccessible related doctypes must not break the host form.
+		return []

@@ -28,7 +28,8 @@ def boot_session(bootinfo):
 	for doc_list in frappe.get_hooks("beeone_documents") or []:
 		docs = doc_list if isinstance(doc_list, list) else [doc_list]
 		for doctype in docs:
-			if frappe.has_permission(doctype, "read"):
+			# beeone: stale app hook entries must not break desk boot for unrelated doctypes.
+			if frappe.db.exists("DocType", doctype) and frappe.has_permission(doctype, "read"):
 				documents.append(doctype)
 	bootinfo.beeone_documents = documents
 

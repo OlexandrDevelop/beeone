@@ -9,6 +9,27 @@ from frappe.beeone.registers.meta import get_register, register_doctypes
 
 
 @frappe.whitelist()
+def catalog():
+	"""Readable register catalog for the platform's Register Explorer."""
+	result = []
+	for doctype, register in register_doctypes().items():
+		if not frappe.has_permission(doctype, "read"):
+			continue
+		reg = get_register(register)
+		result.append(
+			{
+				"register": reg.name,
+				"doctype": reg.register_doctype,
+				"kind": reg.register_kind,
+				"balance": query.supports_balance(reg),
+				"turnover": query.supports_turnover(reg),
+				"columns": query.columns(reg, with_system=False),
+			}
+		)
+	return sorted(result, key=lambda row: row["register"])
+
+
+@frappe.whitelist()
 def document_movements(doctype: str, name: str):
 	"""Movements of a document, one entry per register that has rows."""
 	return query.document_movements(doctype, name)

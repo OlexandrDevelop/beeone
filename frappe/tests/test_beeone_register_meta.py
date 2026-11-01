@@ -9,6 +9,8 @@ from pathlib import Path
 import frappe
 from frappe.modules.import_file import import_file_by_path
 from frappe.tests import IntegrationTestCase
+from frappe.beeone.accounting_meta import normalize_accounting_entry, validate_chart_of_accounts
+from frappe.beeone.register_meta import validate_register
 
 LEDGER = "Beeone Test Ledger"
 DOCUMENT = "Beeone Test Document"
@@ -275,3 +277,151 @@ class TestCoreIsCountryNeutral(IntegrationTestCase):
 			for path in (root / folder).rglob("*"):
 				if path.suffix in (".py", ".json"):
 					self.assertIsNone(cyrillic.search(path.read_text(encoding="utf-8")), str(path))
+
+
+class TestAccountingMeta(IntegrationTestCase):
+	ACCOUNT = "Beeone Test Account"
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		_doctype("Beeone Test Subconto", [
+			{"fieldname": "subconto_type", "fieldtype": "Data"},
+			{"fieldname": "reference_doctype", "fieldtype": "Link", "options": "DocType"},
+			{"fieldname": "is_dynamic", "fieldtype": "Check"},
+			{"fieldname": "turnover_only", "fieldtype": "Check"},
+		], istable=1)
+		_doctype(cls.ACCOUNT, [
+			{"fieldname": "account_code", "fieldtype": "Data"},
+			{"fieldname": "parent_account", "fieldtype": "Link", "options": cls.ACCOUNT},
+			{"fieldname": "is_group", "fieldtype": "Check"},
+			{"fieldname": "off_balance", "fieldtype": "Check"},
+			{"fieldname": "quantity_accounting", "fieldtype": "Check"},
+			{"fieldname": "currency_accounting", "fieldtype": "Check"},
+			{"fieldname": "subconto", "fieldtype": "Table", "options": "Beeone Test Subconto"},
+		], autoname="field:account_code")
+		_doctype("Beeone Test Accounting Entries", [
+			{"fieldname": "registrar_type", "fieldtype": "Data"},
+			{"fieldname": "registrar", "fieldtype": "Data"},
+			{"fieldname": "posting_date", "fieldtype": "Date"},
+		])
+
+	def tearDown(self):
+		frappe.db.rollback()
+		for account in ("group", "balance", "offbalance", "quantity", "currency", "subaccount", "too-many"):
+			if frappe.db.exists(self.ACCOUNT, account):
+				frappe.delete_doc(self.ACCOUNT, account, force=True)
+
+	def _chart(self, **values):
+		return frappe.get_doc({
+			"doctype": "Chart of Accounts",
+			"account_doctype": self.ACCOUNT,
+			"code_field": "account_code",
+			"parent_account_field": "parent_account",
+			"group_field": "is_group",
+			"off_balance_field": "off_balance",
+			"quantity_accounting_field": "quantity_accounting",
+			"currency_accounting_field": "currency_accounting",
+			"subconto_table_field": "subconto",
+			"subconto_type_field": "subconto_type",
+			"subconto_reference_doctype_field": "reference_doctype",
+			"subconto_is_dynamic_field": "is_dynamic",
+			"subconto_turnover_only_field": "turnover_only",
+			**values,
+		})
+
+	def test_chart_describes_generic_account_metadata(self):
+		chart = self._chart()
+		chart.insert()
+		self.assertEqual(chart.name, self.ACCOUNT)
+		self.assertEqual(chart.account_doctype, self.ACCOUNT)
+
+	def test_chart_rejects_missing_account_metadata_field(self):
+		with self.assertRaises(frappe.ValidationError) as ctx:
+			validate_chart_of_accounts(self._chart(off_balance_field="missing_field"))
+		self.assertIn("missing_field", str(ctx.exception))
+
+	def test_accounting_register_kind_requires_recorder_and_date(self):
+		self.assertIn("Accounting", frappe.get_meta("Register").get_field("register_kind").options.split("\n"))
+		register = frappe.get_doc({
+			"doctype": "Register",
+			"register_doctype": "Beeone Test Accounting Entries",
+			"register_kind": "Accounting",
+			"registrar_type_field": "registrar_type",
+			"date_field": "posting_date",
+			"totals": "None",
+			"fields": [],
+			"control_negative": [],
+		})
+		with self.assertRaises(frappe.ValidationError):
+			validate_register(register)
+		register.registrar_field = "registrar"
+		validate_register(register)
+		register.date_field = None
+		with self.assertRaises(frappe.ValidationError):
+			validate_register(register)
+
+	def test_accounting_entry_rejects_group_accounts(self):
+		chart = self._chart()
+		frappe.get_doc({"doctype": self.ACCOUNT, "account_code": "group", "is_group": 1}).insert()
+		with self.assertRaises(frappe.ValidationError):
+			normalize_accounting_entry(chart, debit="group", amount=1)
+
+	def test_accounting_entry_requires_off_balance_for_single_side(self):
+		chart = self._chart()
+		frappe.get_doc(
+			{"doctype": self.ACCOUNT, "account_code": "balance", "is_group": 0, "off_balance": 0}
+		).insert()
+		with self.assertRaises(frappe.ValidationError):
+			normalize_accounting_entry(chart, debit="balance", amount=1)
+		frappe.get_doc(
+			{"doctype": self.ACCOUNT, "account_code": "offbalance", "is_group": 0, "off_balance": 1}
+		).insert()
+		self.assertEqual(
+			normalize_accounting_entry(chart, debit="offbalance", amount=1)["debit"]["account"], "offbalance"
+		)
+		with self.assertRaises(frappe.ValidationError):
+			normalize_accounting_entry(chart, debit="offbalance", credit="balance", amount=1)
+
+	def test_accounting_entry_allows_negative_amount_and_maps_quantity(self):
+		chart = self._chart()
+		frappe.get_doc({"doctype": self.ACCOUNT, "account_code": "quantity", "is_group": 0,
+			"off_balance": 0, "quantity_accounting": 1}).insert()
+		row = normalize_accounting_entry(chart, debit="quantity", credit="quantity", amount=-2, quantity_debit=3)
+		self.assertEqual(row["amount"], -2)
+		self.assertEqual(row["debit"]["quantity"], 3)
+		self.assertEqual(row["credit"]["quantity"], 0)
+
+	def test_accounting_entry_gates_currency_and_rejects_zero(self):
+		chart = self._chart()
+		frappe.get_doc({"doctype": self.ACCOUNT, "account_code": "currency", "is_group": 0,
+			"off_balance": 0, "currency_accounting": 1}).insert()
+		row = normalize_accounting_entry(chart, debit="currency", credit="currency", amount=1,
+			currency_debit="USD", currency_amount_debit=4)
+		self.assertEqual(row["debit"]["currency"], "USD")
+		self.assertEqual(row["debit"]["currency_amount"], 4)
+		with self.assertRaises(frappe.ValidationError):
+			normalize_accounting_entry(chart, debit="currency", credit="currency", amount=0)
+
+	def test_accounting_entry_maps_subaccounts_by_configured_order(self):
+		chart = self._chart()
+		frappe.get_doc({"doctype": self.ACCOUNT, "account_code": "subaccount", "is_group": 0,
+			"off_balance": 0, "subconto": [
+				{"subconto_type": "First", "reference_doctype": "User", "is_dynamic": 0, "turnover_only": 1},
+				{"subconto_type": "Second", "reference_doctype": "", "is_dynamic": 1, "turnover_only": 0},
+			]}).insert()
+		row = normalize_accounting_entry(chart, debit="subaccount", credit="subaccount", amount=1,
+			subconto_debit={"Second": ("Role", "Test Role"), "First": "person@example.com"})
+		self.assertEqual(row["debit"]["subconto"], [
+			{"type": "First", "doctype": "User", "value": "person@example.com", "turnover_only": True},
+			{"type": "Second", "doctype": "Role", "value": "Test Role", "turnover_only": False},
+		])
+
+	def test_accounting_entry_rejects_more_than_three_subaccounts(self):
+		chart = self._chart()
+		frappe.get_doc({"doctype": self.ACCOUNT, "account_code": "too-many", "is_group": 0,
+			"off_balance": 0, "subconto": [
+				{"subconto_type": f"Subaccount {idx}", "is_dynamic": 0} for idx in range(4)
+			]}).insert()
+		with self.assertRaises(frappe.ValidationError):
+			normalize_accounting_entry(chart, debit="too-many", credit="too-many", amount=1)

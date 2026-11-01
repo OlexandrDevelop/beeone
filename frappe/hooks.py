@@ -20,6 +20,9 @@ after_app_uninstall = "frappe.utils.install.delete_desktop_icons_for_app"
 
 page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 
+# Platform-owned navigation; applications add their own sections alongside it.
+beeone_sections = ["frappe.beeone.shell.core_sections"]
+
 # website
 app_include_js = [
 	"libs.bundle.js",
@@ -174,7 +177,12 @@ has_permission = {
 has_website_permission = {"Address": "frappe.contacts.doctype.address.address.has_website_permission"}
 
 jinja = {
-	"methods": "frappe.utils.jinja_globals",
+	"methods": [
+		"frappe.utils.jinja_globals",
+		"frappe.beeone.print.title_of",  # beeone: country-neutral print helper
+		"frappe.beeone.localization.amount_in_words",  # beeone: language-specific hook
+		"frappe.beeone.qr.qr_code",  # beeone: country-neutral qr code helper
+	],
 	"filters": [
 		"frappe.utils.data.global_date_format",
 		"frappe.utils.markdown",
@@ -188,6 +196,7 @@ standard_queries = {"User": "frappe.core.doctype.user.user.user_query"}
 
 doc_events = {
 	"*": {
+		"validate": ["frappe.beeone.characteristic_chart.validate_element"],  # beeone: chart of characteristic types
 		"on_update": [
 			"frappe.desk.notifications.clear_doctype_notifications",
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
@@ -212,6 +221,7 @@ doc_events = {
 			"frappe.desk.notifications.clear_doctype_notifications",
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
 			"frappe.search.sqlite_search.delete_doc_index",
+			"frappe.beeone.characteristic_chart.on_trash",  # beeone: chart of characteristic types
 		],
 		"on_update_after_submit": [
 			"frappe.workflow.doctype.workflow_action.workflow_action.process_workflow_actions",
@@ -638,3 +648,13 @@ code_only_modules = {
 	"Custom": ["Build"],
 	"Desk": ["Build"],
 }
+
+# beeone: localization hooks
+# amount_in_words: implement in app as `amount_in_words = {"uk": "app.module.function"}`
+# beeone_validators: implement in app as `beeone_validators = {"edrpou": "app.module.function"}`
+# beeone_formats: implement in app as `beeone_formats = {"uk": {"date_pattern": "..."}}`
+# beeone_translation_files: implement in app as `beeone_translation_files = {"uk": ["path/to/file.csv"]}`
+amount_in_words = {}
+beeone_validators = {}
+beeone_formats = {}
+beeone_translation_files = {}

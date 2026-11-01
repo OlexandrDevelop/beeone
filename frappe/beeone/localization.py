@@ -21,19 +21,36 @@ FORMAT_KEYS = ("date_pattern", "time_pattern", "number_pattern", "currency_patte
 
 def _handler(hook: str, key: str):
 	"""Return the first function that an app registered for `key` in the dict hook `hook`."""
-	registered = (frappe.get_hooks(hook) or {}).get(key) or []
+	hooks = frappe.get_hooks(hook) or {}
+	registered = hooks.get(key)
+	if not registered and ("_" in key or "-" in key):
+		base_key = key.replace("_", "-").split("-")[0]
+		registered = hooks.get(base_key)
 	if isinstance(registered, str):
 		registered = [registered]
 	return frappe.get_attr(registered[0]) if registered else None
 
 
+@frappe.whitelist()
 def amount_in_words(value, currency=None, lang=None) -> str:
-	"""Write an amount in words in `lang` (default: the user language) with the handler of an app.
+	"""Write an amount in words in `lang` (default: the print or user language) with the handler of an app.
 
 	Without a handler for the language (or its base language) a plain number text is returned.
 	"""
-	lang = lang or frappe.local.lang or "en"
-	handler = _handler("amount_in_words", lang) or _handler("amount_in_words", lang.split("-")[0])
+	if not lang:
+		local_doc = getattr(frappe.local, "doc", None)
+		if isinstance(local_doc, dict):
+			lang = local_doc.get("default_print_language")
+		elif local_doc and hasattr(local_doc, "default_print_language"):
+			lang = getattr(local_doc, "default_print_language", None)
+		if not lang:
+			flags = getattr(getattr(frappe, "local", None), "flags", None)
+			lang = flags.get("print_language") if isinstance(flags, dict) else None
+		if not lang:
+			lang = getattr(getattr(frappe, "local", None), "lang", None) or "en"
+
+	base_lang = lang.replace("_", "-").split("-")[0]
+	handler = _handler("amount_in_words", lang) or _handler("amount_in_words", base_lang)
 	if handler:
 		return handler(value, currency)
 	text = f"{float(value or 0):.2f}"

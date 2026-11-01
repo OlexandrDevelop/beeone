@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "creation": "2026-10-30 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "name": "Chart of Accounts",
+ "module": "Beeone Core",
+ "autoname": "field:account_doctype",
+ "naming_rule": "By fieldname",
+ "title_field": "account_doctype",
+ "field_order": [
+  "account_doctype", "code_field", "parent_account_field", "group_field", "off_balance_field",
+  "quantity_accounting_field", "currency_accounting_field", "subconto_table_field",
+  "subconto_type_field", "subconto_type_doctype", "subconto_reference_doctype_field",
+  "subconto_is_dynamic_field", "subconto_turnover_only_field"
+ ],
+ "fields": [
+  {"fieldname": "account_doctype", "fieldtype": "Link", "label": "Account DocType", "options": "DocType", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "code_field", "fieldtype": "Data", "label": "Code Field", "reqd": 1},
+  {"fieldname": "parent_account_field", "fieldtype": "Data", "label": "Parent Account Field", "reqd": 1},
+  {"fieldname": "group_field", "fieldtype": "Data", "label": "Group Field", "reqd": 1},
+  {"fieldname": "off_balance_field", "fieldtype": "Data", "label": "Off Balance Field", "reqd": 1},
+  {"fieldname": "quantity_accounting_field", "fieldtype": "Data", "label": "Quantity Accounting Field", "reqd": 1},
+  {"fieldname": "currency_accounting_field", "fieldtype": "Data", "label": "Currency Accounting Field", "reqd": 1},
+  {"fieldname": "subconto_table_field", "fieldtype": "Data", "label": "Subconto Table Field", "reqd": 1},
+  {"fieldname": "subconto_type_field", "fieldtype": "Data", "label": "Subconto Type Field", "reqd": 1},
+  {"fieldname": "subconto_type_doctype", "fieldtype": "Link", "label": "Subconto Type DocType", "options": "DocType"},
+  {"fieldname": "subconto_reference_doctype_field", "fieldtype": "Data", "label": "Subconto Reference DocType Field", "reqd": 1},
+  {"fieldname": "subconto_is_dynamic_field", "fieldtype": "Data", "label": "Subconto Is Dynamic Field", "reqd": 1},
+  {"fieldname": "subconto_turnover_only_field", "fieldtype": "Data", "label": "Subconto Turnover Only Field", "reqd": 1}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1}],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

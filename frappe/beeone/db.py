@@ -92,6 +92,20 @@ class Dialect:
 	def _conflict_clause(self, table, key_columns, value_columns, add) -> str:
 		raise NotImplementedError
 
+	def accumulate_sql(
+		self, table: str, columns: list[str], conflict: list[str], add: list[str], replace: list[str], count: int
+	) -> str:
+		"""One INSERT of `count` rows. On a key that exists, add `add` columns and replace `replace` columns."""
+		q = self.quote
+		row = "(" + ", ".join(["%s"] * len(columns)) + ")"
+		return (
+			f"INSERT INTO {q(table)} ({', '.join(q(c) for c in columns)}) VALUES {', '.join([row] * count)} "
+			f"{self._accumulate_clause(table, conflict, add, replace)}"
+		)
+
+	def _accumulate_clause(self, table, conflict, add, replace) -> str:
+		raise NotImplementedError
+
 	def month_start(self, expr: str) -> str:
 		"""First day of the month of a DATE expression."""
 		raise NotImplementedError
@@ -138,6 +152,11 @@ class MariaDB(Dialect):
 		else:
 			update = ", ".join(f"{q(f)} = VALUES({q(f)})" for f in value_columns)
 		return f"ON DUPLICATE KEY UPDATE {update}"
+
+	def _accumulate_clause(self, table, conflict, add, replace) -> str:
+		q = self.quote
+		update = [f"{q(f)} = {q(f)} + VALUES({q(f)})" for f in add] + [f"{q(f)} = VALUES({q(f)})" for f in replace]
+		return f"ON DUPLICATE KEY UPDATE {', '.join(update)}"
 
 	def insert_missing_sql(self, table: str, columns: list[str]) -> str:
 		q = self.quote
@@ -187,6 +206,14 @@ class Postgres(Dialect):
 		else:
 			update = ", ".join(f"{q(f)} = EXCLUDED.{q(f)}" for f in value_columns)
 		return f"ON CONFLICT ({key}) DO UPDATE SET {update}"
+
+	def _accumulate_clause(self, table, conflict, add, replace) -> str:
+		q = self.quote
+		key = ", ".join(q(c) for c in conflict)
+		update = [f"{q(f)} = {q(table)}.{q(f)} + EXCLUDED.{q(f)}" for f in add] + [
+			f"{q(f)} = EXCLUDED.{q(f)}" for f in replace
+		]
+		return f"ON CONFLICT ({key}) DO UPDATE SET {', '.join(update)}"
 
 	def insert_missing_sql(self, table: str, columns: list[str]) -> str:
 		q = self.quote
@@ -379,6 +406,28 @@ def upsert(table: str, key_columns: list[str], value_columns: list[str], rows: l
 		chunk = rows[start : start + CHUNK]
 		params = [part for key, values in chunk for part in (*key, *values)]
 		frappe.db.sql(dia.upsert_sql(table, key_columns, value_columns, len(chunk), add), params)
+
+
+def accumulate(
+	table: str, columns: list[str], conflict: list[str], add: list[str], replace: list[str], rows: list[tuple]
+):
+	"""Insert `rows` of `columns`. A row whose `conflict` key exists gets `add` columns added and `replace` columns replaced.
+
+	Other columns of an existing row (creation, owner) stay. Rows keep the given order, so the caller
+	sorts the keys. A key may appear once only.
+	"""
+	rows = list(rows)
+	positions = [columns.index(c) for c in conflict]
+	keys = [tuple(row[i] for i in positions) for row in rows]
+	if len(set(keys)) != len(keys):
+		frappe.throw(_("A key is twice in one write to {0}").format(table))
+	dia = dialect()
+	for start in range(0, len(rows), CHUNK):
+		chunk = rows[start : start + CHUNK]
+		frappe.db.sql(
+			dia.accumulate_sql(table, columns, conflict, add, replace, len(chunk)),
+			[value for row in chunk for value in row],
+		)
 
 
 def lock_keys(table: str, key_columns: list[str], keys: list[tuple]):

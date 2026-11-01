@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "creation": "2026-10-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "chart_doctype",
+  "value_types_field",
+  "predefined_field"
+ ],
+ "fields": [
+  {
+   "fieldname": "chart_doctype",
+   "fieldtype": "Link",
+   "label": "Chart DocType",
+   "options": "DocType",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "value_types_field",
+   "fieldtype": "Data",
+   "label": "Value Types Field",
+   "description": "Table field of the element DocType (child DocType Characteristic Value Type) that lists the allowed value types",
+   "reqd": 1
+  },
+  {
+   "fieldname": "predefined_field",
+   "fieldtype": "Data",
+   "label": "Predefined Field",
+   "description": "Field name that marks predefined elements; predefined elements cannot be deleted"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Beeone Core",
+ "name": "Characteristic Chart",
+ "owner": "Administrator",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "autoname": "field:chart_doctype",
+ "naming_rule": "By fieldname",
+ "title_field": "chart_doctype"
+}

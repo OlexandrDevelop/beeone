@@ -48,8 +48,13 @@ frappe.views.BaseList = class BaseList {
 		this.user_settings = frappe.get_user_settings(this.doctype);
 
 		this.start = 0;
-		this.page_length = frappe.is_large_screen() ? 100 : 20;
+		// Lists are an infinite stream. Fetch a small first window and grow it as
+		// the user approaches the end; page-size controls are not part of the UI.
+		this.page_length = frappe.is_large_screen() ? 100 : 40;
 		this.selected_page_count = this.page_length;
+		this.infinite_scroll = true;
+		this.virtual_page_size = frappe.is_large_screen() ? 100 : 40;
+		this.total_count = null;
 		this.data = [];
 		this.method = "frappe.desk.reportview.get";
 
@@ -421,6 +426,7 @@ frappe.views.BaseList = class BaseList {
 				},
 			})
 		);
+		if (this.infinite_scroll) this.$paging_area.hide();
 	}
 
 	setup_resize_handler() {
@@ -543,6 +549,7 @@ frappe.views.BaseList = class BaseList {
 		}
 		this.freeze(true);
 		// fetch data from server
+		const initial_load = this.start === 0;
 		return frappe.call(args).then((r) => {
 			// render
 			this.prepare_data(r);
@@ -556,6 +563,23 @@ frappe.views.BaseList = class BaseList {
 			if (this.settings.refresh) {
 				this.settings.refresh(this);
 			}
+			if (initial_load) return this.refresh_total_count();
+		});
+	}
+
+	refresh_total_count() {
+		const args = this.get_args();
+		args.fields = ["name"];
+		delete args.order_by;
+		delete args.start;
+		delete args.page_length;
+		delete args.view;
+		delete args.group_by;
+		args.limit = 0;
+		return frappe.call({ method: "frappe.desk.reportview.get_count", args }).then((r) => {
+			this.total_count = Number.isFinite(Number(r.message)) ? Number(r.message) : this.data.length;
+			if (this.virtualization_state?.enabled) this.render_virtual_rows(true);
+			return this.total_count;
 		});
 	}
 
@@ -614,7 +638,7 @@ frappe.views.BaseList = class BaseList {
 	toggle_result_area() {
 		this.$result.parent(".result-container").toggle(this.data.length > 0);
 		this.$result.toggle(this.data.length > 0);
-		this.$paging_area.toggle(this.data.length > 0);
+		this.$paging_area.toggle(!this.infinite_scroll && this.data.length > 0);
 		this.$no_result.toggle(this.data.length == 0);
 
 		if (this.data.length) {
