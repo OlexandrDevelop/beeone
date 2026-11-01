@@ -18,6 +18,7 @@ Nothing here writes or commits.
 
 import frappe
 from frappe import _
+from frappe.beeone import db
 from frappe.beeone.accounting_totals import mapping_for
 from frappe.beeone.registers.meta import get_register
 from frappe.utils import flt, get_first_day, getdate
@@ -186,7 +187,7 @@ def _read_totals(src, group, months, out, organizations, currency, by_currency, 
 		f"SUM({t['quantity']['debit']}) AS qty_dr, SUM({t['quantity']['credit']}) AS qty_cr, "
 		f"SUM({t['currency_amount']['debit']}) AS cur_dr, SUM({t['currency_amount']['credit']}) AS cur_cr"
 	)
-	sql = f"SELECT {', '.join(select)}, {sums} FROM `{src.totals}` WHERE {w.sql()} GROUP BY {', '.join(group_by)}"
+	sql = f"SELECT {', '.join(select)}, {sums} FROM {db.quote(src.totals)} WHERE {w.sql()} GROUP BY {', '.join(group_by)}"
 	_merge(out, frappe.db.sql(sql, w.params, as_dict=True), n_levels)
 
 
@@ -214,7 +215,7 @@ def _read_entries(src, group, edges, out, organizations, currency, by_currency, 
 					f"0 AS debit, SUM({amount}) AS credit, 0 AS qty_dr, SUM({quantity}) AS qty_cr, "
 					f"0 AS cur_dr, SUM({currency_amount}) AS cur_cr"
 				)
-			sql = f"SELECT {', '.join(select)}, {sums} FROM `{src.entries}` WHERE {w.sql()} GROUP BY {', '.join(group_by)}"
+			sql = f"SELECT {', '.join(select)}, {sums} FROM {db.quote(src.entries)} WHERE {w.sql()} GROUP BY {', '.join(group_by)}"
 			_merge(out, frappe.db.sql(sql, w.params, as_dict=True), n_levels)
 
 
@@ -313,9 +314,9 @@ def acc_entries(register, begin, end, groups, fields, limit, organizations=(), c
 		return [], False
 	w.add(cond[0])
 	w.params.extend(cond[1])
-	columns = ", ".join(f"`{f}`" for f in fields)
+	columns = ", ".join(db.quote(f) for f in fields)
 	rows = frappe.db.sql(
-		f"SELECT {columns} FROM `{src.entries}` WHERE {w.sql()} "
+		f"SELECT {columns} FROM {db.quote(src.entries)} WHERE {w.sql()} "
 		f"ORDER BY {src.date_field} ASC, name ASC LIMIT %s",
 		[*w.params, limit + 1],
 		as_dict=True,
@@ -343,7 +344,7 @@ def acc_corr_turnover(register, begin, end, groups, organizations=(), currency=N
 			own, corr = cols["account"], src.m["account"][other]
 			sql = (
 				f"SELECT {own} AS account, {corr} AS corr, SUM({amount}) AS total "
-				f"FROM `{src.entries}` WHERE {w.sql()} GROUP BY {own}, {corr}"
+				f"FROM {db.quote(src.entries)} WHERE {w.sql()} GROUP BY {own}, {corr}"
 			)
 			for r in frappe.db.sql(sql, w.params, as_dict=True):
 				vec = out.setdefault((r["account"], r["corr"] or ""), [0.0, 0.0])
@@ -365,7 +366,7 @@ def acc_side_sums(register, side, account, date_from, date_to, organization, cor
 		f"SELECT {slot} AS sub_key, "
 		f"COALESCE(SUM(CASE WHEN {date} < %s THEN {m['amount']} END), 0) AS before_sum, "
 		f"COALESCE(SUM(CASE WHEN {date} >= %s THEN {m['amount']} END), 0) AS turn_sum "
-		f"FROM `{src.entries}` WHERE {m['organization']} = %s AND {m['account'][side]} = %s AND {date} <= %s"
+		f"FROM {db.quote(src.entries)} WHERE {m['organization']} = %s AND {m['account'][side]} = %s AND {date} <= %s"
 	)
 	values = [date_from, date_from, organization, account, date_to]
 	if corr_like:
@@ -406,7 +407,7 @@ def acc_entry_balances(register, organization, upto, accounts, type_fields=None)
 			select += ["0 AS d", f"{amount} AS c", "0 AS cd", f"{currency_amount} AS cc"]
 		marks = ", ".join(["%s"] * len(accounts))
 		parts.append(
-			f"SELECT {', '.join(select)} FROM `{src.entries}` WHERE {m['organization']} = %s "
+			f"SELECT {', '.join(select)} FROM {db.quote(src.entries)} WHERE {m['organization']} = %s "
 			f"AND {date} <= %s AND {m['account'][side]} IN ({marks})"
 		)
 		params += [organization, getdate(upto), *accounts]
