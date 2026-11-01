@@ -37,28 +37,25 @@ def check_period_lock(doc) -> None:
 			continue
 
 		doc_org = doc.get("organization")
-		period_lock = frappe.db.get_value(
-			"Period Lock",
-			{"organization": doc_org or "", "lock_date": lock_date},
-			["name", "roles"]
-		)
+		period_lock = None
+		if doc_org:
+			period_lock = frappe.db.get_value("Period Lock", {"organization": doc_org, "lock_date": lock_date}, "name")
 
-		if not period_lock and doc_org:
+		if not period_lock:
+			# A lock without an organization applies to all organizations (stored as NULL or empty).
 			period_lock = frappe.db.get_value(
 				"Period Lock",
-				{"organization": "", "lock_date": lock_date},
-				["name", "roles"]
+				[["organization", "is", "not set"], ["lock_date", "=", lock_date]],
+				"name",
 			)
 
 		if not period_lock:
 			continue
 
-		user_roles = {role.role for role in frappe.get_user().get_roles()}
-		exception_roles = {row["role"] for row in frappe.db.get_list(
-			"Period Lock Role",
-			filters={"parent": period_lock[0]},
-			fields=["role"]
-		)}
+		user_roles = set(frappe.get_roles())
+		exception_roles = set(
+			frappe.get_all("Period Lock Role", filters={"parent": period_lock}, pluck="role")
+		)
 
 		if not user_roles & exception_roles:
 			frappe.throw(_("Cannot edit locked period"))
