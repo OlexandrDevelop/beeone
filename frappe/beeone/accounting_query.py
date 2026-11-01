@@ -245,7 +245,7 @@ def acc_turnover(
 def acc_balance(register, at, groups, organizations=(), currency=None, by_currency=False, n_levels=0):
 	"""Closing balance of the end of the day `at`, from the start of the books.
 
-	Returns {(account, (level values...), currency): {"debit": ..., "credit": ..., "quantity": ..., "currency_amount": ...}}
+	Returns {(account, (level values...), currency): {"amount": ..., "quantity": ..., "currency_amount": ...}}
 	where every value is debit minus credit.
 	"""
 	from frappe.utils import add_days
@@ -393,7 +393,6 @@ def acc_entry_balances(register, organization, upto, accounts, type_fields=None)
 	m, date = src.m, src.date_field
 	parts, params = [], []
 	for side, other in (("debit", "credit"), ("credit", "debit")):
-		columns = ["account"]
 		select = [f"{m['account'][side]} AS account"]
 		for i in range(3):
 			kind = ((type_fields or {}).get(side) or [None] * 3)[i]
