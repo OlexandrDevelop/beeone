@@ -117,6 +117,8 @@ def validate_register(doc):
 
 	# an information register can be independent of documents: its rows are written by the user or by the application
 	required = {
+		# beeone: accounting movements always belong to a posting document and date.
+		KIND_ACCOUNTING: ("registrar_field", "date_field"),
 		"Information: Plain": (),
 		"Information: Periodic": ("date_field",),
 	}.get(doc.register_kind, ("registrar_field", "date_field"))

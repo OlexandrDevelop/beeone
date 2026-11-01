@@ -177,7 +177,12 @@ has_permission = {
 has_website_permission = {"Address": "frappe.contacts.doctype.address.address.has_website_permission"}
 
 jinja = {
-	"methods": "frappe.utils.jinja_globals",
+	"methods": [
+		"frappe.utils.jinja_globals",
+		"frappe.beeone.print.title_of",  # beeone: country-neutral print helper
+		"frappe.beeone.localization.amount_in_words",  # beeone: language-specific hook
+		"frappe.beeone.qr.qr_code",  # beeone: country-neutral qr code helper
+	],
 	"filters": [
 		"frappe.utils.data.global_date_format",
 		"frappe.utils.markdown",
@@ -641,3 +646,13 @@ code_only_modules = {
 	"Custom": ["Build"],
 	"Desk": ["Build"],
 }
+
+# beeone: localization hooks
+# amount_in_words: implement in app as `amount_in_words = {"uk": "app.module.function"}`
+# beeone_validators: implement in app as `beeone_validators = {"edrpou": "app.module.function"}`
+# beeone_formats: implement in app as `beeone_formats = {"uk": {"date_pattern": "..."}}`
+# beeone_translation_files: implement in app as `beeone_translation_files = {"uk": ["path/to/file.csv"]}`
+amount_in_words = {}
+beeone_validators = {}
+beeone_formats = {}
+beeone_translation_files = {}
