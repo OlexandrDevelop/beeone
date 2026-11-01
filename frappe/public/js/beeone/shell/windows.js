@@ -136,7 +136,8 @@ export function label_of(route) {
 function title_of(route, kind) {
 	if (kind === "form") {
 		const name = route.slice(2).join("/");
-		return /^new-/.test(name) ? __("New {0}", [__(route[1])]) : name;
+		if (/^new-/.test(name)) return __("New {0}", [__(route[1])]);
+		return name === route[1] ? label_of(route) || __(name) : name; // a single document is titled by its type
 	}
 	if (kind === "report") return label_of(route) || __(route[1] || "");
 	if (kind === "list") return label_of(route) || __(route[1]);
@@ -315,10 +316,11 @@ export function refresh_title(win) {
 		if (frm && frm.doc) {
 			let title = frm.doc.name;
 			const meta = frappe.get_meta(frm.doctype);
-			if (frm.is_new()) title = __("New {0}", [__(frm.doctype)]);
+			if (meta && meta.issingle) title = label_of(["Form", frm.doctype]) || __(frm.doctype);
+			else if (frm.is_new()) title = __("New {0}", [__(frm.doctype)]);
 			else if (meta && meta.title_field && meta.title_field !== "name" && frm.doc[meta.title_field] && !meta.is_submittable)
 				title = frm.doc[meta.title_field];
-			set_title(win, title, label_of(["List", frm.doctype]) || __(frm.doctype));
+			set_title(win, title, meta && meta.issingle ? "" : label_of(["List", frm.doctype]) || __(frm.doctype));
 		}
 		set_dirty(win, !!(frm && frm.doc && frm.doc.__unsaved));
 	} else if (win.kind === "page" || win.kind === "report") {
@@ -654,7 +656,10 @@ export function init_pointer() {
 	layer.addEventListener("click", (e) => {
 		const btn = e.target.closest("[data-act]");
 		if (!btn) return;
-		const win = wins.map.get(btn.closest(".bo-win").dataset.key);
+		// only the window's own buttons (a page may use data-act and re-render, which detaches its button)
+		const own = btn.closest(".bo-win-bar, .bo-win-parked");
+		const host = own && own.closest(".bo-win");
+		const win = host && wins.map.get(host.dataset.key);
 		if (!win) return;
 		const act = btn.dataset.act;
 		if (act === "min") minimize(win.key);
