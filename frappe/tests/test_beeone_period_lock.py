@@ -31,9 +31,15 @@ class TestPeriodLock(IntegrationTestCase):
 	def check(self, day, roles):
 		"""Run the guard for a document of `day` posted by a user who has `roles`."""
 		doc = frappe._dict(posting_date=day, organization=None, creation=day)
-		hooks = ["frappe.tests.test_beeone_period_lock.lock_date_hook"]
+		real_get_hooks = frappe.get_hooks
+
+		def get_hooks(hook=None, *args, **kwargs):
+			if hook == "beeone_lock_date":
+				return ["frappe.tests.test_beeone_period_lock.lock_date_hook"]
+			return real_get_hooks(hook, *args, **kwargs)
+
 		with (
-			patch("frappe.get_hooks", return_value=hooks),
+			patch("frappe.get_hooks", side_effect=get_hooks),
 			patch("frappe.get_roles", return_value=roles),
 		):
 			check_period_lock(doc)
