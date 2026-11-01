@@ -55,7 +55,7 @@ function _ensure_subordination_container(frm) {
 }
 
 function _load_subordination_data(frm) {
-	if (!_is_subordination_supported(frm.doctype) || frm.doc.name === "__new") {
+	if (!_is_subordination_supported(frm.doctype) || frm.doc.name === "__new" || frm.is_new()) {
 		const container = document.getElementById("subordination_tree_container");
 		if (container) {
 			container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No related documents</p>';
