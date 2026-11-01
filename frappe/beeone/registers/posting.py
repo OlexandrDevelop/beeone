@@ -37,16 +37,15 @@ def check_period_lock(doc) -> None:
 			continue
 
 		doc_org = doc.get("organization")
-		period_lock = frappe.db.get_value(
-			"Period Lock",
-			{"organization": doc_org or "", "lock_date": lock_date},
-			"name",
-		)
+		period_lock = None
+		if doc_org:
+			period_lock = frappe.db.get_value("Period Lock", {"organization": doc_org, "lock_date": lock_date}, "name")
 
-		if not period_lock and doc_org:
+		if not period_lock:
+			# A lock without an organization applies to all organizations (stored as NULL or empty).
 			period_lock = frappe.db.get_value(
 				"Period Lock",
-				{"organization": "", "lock_date": lock_date},
+				[["organization", "is", "not set"], ["lock_date", "=", lock_date]],
 				"name",
 			)
 
