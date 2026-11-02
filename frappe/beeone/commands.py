@@ -52,8 +52,14 @@ def check_registers(context, register=None, from_month=None, fix_totals=False):
 @click.option("--seed", default=42, type=int, help="The same seed gives the same data.")
 @click.option("--reset", is_flag=True, default=False, help="Delete the old demo data first, then create it again.")
 @click.option("--delete-only", is_flag=True, default=False, help="Only delete the demo data.")
+@click.option(
+	"--if-allowed",
+	is_flag=True,
+	default=False,
+	help="Create the demo data only when the site has no data of its own; otherwise print why and exit 0.",
+)
 @pass_context
-def demo(context, app, scale, seed, reset, delete_only):
+def demo(context, app, scale, seed, reset, delete_only, if_allowed):
 	"""Create demo data with the generator of an app (hook `beeone_demo`).
 
 	Exit code 1 when the self-check of the generator fails.
@@ -67,7 +73,40 @@ def demo(context, app, scale, seed, reset, delete_only):
 	frappe.connect()
 	try:
 		frappe.set_user("Administrator")
+		if if_allowed:
+			from frappe.beeone.demo import get_provider
+			from frappe.beeone.setup import demo_allowed
+
+			allowed, reason = demo_allowed({app: get_provider(app)})
+			if not allowed:
+				print(f"Demo data skipped: {reason}")
+				return
 		run_demo(app, scale=scale, seed=seed, reset=reset, delete_only=delete_only)
+	except frappe.ValidationError as e:
+		print(f"Error: {e}", file=sys.stderr)
+		sys.exit(1)
+	finally:
+		frappe.destroy()
+
+
+@beeone.command("prepare-site")
+@click.option("--language", required=True, help="Language code the site is fixed to, e.g. de.")
+@click.option("--country", default=None, help="Country of the site.")
+@click.option("--time-zone", default=None, help="Time zone of the site.")
+@click.option("--currency", default=None, help="Default currency of the site.")
+@pass_context
+def prepare_site(context, language, country, time_zone, currency):
+	"""Complete the stock setup of Frappe without questions and fix the site to one language."""
+	from frappe.beeone.setup import prepare_site as prepare
+
+	if not context.sites:
+		raise frappe.SiteNotSpecifiedError
+
+	frappe.init(context.sites[0])
+	frappe.connect()
+	try:
+		frappe.set_user("Administrator")
+		prepare(language, country=country, time_zone=time_zone, currency=currency)
 	except frappe.ValidationError as e:
 		print(f"Error: {e}", file=sys.stderr)
 		sys.exit(1)

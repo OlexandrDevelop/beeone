@@ -22,6 +22,7 @@ page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 
 # Platform-owned navigation; applications add their own sections alongside it.
 beeone_sections = ["frappe.beeone.shell.core_sections"]
+beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional step of the setup wizard
 
 # website
 app_include_js = [
@@ -537,6 +538,7 @@ extend_bootinfo = [
 	"frappe.utils.telemetry.add_bootinfo",
 	"frappe.core.doctype.user_permission.user_permission.send_user_permissions",
 	"frappe.beeone.shell.extend_bootinfo",  # beeone: the saved layout of the desktop shell
+	"frappe.beeone.setup.extend_bootinfo",  # beeone: first-run screen and single language
 ]
 
 # beeone: register list and movement viewer data for the desk
@@ -544,7 +546,6 @@ boot_session = [
 	"frappe.beeone.shell.boot_session",  # beeone: multi-window desktop shell
 	"frappe.beeone.boot.boot_session",
 	"frappe.beeone.basis.boot_session",  # beeone: create-on-basis registry
-	"frappe.beeone.shell.boot_session",  # beeone: desktop shell
 ]
 
 export_python_type_annotations = True

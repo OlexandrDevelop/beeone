@@ -549,7 +549,10 @@ function _preferences_tab(user_data) {
 
 			panel.body.append(_section_heading(__("Locale")));
 
-			const $lang = _add_preference_row(panel.body, {
+			// beeone: a site fixed to one language has no language row
+			const $lang = frappe.boot.beeone_language
+				? $()
+				: _add_preference_row(panel.body, {
 				label: __("Language"),
 				value: user_data.language,
 				button_label: __("Change Language"),
@@ -571,7 +574,7 @@ function _preferences_tab(user_data) {
 					});
 				},
 			});
-			_set_language_label($lang, user_data.language);
+			if ($lang.length) _set_language_label($lang, user_data.language);
 
 			const $tz = _add_preference_row(panel.body, {
 				label: __("Time Zone"),

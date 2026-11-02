@@ -1,0 +1,150 @@
+/* First-run screen, setup wizard and demo card (docs/platform/SETUP.md). Only --bo-* tokens. */
+.bo-setup-lead {
+	margin: 0 0 12px;
+	color: var(--bo-text-2);
+}
+.bo-setup-choices {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+.bo-setup-choice {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	padding: 16px;
+	text-align: left;
+	border: 1px solid var(--bo-border);
+	border-radius: var(--bo-r-md);
+	background: var(--bo-surface);
+	color: var(--bo-text);
+	cursor: pointer;
+	box-shadow: var(--bo-shadow-xs);
+}
+.bo-setup-choice:hover:not(:disabled) {
+	border-color: var(--bo-accent);
+	background: var(--bo-accent-soft);
+}
+.bo-setup-choice:focus-visible {
+	box-shadow: var(--bo-focus-ring);
+	outline: none;
+}
+.bo-setup-choice:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+.bo-setup-choice .bo-i {
+	width: 24px;
+	height: 24px;
+	color: var(--bo-accent);
+}
+.bo-setup-choice-title {
+	font-weight: var(--bo-fw-medium);
+}
+.bo-setup-choice-text {
+	font-size: var(--bo-fs-12);
+	color: var(--bo-text-2);
+}
+.bo-setup-later {
+	margin: 12px 0 0;
+	text-align: center;
+}
+.bo-setup {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 16px;
+}
+.bo-setup-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 16px;
+}
+.bo-setup-card .bo-i {
+	width: 24px;
+	height: 24px;
+	color: var(--bo-accent);
+}
+.bo-setup-card p {
+	color: var(--bo-text-2);
+}
+.bo-setup-actions,
+.bo-setup-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-top: 16px;
+}
+.bo-setup-nav .bo-grow {
+	flex: 1;
+}
+.bo-setup-wizard {
+	display: grid;
+	grid-template-columns: 220px 1fr;
+	gap: 16px;
+}
+.bo-setup-steps {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.bo-setup-steps button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: var(--bo-r-md);
+	background: transparent;
+	color: var(--bo-text-2);
+	text-align: left;
+	cursor: pointer;
+}
+.bo-setup-step.is-current button {
+	background: var(--bo-accent-soft);
+	color: var(--bo-accent-text);
+	font-weight: var(--bo-fw-medium);
+}
+.bo-setup-step.is-done .bo-i {
+	color: var(--bo-success);
+}
+.bo-setup-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--bo-surface-3);
+	font-size: var(--bo-fs-12);
+}
+.bo-setup-progress {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: var(--bo-text-3);
+	font-size: var(--bo-fs-12);
+}
+.bo-setup-bar {
+	flex: 1;
+	height: 6px;
+	border-radius: 3px;
+	background: var(--bo-surface-3);
+	overflow: hidden;
+}
+.bo-setup-bar i {
+	display: block;
+	height: 100%;
+	background: var(--bo-accent);
+}
+.bo-setup-desc {
+	color: var(--bo-text-2);
+}
+@media (max-width: 720px) {
+	.bo-setup-choices,
+	.bo-setup-wizard {
+		grid-template-columns: 1fr;
+	}
+}

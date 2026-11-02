@@ -199,6 +199,7 @@ frappe.provide("beeone.ui");
 			if (opts.on_close) opts.on_close();
 		};
 		const on_key = (e) => {
+			if (opts.locked) return;
 			if (e.key === "Escape") {
 				e.stopPropagation();
 				e.preventDefault();
@@ -207,7 +208,7 @@ frappe.provide("beeone.ui");
 		};
 		document.addEventListener("keydown", on_key, true);
 		back.addEventListener("mousedown", (e) => {
-			if (e.target === back) close();
+			if (e.target === back && !opts.locked) close();
 		});
 		back.addEventListener("click", (e) => {
 			if (e.target.closest("[data-close]")) close();

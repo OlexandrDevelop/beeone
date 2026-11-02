@@ -379,6 +379,7 @@ function user_menu(trigger) {
 		`<button class="bo-menu-item" data-a="reset">${icon("undo")}${esc(__("Reset layout"))}</button>` +
 		`<button class="bo-menu-item" data-a="keys">${icon("book")}${esc(__("Keyboard shortcuts"))}</button>` +
 		`<button class="bo-menu-item" data-a="settings">${icon("gear")}${esc(__("My Settings"))}</button>` +
+		(frappe.user.has_role("System Manager") ? `<button class="bo-menu-item" data-a="setup">${icon("sliders")}${esc(__("Initial setup"))}</button>` : "") +
 		`<button class="bo-menu-item" data-a="logout">${icon("logout")}${esc(__("Log out"))}</button>`;
 	beeone.ui.menu(
 		trigger,
@@ -389,6 +390,7 @@ function user_menu(trigger) {
 			else if (a === "reset") beeone.shell.reset_layout();
 			else if (a === "keys") help();
 			else if (a === "settings") frappe.set_route("Form", "User", frappe.session.user);
+			else if (a === "setup") frappe.set_route("beeone-setup");
 			else if (a === "logout") frappe.app.logout();
 		},
 		{ cls: "bo-user-pop", side: "right" }

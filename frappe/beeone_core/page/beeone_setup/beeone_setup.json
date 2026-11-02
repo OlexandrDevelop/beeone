@@ -1,0 +1,9 @@
+{
+ "doctype": "Page",
+ "module": "Beeone Core",
+ "name": "beeone-setup",
+ "page_name": "beeone-setup",
+ "roles": [{"role": "System Manager"}],
+ "standard": "Yes",
+ "title": "Initial setup"
+}

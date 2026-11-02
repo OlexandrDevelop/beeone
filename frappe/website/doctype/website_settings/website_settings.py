@@ -218,6 +218,10 @@ def get_website_settings(context=None):
 	]:
 		context[k] = cint(context.get(k))
 
+	# beeone: a site fixed to one language has no language picker
+	if frappe.conf.get("beeone_language"):
+		context["show_language_picker"] = 0
+
 	if settings.address:
 		context["footer_address"] = settings.address
 

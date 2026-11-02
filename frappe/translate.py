@@ -40,6 +40,10 @@ def get_language(lang_list: list | None = None) -> str:
 	4. User document => language
 	5. System Settings => language
 	"""
+	# beeone: a site fixed to one language ignores the request
+	if frappe.conf.get("beeone_language"):
+		return frappe.conf.beeone_language
+
 	is_logged_in = frappe.session.user != "Guest"
 
 	# fetch language from form_dict
@@ -95,6 +99,10 @@ def get_parent_language(lang: str) -> str:
 
 def get_user_lang(user: str | None = None) -> str:
 	"""Set frappe.local.lang from user preferences on session beginning or resumption"""
+	# beeone: a site fixed to one language
+	if frappe.conf.get("beeone_language"):
+		return frappe.conf.beeone_language
+
 	user = user or frappe.session.user
 
 	# User.language => Session Defaults => frappe.local.lang => 'en'
