@@ -155,6 +155,12 @@ def ensure_indexes():
 	frappe.db.commit()
 
 
+def drop_indexes():
+	"""The register creates its indexes when it is saved; the measurement "before" needs a table without them."""
+	register_indexes.drop_register_indexes(frappe.get_doc("Register", REGISTER))
+	frappe.db.commit()
+
+
 def ensure_partitions():
 	"""Rebuild the movement table with yearly partitions."""
 	register_indexes.partition_register(REGISTER, LAST_DAY.year - 2, LAST_DAY.year + 1)
@@ -252,6 +258,7 @@ def run(
 	`with_partitions` also make the yearly partitions and measure a third time."""
 	ensure_register()
 	if fill:
+		drop_indexes()
 		have = frappe.db.count(REGISTER)
 		if have not in (0, movements):
 			frappe.throw(f"The register has {have} rows, not {movements}. Run with --cleanup first.")

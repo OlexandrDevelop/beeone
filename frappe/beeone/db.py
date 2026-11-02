@@ -107,6 +107,9 @@ class Dialect:
 		"""
 		raise NotImplementedError
 
+	def drop_index(self, table: str, name: str):
+		raise NotImplementedError
+
 	def _update_clause(self, table: str, value_columns: list[str], add: bool) -> str:
 		raise NotImplementedError
 
@@ -204,6 +207,9 @@ class MariaDB(Dialect):
 				f"PARTITION p{year} VALUES LESS THAN ('{year + 1}-01-01'), PARTITION pmax VALUES LESS THAN (MAXVALUE))"
 			)
 
+	def drop_index(self, table: str, name: str):
+		self.ddl(f"DROP INDEX IF EXISTS {self.quote(name)} ON {self.quote(table)}")
+
 	def _conflict_clause(self, table, key_columns, value_columns, add) -> str:
 		q = self.quote
 		if add:
@@ -256,6 +262,9 @@ class Postgres(Dialect):
 		frappe.db.sql_ddl(query)
 		# MariaDB commits a DDL by itself, PostgreSQL does not: same effect on both
 		frappe.db.commit()
+
+	def drop_index(self, table: str, name: str):
+		self.ddl(f"DROP INDEX IF EXISTS {self.quote(name)}")
 
 	@staticmethod
 	def _partition_name(table: str, suffix: str) -> str:
@@ -405,10 +414,18 @@ def partition_by_year(table: str, column: str, first_year: int, last_year: int):
 	dialect().partition_by_year(table, column, first_year, last_year)
 
 
+def _index_name(table: str, tag: str) -> str:
+	return "beeone_ix_" + hashlib.sha1(f"{table}:{tag}".encode()).hexdigest()[:16]
+
+
 def ensure_index(table: str, tag: str, columns: list[str]):
 	"""Create an index on the columns of a table when it is not there. The name is made from the table and the tag."""
-	digest = hashlib.sha1(f"{table}:{tag}".encode()).hexdigest()[:16]
-	dialect().ensure_index(table, f"beeone_ix_{digest}", columns)
+	dialect().ensure_index(table, _index_name(table, tag), columns)
+
+
+def drop_index(table: str, tag: str):
+	"""Drop an index made by `ensure_index`, when it is there."""
+	dialect().drop_index(table, _index_name(table, tag))
 
 
 def month_start(expr: str) -> str:

@@ -46,6 +46,14 @@ def ensure_register_indexes(reg):
 		db.ensure_index(table, tag, columns)
 
 
+def drop_register_indexes(reg):
+	"""Drop the indexes of `ensure_register_indexes`. For measurements; a register needs them in production."""
+	table = "tab" + reg.register_doctype
+	if db.table_exists(table):
+		for tag in index_plan(reg):
+			db.drop_index(table, tag)
+
+
 def ensure_all_register_indexes():
 	"""After migrate: the register meta may be imported before the table of its DocType."""
 	try:
