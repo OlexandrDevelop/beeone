@@ -58,8 +58,8 @@ def steps_one():
 
 
 def generate(cfg, seed):
-	doc = frappe.get_doc({"doctype": "Note", "title": f"Demo {TAG} {seed}", "public": 0}).insert(ignore_permissions=True)
-	demo.tag_records(TAG, "Note", [doc.name])
+	doc = frappe.get_doc({"doctype": PROBE, "title": f"Demo {seed}"}).insert(ignore_permissions=True)
+	demo.tag_records(TAG, PROBE, [doc.name])
 	return {"notes": [doc.name]}
 
 
@@ -67,14 +67,50 @@ def provider(**changes):
 	return {
 		"app": DEMO_APP,
 		"tag": TAG,
-		"root_doctype": "Note",
+		"root_doctype": PROBE,
 		"scales": {"small": {}},
 		"documents": [],
-		"catalogs": [("Note", False)],
+		"catalogs": [(PROBE, False)],
 		"generate": generate,
 		"check": lambda result: {"ok": True},
 		**changes,
 	}
+
+
+PROBE = "Beeone Setup Probe"
+PROBE_B = "Beeone Setup Probe B"
+
+
+def make_probe(name):
+	if not frappe.db.exists("DocType", name):
+		frappe.get_doc(
+			{
+				"doctype": "DocType",
+				"name": name,
+				"module": "Beeone Core",
+				"custom": 1,
+				"autoname": "hash",
+				"fields": [{"fieldname": "title", "fieldtype": "Data", "label": "Title"}],
+				"permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}],
+			}
+		).insert(ignore_permissions=True)
+
+
+def setUpModule():
+	frappe.set_user("Administrator")
+	make_probe(PROBE)
+	make_probe(PROBE_B)
+
+
+def tearDownModule():
+	frappe.set_user("Administrator")
+	for name in (PROBE, PROBE_B):
+		frappe.delete_doc("DocType", name, force=1, ignore_permissions=True)
+	frappe.db.commit()
+
+
+def probe_titles(doctype=PROBE):
+	return frappe.get_all(doctype, pluck="name")
 
 
 class TestBeeoneSetup(IntegrationTestCase):
@@ -99,7 +135,7 @@ class TestBeeoneSetup(IntegrationTestCase):
 		frappe.cache.delete_value(setup.JOB_CACHE_KEY)
 
 	def with_steps(self):
-		patcher = patch.object(setup, "get_steps", steps_one)
+		patcher = patch.object(setup, "_hook_steps", steps_one)
 		patcher.start()
 		self.addCleanup(patcher.stop)
 
@@ -108,11 +144,21 @@ class TestBeeoneSetup(IntegrationTestCase):
 		patcher = patch.object(demo, "get_providers", lambda: {DEMO_APP: self.provider})
 		patcher.start()
 		self.addCleanup(patcher.stop)
-		self.addCleanup(lambda: frappe.db.delete("Note", {"title": ("like", f"Demo {TAG}%")}))
-		frappe.db.delete("Note", {"title": ("like", f"Demo {TAG}%")})
+		self.addCleanup(self.wipe)
+		self.wipe()
 		self.supported = patch.object(setup, "_database_name", lambda: "mariadb")
 		self.supported.start()
 		self.addCleanup(self.supported.stop)
+
+	def wipe(self):
+		for doctype in (PROBE, PROBE_B):
+			frappe.db.delete(doctype)
+		frappe.db.commit()
+
+	def real(self, doctype=PROBE):
+		doc = frappe.get_doc({"doctype": doctype, "title": "Real"}).insert(ignore_permissions=True)
+		frappe.db.commit()
+		return doc
 
 	# ------------------------------------------------------------------ steps
 
@@ -121,13 +167,13 @@ class TestBeeoneSetup(IntegrationTestCase):
 		self.assertIn("frappe.regional", [s["id"] for s in setup.get_steps()])
 
 	def test_steps_sorted_and_broken_ones_skipped(self):
-		with patch.object(frappe, "get_hooks", return_value=["x"]), patch.object(frappe, "get_attr", return_value=steps_one):
+		with patch.object(setup, "_hook_steps", steps_one):
 			ids = [s["id"] for s in setup.get_steps()]
 		self.assertEqual(ids, ["t.name", "t.extra", "t.hidden"])
 
 	def test_hidden_step_is_not_in_the_wizard(self):
-		with patch.object(setup, "get_steps", steps_one):
-			ids = [s["id"] for s in setup.get_wizard()["steps"]]
+		self.with_steps()
+		ids = [s["id"] for s in setup.get_wizard()["steps"]]
 		self.assertEqual(ids, ["t.name", "t.extra"])
 
 	def test_required_and_type_errors(self):
@@ -188,7 +234,7 @@ class TestBeeoneSetup(IntegrationTestCase):
 		old = setup.load_regional()
 		self.addCleanup(setup.save_regional, old)
 		step = setup.core_steps()[0]
-		values = {**old, "time_zone": "Europe/Berlin"}
+		values = {**old, "country": frappe.db.get_value("Country", {}, "name"), "time_zone": "Europe/Berlin"}
 		clean, errors = setup._check_fields(step["fields"], values)
 		self.assertEqual(errors, {})
 		setup.save_regional(clean)
@@ -223,8 +269,7 @@ class TestBeeoneSetup(IntegrationTestCase):
 
 	def test_first_run_hidden_when_real_data_exists(self):
 		self.with_provider()
-		note = frappe.get_doc({"doctype": "Note", "title": "Real data of T-666 test", "public": 0}).insert()
-		self.addCleanup(frappe.delete_doc, "Note", note.name, force=1)
+		self.real()
 		self.assertFalse(setup.first_run_info()["show"])
 
 	def test_first_run_hidden_when_demo_exists(self):
@@ -273,16 +318,14 @@ class TestBeeoneSetup(IntegrationTestCase):
 
 	def test_demo_refused_for_untagged_root_record(self):
 		self.with_provider()
-		note = frappe.get_doc({"doctype": "Note", "title": "Real root record", "public": 0}).insert()
-		self.addCleanup(frappe.delete_doc, "Note", note.name, force=1)
+		self.real()
 		allowed, reason = setup.demo_allowed()
 		self.assertFalse(allowed)
 		self.assertTrue(reason)
 
 	def test_demo_refused_for_untagged_document(self):
-		self.with_provider(root_doctype="ToDo", documents=["Note"])
-		note = frappe.get_doc({"doctype": "Note", "title": "Real document", "public": 0}).insert()
-		self.addCleanup(frappe.delete_doc, "Note", note.name, force=1)
+		self.with_provider(documents=[PROBE_B])
+		self.real(PROBE_B)
 		self.assertFalse(setup.demo_allowed()[0])
 
 	def test_tagged_records_do_not_count_as_real_data(self):
@@ -325,19 +368,18 @@ class TestBeeoneSetup(IntegrationTestCase):
 		setup.run_demo_job("load")
 		self.assertTrue(setup.demo_status()["loaded"])
 		self.assertEqual(setup._job()["state"], "done")
-		note = frappe.get_doc({"doctype": "Note", "title": "Real note stays", "public": 0}).insert()
-		self.addCleanup(frappe.delete_doc, "Note", note.name, force=1)
+		real = self.real()
 		setup.run_demo_job("delete")
 		self.assertFalse(setup.demo_status()["loaded"])
-		self.assertTrue(frappe.db.exists("Note", note.name))
+		self.assertEqual(probe_titles(), [real.name])
 
 	def test_job_refuses_when_data_appeared(self):
 		self.with_provider()
-		note = frappe.get_doc({"doctype": "Note", "title": "Real data before the job", "public": 0}).insert()
-		self.addCleanup(frappe.delete_doc, "Note", note.name, force=1)
+		self.real()
 		setup.run_demo_job("load")
 		self.assertEqual(setup._job()["state"], "failed")
-		self.assertFalse(frappe.db.exists("Note", {"_user_tags": ["like", f"%{TAG}%"]}))
+		self.assertEqual(len(probe_titles()), 1)
+		self.assertFalse(frappe.db.exists(PROBE, {"_user_tags": ["like", f"%{TAG}%"]}))
 
 	def test_delete_demo_enqueues_only_when_demo_exists(self):
 		self.with_provider()

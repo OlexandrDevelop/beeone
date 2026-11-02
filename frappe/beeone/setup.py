@@ -90,22 +90,27 @@ def _valid_fields(fields, nested=False) -> bool:
 	return True
 
 
-def get_steps() -> list[dict]:
-	"""All valid steps of all apps, sorted by (order, id). A broken provider or step is logged and skipped."""
-	steps, seen = [], set()
+def _hook_steps() -> list:
+	"""The raw steps of all providers. A broken provider is logged and skipped."""
+	found = []
 	for path in frappe.get_hooks(HOOK) or []:
 		try:
-			found = frappe.get_attr(path)()
+			found.extend(frappe.get_attr(path)() or [])
 		except Exception:
 			frappe.log_error(title=f"beeone setup steps {path}")
+	return found
+
+
+def get_steps() -> list[dict]:
+	"""All valid steps of all apps, sorted by (order, id). A broken step is logged and skipped."""
+	steps, seen = [], set()
+	for step in _hook_steps():
+		ident = step.get("id") if isinstance(step, dict) else None
+		if not ident or ident in seen or not step.get("save") or not _valid_fields(step.get("fields")):
+			frappe.log_error(title="beeone setup step skipped", message=frappe.as_json(ident or str(step)))
 			continue
-		for step in found or []:
-			ident = step.get("id") if isinstance(step, dict) else None
-			if not ident or ident in seen or not step.get("save") or not _valid_fields(step.get("fields")):
-				frappe.log_error(title="beeone setup step skipped", message=frappe.as_json(ident or str(step)))
-				continue
-			seen.add(ident)
-			steps.append(step)
+		seen.add(ident)
+		steps.append(step)
 	steps.sort(key=lambda s: (s.get("order", 100), s["id"]))
 	return steps
 
