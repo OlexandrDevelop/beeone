@@ -37,7 +37,7 @@ FIELDS = [
 	{"fieldname": "voucher_type", "fieldtype": "Data", "length": 60},
 	{"fieldname": "voucher_no", "fieldtype": "Data", "length": 60},
 	{"fieldname": "line", "fieldtype": "Int"},
-	{"fieldname": "posting_date", "fieldtype": "Date", "not_nullable": 1},
+	{"fieldname": "posting_date", "fieldtype": "Date", "not_nullable": 1, "default": "1900-01-01"},
 	{"fieldname": "posting_time", "fieldtype": "Time"},
 	{"fieldname": "warehouse", "fieldtype": "Data", "length": 40, "label": "Warehouse"},
 	{"fieldname": "item", "fieldtype": "Data", "length": 40, "label": "Item"},
