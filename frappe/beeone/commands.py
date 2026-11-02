@@ -46,4 +46,33 @@ def check_registers(context, register=None, from_month=None, fix_totals=False):
 	sys.exit(1 if failed else 0)
 
 
+@beeone.command("demo")
+@click.option("--app", "app", required=True, help="App whose demo data generator to run.")
+@click.option("--scale", default="small", help="Scale name of the app (small, large) or a number.")
+@click.option("--seed", default=42, type=int, help="The same seed gives the same data.")
+@click.option("--reset", is_flag=True, default=False, help="Delete the old demo data first, then create it again.")
+@click.option("--delete-only", is_flag=True, default=False, help="Only delete the demo data.")
+@pass_context
+def demo(context, app, scale, seed, reset, delete_only):
+	"""Create demo data with the generator of an app (hook `beeone_demo`).
+
+	Exit code 1 when the self-check of the generator fails.
+	"""
+	from frappe.beeone.demo import run_demo
+
+	if not context.sites:
+		raise frappe.SiteNotSpecifiedError
+
+	frappe.init(context.sites[0])
+	frappe.connect()
+	try:
+		frappe.set_user("Administrator")
+		run_demo(app, scale=scale, seed=seed, reset=reset, delete_only=delete_only)
+	except frappe.ValidationError as e:
+		print(f"Error: {e}", file=sys.stderr)
+		sys.exit(1)
+	finally:
+		frappe.destroy()
+
+
 commands = [beeone]
