@@ -180,7 +180,7 @@ class TestBeeoneShell(IntegrationTestCase):
 			tiles = shell.get_tiles(PLAIN_USER)
 		# the Role tile is unreadable for the user; "none" and "empty" are no visible sections
 		self.assertEqual([t.get("section") for t in tiles], ["sales"])
-		self.assertEqual(tiles[0]["label"], "Sales again")
+		self.assertEqual(tiles[0]["label"], "Sales")
 
 	def test_command_tile_is_kept_for_a_user_who_may_read_the_target(self):
 		with hooks_for(sections=("sections_a",), desks=("desks_a",)):
