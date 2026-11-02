@@ -158,12 +158,6 @@ def core_steps() -> list[dict]:
 				},
 				{"fieldname": "currency", "fieldtype": "Link", "options": "Currency", "label": _("Currency"), "reqd": 1},
 				{
-					"fieldname": "date_format",
-					"fieldtype": "Select",
-					"options": _regional_options("date_format"),
-					"label": _("Date format"),
-				},
-				{
 					"fieldname": "number_format",
 					"fieldtype": "Select",
 					"options": _regional_options("number_format"),
@@ -176,7 +170,7 @@ def core_steps() -> list[dict]:
 	]
 
 
-REGIONAL_FIELDS = ("country", "time_zone", "currency", "date_format", "number_format")
+REGIONAL_FIELDS = ("country", "time_zone", "currency", "number_format")
 
 
 def load_regional() -> dict:
@@ -625,7 +619,7 @@ def prepare_site(language: str, country: str | None = None, time_zone: str | Non
 # --------------------------------------------------------------------------- translations
 
 PY_STRING = re.compile(r"""\b_\(\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')""")
-JS_STRING = re.compile(r"""\b__\(\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)""")
+JS_STRING = re.compile(r"""\b__\(\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')""")
 
 
 def _source_files() -> list[Path]:
