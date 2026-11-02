@@ -334,7 +334,7 @@ class TestBeeoneSetup(IntegrationTestCase):
 		self.assertFalse(setup.real_data_exists(self.provider))
 		allowed, reason = setup.demo_allowed()
 		self.assertFalse(allowed)
-		self.assertIn("already", reason)
+		self.assertEqual(reason, frappe._("Demo data is already loaded"))
 
 	def test_demo_refused_on_unsupported_database(self):
 		self.with_provider(databases=["other"])

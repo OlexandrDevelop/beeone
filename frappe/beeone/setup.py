@@ -145,7 +145,7 @@ def core_steps() -> list[dict]:
 		{
 			"id": "frappe.regional",
 			"order": 10,
-			"title": _("Region"),
+			"title": _("Regional settings"),
 			"description": _("Country, time zone and currency of the site"),
 			"fields": [
 				{"fieldname": "country", "fieldtype": "Link", "options": "Country", "label": _("Country"), "reqd": 1},
