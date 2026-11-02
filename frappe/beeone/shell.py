@@ -170,6 +170,13 @@ def get_tiles(user: str | None = None, sections: list[dict] | None = None) -> li
 	return out
 
 
+@frappe.whitelist()
+def get_home() -> dict:
+	"""Sections and home tiles of the session user (what the boot data carries)."""
+	sections = get_sections(frappe.session.user)
+	return {"enabled": bool(sections), "sections": sections, "tiles": get_tiles(frappe.session.user, sections) if sections else []}
+
+
 def get_sections(user: str | None = None) -> list[dict]:
 	"""The sections of all apps for the user: merged by id, filtered by the role desk and by read permission."""
 	user = user or frappe.session.user
