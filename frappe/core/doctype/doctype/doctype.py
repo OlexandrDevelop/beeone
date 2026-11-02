@@ -1751,7 +1751,10 @@ def validate_fields(meta: Meta):
 			return
 
 		try:
-			link_filters = json.loads(link_filters_value)
+			# PostgreSQL returns a JSON column already decoded
+			link_filters = (
+				link_filters_value if isinstance(link_filters_value, list) else json.loads(link_filters_value)
+			)
 		except (TypeError, ValueError):
 			frappe.throw(
 				_("Invalid Filters for field {0}. Filters must be valid JSON.").format(
