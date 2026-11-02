@@ -10,12 +10,21 @@ takes its names from `quote()`. A test checks that no other file has dialect SQL
 """
 
 import hashlib
+import re
 
 import frappe
 from frappe import _
 from frappe.utils import cstr
 
 CHUNK = 500
+
+
+def _last_partition_year(names: list[str]) -> int:
+	"""The newest year among partitions named like `p2026` or `tabX_p2026`; the catch-all `pmax` is skipped."""
+	years = [int(m.group(1)) for n in names if (m := re.search(r"p(\d{4})$", n))]
+	if not years:
+		frappe.throw(_("The table has partitions that are not yearly"))
+	return max(years)
 
 
 class Dialect:
@@ -75,6 +84,18 @@ class Dialect:
 	def ensure_index(self, table: str, name: str, columns: list[str]):
 		q = self.quote
 		self.ddl(f"CREATE INDEX IF NOT EXISTS {q(name)} ON {q(table)} ({', '.join(q(c) for c in columns)})")
+
+	def partitions(self, table: str) -> list[str]:
+		"""Names of the partitions of a table, empty when it is not partitioned."""
+		raise NotImplementedError
+
+	def partition_by_year(self, table: str, column: str, first_year: int, last_year: int):
+		"""Make a table partitioned by the year of a DATE column, or add the missing years to a partitioned one.
+
+		Rows before `first_year` go to its partition, rows after `last_year` to a catch-all one. The primary key
+		`name` grows by the date column, because both databases need the partition key in every unique key.
+		"""
+		raise NotImplementedError
 
 	def _update_clause(self, table: str, value_columns: list[str], add: bool) -> str:
 		raise NotImplementedError
@@ -145,6 +166,34 @@ class MariaDB(Dialect):
 	def _table_options(self) -> str:
 		return " ENGINE=InnoDB ROW_FORMAT=DYNAMIC CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 
+	def partitions(self, table: str) -> list[str]:
+		return [
+			row[0]
+			for row in frappe.db.sql(
+				"SELECT partition_name FROM information_schema.partitions WHERE table_schema = DATABASE() "
+				"AND table_name = %s AND partition_name IS NOT NULL ORDER BY partition_ordinal_position",
+				table,
+			)
+		]
+
+	def partition_by_year(self, table: str, column: str, first_year: int, last_year: int):
+		q = self.quote
+		existing = self.partitions(table)
+		if not existing:
+			parts = [f"PARTITION p{y} VALUES LESS THAN ('{y + 1}-01-01')" for y in range(first_year, last_year + 1)]
+			parts.append("PARTITION pmax VALUES LESS THAN (MAXVALUE)")
+			self.ddl(f"ALTER TABLE {q(table)} MODIFY {q(column)} DATE NOT NULL")
+			self.ddl(
+				f"ALTER TABLE {q(table)} DROP PRIMARY KEY, ADD PRIMARY KEY ({q('name')}, {q(column)}) "
+				f"PARTITION BY RANGE COLUMNS({q(column)}) ({', '.join(parts)})"
+			)
+			return
+		for year in range(_last_partition_year(existing) + 1, last_year + 1):
+			self.ddl(
+				f"ALTER TABLE {q(table)} REORGANIZE PARTITION pmax INTO ("
+				f"PARTITION p{year} VALUES LESS THAN ('{year + 1}-01-01'), PARTITION pmax VALUES LESS THAN (MAXVALUE))"
+			)
+
 	def _conflict_clause(self, table, key_columns, value_columns, add) -> str:
 		q = self.quote
 		if add:
@@ -197,6 +246,64 @@ class Postgres(Dialect):
 		frappe.db.sql_ddl(query)
 		# MariaDB commits a DDL by itself, PostgreSQL does not: same effect on both
 		frappe.db.commit()
+
+	@staticmethod
+	def _partition_name(table: str, suffix: str) -> str:
+		return f"{table[:50]}_{suffix}"
+
+	def partitions(self, table: str) -> list[str]:
+		return [
+			row[0]
+			for row in frappe.db.sql(
+				"SELECT c.relname FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid "
+				"JOIN pg_class p ON p.oid = i.inhparent WHERE p.relname = %s "
+				"AND p.relnamespace = current_schema()::regnamespace ORDER BY c.relname",
+				table,
+			)
+		]
+
+	def partition_by_year(self, table: str, column: str, first_year: int, last_year: int):
+		q = self.quote
+		part = self._partition_name
+		existing = self.partitions(table)
+		frappe.db.commit()
+		try:
+			if not existing:
+				self._convert_to_partitioned(table, column, first_year, last_year)
+			else:
+				for year in range(_last_partition_year(existing) + 1, last_year + 1):
+					name = part(table, f"p{year}")
+					bounds = f"FROM ('{year}-01-01') TO ('{year + 1}-01-01')"
+					frappe.db.sql(f"CREATE TABLE {q(name)} (LIKE {q(table)} INCLUDING DEFAULTS)")
+					# rows of that year wait in the catch-all partition: move them before the attach
+					frappe.db.sql(
+						f"WITH moved AS (DELETE FROM {q(part(table, 'pmax'))} WHERE {q(column)} >= '{year}-01-01' "
+						f"AND {q(column)} < '{year + 1}-01-01' RETURNING *) INSERT INTO {q(name)} SELECT * FROM moved"
+					)
+					frappe.db.sql(f"ALTER TABLE {q(table)} ATTACH PARTITION {q(name)} FOR VALUES {bounds}")
+		except Exception:
+			frappe.db.rollback()
+			raise
+		frappe.db.commit()
+
+	def _convert_to_partitioned(self, table: str, column: str, first_year: int, last_year: int):
+		"""Copy the table into a partitioned one in one transaction (PostgreSQL has no in-place change)."""
+		q = self.quote
+		part = self._partition_name
+		old = q(f"{table[:55]}__old")
+		columns = ", ".join(q(c) for c in self.table_columns(table))
+		frappe.db.sql(f"ALTER TABLE {q(table)} RENAME TO {old}")
+		frappe.db.sql(f"CREATE TABLE {q(table)} (LIKE {old} INCLUDING DEFAULTS) PARTITION BY RANGE ({q(column)})")
+		for year in range(first_year, last_year + 1):
+			low = "MINVALUE" if year == first_year else f"'{year}-01-01'"
+			frappe.db.sql(
+				f"CREATE TABLE {q(part(table, f'p{year}'))} PARTITION OF {q(table)} "
+				f"FOR VALUES FROM ({low}) TO ('{year + 1}-01-01')"
+			)
+		frappe.db.sql(f"CREATE TABLE {q(part(table, 'pmax'))} PARTITION OF {q(table)} DEFAULT")
+		frappe.db.sql(f"INSERT INTO {q(table)} ({columns}) SELECT {columns} FROM {old}")
+		frappe.db.sql(f"DROP TABLE {old}")
+		frappe.db.sql(f"ALTER TABLE {q(table)} ADD PRIMARY KEY ({q('name')}, {q(column)})")
 
 	def _conflict_clause(self, table, key_columns, value_columns, add) -> str:
 		q = self.quote
@@ -277,6 +384,14 @@ def drop_table(table: str):
 
 def ddl(query: str):
 	dialect().ddl(query)
+
+
+def partitions(table: str) -> list[str]:
+	return dialect().partitions(table)
+
+
+def partition_by_year(table: str, column: str, first_year: int, last_year: int):
+	dialect().partition_by_year(table, column, first_year, last_year)
 
 
 def ensure_index(table: str, tag: str, columns: list[str]):

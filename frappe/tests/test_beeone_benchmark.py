@@ -60,3 +60,51 @@ class TestBeeoneBenchmark(IntegrationTestCase):
 		benchmark.ensure_indexes()
 		benchmark.ensure_indexes()
 		self.assertEqual(frappe.db.count(benchmark.REGISTER), MOVEMENTS)
+
+	def test_register_indexes_are_created(self):
+		from frappe.beeone.registers.indexes import index_plan
+
+		plan = index_plan(frappe.get_doc("Register", benchmark.REGISTER))
+		self.assertEqual(
+			plan,
+			{
+				"period": ["posting_date"],
+				"dimensions_date": ["warehouse", "item", "posting_date"],
+				"recorder": ["voucher_type", "voucher_no"],
+			},
+		)
+		benchmark.ensure_indexes()
+
+	def test_yearly_partitions(self):
+		from frappe.beeone import db
+
+		table = "tab" + benchmark.REGISTER
+		before = frappe.db.sql(f"select count(*), sum(qty), sum(amount) from {db.quote(table)}")
+		self.assertFalse(db.partitions(table))
+		benchmark.ensure_partitions()
+		partitions = db.partitions(table)
+		self.assertEqual(len([p for p in partitions if p[-4:].isdigit()]), 4)
+		self.assertTrue(any(p.endswith("pmax") for p in partitions))
+		after = frappe.db.sql(f"select count(*), sum(qty), sum(amount) from {db.quote(table)}")
+		self.assertEqual(before, after)
+		# the register still works: totals match, the reports run, a posting is written and read back
+		result = check_registers(benchmark.REGISTER, None)
+		issues = [i for i in result["issues"] if i.check not in (CHECK_CANCELLED, CHECK_MOMENT)]
+		self.assertFalse(issues, issues)
+		benchmark.measure(seed=7, repeat=3, items=30, warehouses=4, years=2)
+		# a second run only adds the missing years
+		benchmark.ensure_partitions()
+		self.assertEqual(db.partitions(table), partitions)
+		# a date after the last partition lands in the catch-all one, and a later year can be added
+		from frappe.beeone.registers import RecordSet, register_write
+
+		with register_write():
+			RecordSet(benchmark.REGISTER, "Bench Receipt", "BENCH-FAR", benchmark._moment(frappe.utils.getdate("2031-05-01"))).replace(
+				[{"warehouse": "WH-000", "item": "ITEM-00001", "qty": 1.0, "amount": 1.0, "posting_date": "2031-05-01"}]
+			)
+		frappe.db.commit()
+		from frappe.beeone.registers.indexes import partition_register
+
+		partition_register(benchmark.REGISTER, 2025, 2031)
+		self.assertTrue(any(p.endswith("p2031") for p in db.partitions(table)))
+		self.assertEqual(frappe.db.count(benchmark.REGISTER), MOVEMENTS + 1)

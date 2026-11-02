@@ -24,6 +24,7 @@ from datetime import date, timedelta
 import frappe
 from frappe.beeone import db
 from frappe.beeone.registers import RecordSet, register_write, totals
+from frappe.beeone.registers import indexes as register_indexes
 from frappe.beeone.registers import query as register_query
 from frappe.beeone.registers.meta import clear_cache, get_register
 
@@ -31,7 +32,6 @@ REGISTER = "Beeone Bench Stock"
 LAST_DAY = date(2026, 12, 31)
 CHUNK = 20000
 LINES = 10  # movements per recorder in the dataset
-INDEX_TAGS = {"dimensions_date": ["warehouse", "item", "posting_date"], "recorder": ["voucher_no"]}
 
 FIELDS = [
 	{"fieldname": "voucher_type", "fieldtype": "Data", "length": 60},
@@ -149,9 +149,14 @@ def generate(movements: int, seed: int = 42, items: int = 5000, warehouses: int 
 
 
 def ensure_indexes():
-	"""The indexes of PLAN.md 3.9: (dimensions, date) and (recorder)."""
-	for tag, columns in INDEX_TAGS.items():
-		db.ensure_index("tab" + REGISTER, tag, columns)
+	"""The indexes of PLAN.md 3.9, the same the core creates for every register."""
+	register_indexes.ensure_register_indexes(frappe.get_doc("Register", REGISTER))
+	frappe.db.commit()
+
+
+def ensure_partitions():
+	"""Rebuild the movement table with yearly partitions."""
+	register_indexes.partition_register(REGISTER, LAST_DAY.year - 2, LAST_DAY.year + 1)
 	frappe.db.commit()
 
 
@@ -234,8 +239,16 @@ UNINDEXED_REPEAT = 3
 TARGETS_MS = {"osv_month": 2000, "balance_on_date": 50, "balance_check_per_row": 20}
 
 
-def run(movements: int, seed: int = 42, repeat: int = 20, with_indexes: bool = False, fill: bool = True) -> dict:
-	"""Fill (when `fill`), measure, and when `with_indexes` create the indexes and measure again."""
+def run(
+	movements: int,
+	seed: int = 42,
+	repeat: int = 20,
+	with_indexes: bool = False,
+	fill: bool = True,
+	with_partitions: bool = False,
+) -> dict:
+	"""Fill (when `fill`), measure, and when `with_indexes` create the indexes and measure again; with
+	`with_partitions` also make the yearly partitions and measure a third time."""
 	ensure_register()
 	if fill:
 		have = frappe.db.count(REGISTER)
@@ -260,4 +273,9 @@ def run(movements: int, seed: int = 42, repeat: int = 20, with_indexes: bool = F
 		ensure_indexes()
 		report["index_build_seconds"] = round(time.perf_counter() - started, 1)
 		report["with_indexes"] = measure(seed, repeat)
+	if with_partitions:
+		started = time.perf_counter()
+		ensure_partitions()
+		report["partition_build_seconds"] = round(time.perf_counter() - started, 1)
+		report["with_indexes_and_partitions"] = measure(seed, repeat)
 	return report

@@ -80,10 +80,11 @@ def demo(context, app, scale, seed, reset, delete_only):
 @click.option("--seed", default=42, type=int, help="The same seed gives the same data and keys.")
 @click.option("--repeat", default=20, type=int, help="Runs of every measurement.")
 @click.option("--with-indexes", is_flag=True, default=False, help="Create the indexes of PLAN.md 3.9 and measure again.")
+@click.option("--with-partitions", is_flag=True, default=False, help="Also make yearly partitions and measure a third time.")
 @click.option("--measure-only", is_flag=True, default=False, help="Do not fill: measure the rows that are there.")
 @click.option("--cleanup", is_flag=True, default=False, help="Drop the benchmark register and its data, then exit.")
 @pass_context
-def benchmark(context, movements, seed, repeat, with_indexes, measure_only, cleanup):
+def benchmark(context, movements, seed, repeat, with_indexes, with_partitions, measure_only, cleanup):
 	"""Fill a stock register with movements and measure the performance goals. Prints JSON."""
 	from frappe.beeone import benchmark as bench
 
@@ -98,8 +99,39 @@ def benchmark(context, movements, seed, repeat, with_indexes, measure_only, clea
 			bench.remove_register()
 			print("Benchmark register removed")
 			return
-		report = bench.run(movements, seed=seed, repeat=repeat, with_indexes=with_indexes, fill=not measure_only)
+		report = bench.run(
+			movements,
+			seed=seed,
+			repeat=repeat,
+			with_indexes=with_indexes,
+			with_partitions=with_partitions,
+			fill=not measure_only,
+		)
 		print(frappe.as_json(report))
+	finally:
+		frappe.destroy()
+
+
+@beeone.command("partition-register")
+@click.argument("register")
+@click.option("--first-year", type=int, help="First yearly partition (default: year of the oldest movement).")
+@click.option("--last-year", type=int, help="Last yearly partition (default: two years after today).")
+@pass_context
+def partition_register(context, register, first_year, last_year):
+	"""Partition the movement table of a register by year and add the indexes. Rebuilds the table; safe to repeat."""
+	from frappe.beeone.registers.indexes import partition_register as partition
+
+	if not context.sites:
+		raise frappe.SiteNotSpecifiedError
+
+	frappe.init(context.sites[0])
+	frappe.connect()
+	try:
+		frappe.set_user("Administrator")
+		print("\n".join(partition(register, first_year, last_year)))
+	except frappe.ValidationError as e:
+		print(f"Error: {e}", file=sys.stderr)
+		sys.exit(1)
 	finally:
 		frappe.destroy()
 
