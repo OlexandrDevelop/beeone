@@ -66,10 +66,26 @@ def own_data():
 	return {"hello": 1}
 
 
-def hooks_for(sections=(), widgets=()):
+def desks_a():
+	return {
+		"Desk User": {"sections": ["sales"], "tiles": [{"section": "sales"}, {"label": "Roles", "type": "doctype", "target": "Role"}]},
+		"System Manager": {"sections": "*", "tiles": []},
+	}
+
+
+def desks_b():
+	return {"Desk User": {"sections": ["empty"], "tiles": [{"section": "none"}, {"section": "empty", "label": "Own name"}]}}
+
+
+def desks_c():
+	return {"Desk User": {"sections": "*", "tiles": []}}
+
+
+def hooks_for(sections=(), widgets=(), desks=()):
 	table = {
 		"beeone_sections": [f"{MODULE}.{name}" for name in sections],
 		"beeone_widgets": [f"{MODULE}.{name}" for name in widgets],
+		"beeone_role_desks": [f"{MODULE}.{name}" for name in desks],
 	}
 	real = frappe.get_hooks
 
@@ -136,6 +152,52 @@ class TestBeeoneShell(IntegrationTestCase):
 	def test_no_hooks_means_no_shell(self):
 		with hooks_for():
 			self.assertEqual(shell.get_sections("Administrator"), [])
+
+	# ------------------------------------------------------------ role desks
+
+	def test_no_desk_row_for_the_roles_means_all_sections_and_no_tiles(self):
+		with hooks_for(sections=("sections_a", "sections_b"), desks=()):
+			self.assertEqual(len(shell.get_sections(PLAIN_USER)), 1)
+			self.assertEqual(shell.get_tiles(PLAIN_USER), [])
+			self.assertIsNone(shell.role_desk(PLAIN_USER))
+
+	def test_matrix_limits_sections_of_the_role(self):
+		with hooks_for(sections=("sections_a", "sections_b"), desks=("desks_a",)):
+			self.assertEqual([s["id"] for s in shell.get_sections(PLAIN_USER)], ["sales"])
+			# "*" opens every section
+			ids = [s["id"] for s in shell.get_sections("Administrator")]
+			self.assertEqual(sorted(ids), ["empty", "sales"])
+
+	def test_matrix_rows_of_two_apps_are_united(self):
+		with hooks_for(sections=("sections_a", "sections_b"), desks=("desks_a", "desks_b")):
+			desk = shell.role_desk(PLAIN_USER)
+			self.assertEqual(desk["sections"], {"sales", "empty"})
+			# "empty" has no readable command for this user: it stays hidden
+			self.assertEqual([s["id"] for s in shell.get_sections(PLAIN_USER)], ["sales"])
+
+	def test_tiles_follow_the_visible_sections_and_permissions(self):
+		with hooks_for(sections=("sections_a", "sections_b"), desks=("desks_a", "desks_b")):
+			tiles = shell.get_tiles(PLAIN_USER)
+		# the Role tile is unreadable for the user; "none" and "empty" are no visible sections
+		self.assertEqual([t.get("section") for t in tiles], ["sales"])
+		self.assertEqual(tiles[0]["label"], "Sales again")
+
+	def test_command_tile_is_kept_for_a_user_who_may_read_the_target(self):
+		with hooks_for(sections=("sections_a",), desks=("desks_a",)):
+			tiles = shell.get_tiles("Administrator")
+		self.assertEqual([(t.get("section"), t.get("target")) for t in tiles], [("sales", None), (None, "Role")])
+
+	def test_empty_tile_list_makes_a_tile_per_visible_section(self):
+		with hooks_for(sections=("sections_a", "sections_b"), desks=("desks_c",)):
+			tiles = shell.get_tiles(PLAIN_USER)
+		self.assertEqual([t["section"] for t in tiles], ["sales"])
+
+	def test_boot_carries_the_tiles(self):
+		frappe.set_user(PLAIN_USER)
+		boot = frappe._dict()
+		with hooks_for(sections=("sections_a",), desks=("desks_a",)):
+			shell.boot_session(boot)
+		self.assertEqual([t["section"] for t in boot.beeone_shell["tiles"]], ["sales"])
 
 	def test_boot_carries_sections_layout_and_widget_catalog(self):
 		with hooks_for(sections=("sections_a",), widgets=("widgets_hook",)):

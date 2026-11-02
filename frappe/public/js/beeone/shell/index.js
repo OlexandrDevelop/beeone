@@ -139,6 +139,7 @@ Object.assign(beeone.shell, {
 		sh.active = true;
 		sh.sections = boot.sections;
 		sh.catalog = boot.widgets;
+		sh.tiles = boot.tiles || [];
 		const layout = boot.layout || {};
 		sh.state = {
 			widgets: layout.widgets || [],

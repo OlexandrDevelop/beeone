@@ -95,17 +95,94 @@ def _roles_ok(item: dict, user_roles: set) -> bool:
 	return not roles or bool(set(roles) & user_roles)
 
 
+# --------------------------------------------------------------------------- role desks
+
+
+def role_desk(user: str | None = None) -> dict | None:
+	"""The desk of the roles of the user, merged from the hook `beeone_role_desks`.
+
+	Each app returns `{role: {"sections": ["id", ...] or "*", "tiles": [...]}}`. A tile is
+	`{"section": id}` (opens the section) or a command `{"label", "type", "target", "icon"}`.
+	Returns None when no app has a row for any role of the user: then every section is shown
+	and the home page has no tiles (the shell works as before).
+	"""
+	user = user or frappe.session.user
+	roles = set(frappe.get_roles(user))
+	sections: set | None = set()
+	tiles, matched = [], False
+	for matrix in _call_hooks("beeone_role_desks"):
+		for role, row in (matrix or {}).items():
+			if role not in roles:
+				continue
+			matched = True
+			wanted = row.get("sections")
+			if wanted == "*":
+				sections = None
+			elif sections is not None:
+				sections.update(wanted or [])
+			for tile in row.get("tiles") or []:
+				if tile not in tiles:
+					tiles.append(tile)
+	return {"sections": sections, "tiles": tiles} if matched else None
+
+
+def get_tiles(user: str | None = None, sections: list[dict] | None = None) -> list[dict]:
+	"""Tiles of the home page: the tiles of the role desk, or one tile per visible section."""
+	user = user or frappe.session.user
+	desk = role_desk(user)
+	if not desk:
+		return []
+	sections = get_sections(user) if sections is None else sections
+	by_id = {s["id"]: s for s in sections}
+	out, seen = [], set()
+
+	def add(tile):
+		ident = (tile.get("section"), tile.get("type"), tile.get("target"))
+		if ident not in seen:
+			seen.add(ident)
+			out.append(tile)
+
+	for tile in desk["tiles"]:
+		if tile.get("section"):
+			section = by_id.get(tile["section"])
+			if section:
+				add(
+					{
+						"label": tile.get("label") or section["label"],
+						"description": tile.get("description") or section["description"],
+						"icon": tile.get("icon") or section["icon"],
+						"section": section["id"],
+					}
+				)
+		elif _target_allowed(tile, user):
+			add(
+				{
+					"label": tile.get("label") or tile["target"],
+					"description": tile.get("description") or "",
+					"icon": tile.get("icon") or "list",
+					"type": tile["type"],
+					"target": tile["target"],
+				}
+			)
+	if not desk["tiles"]:
+		for section in sections:
+			add({"label": section["label"], "description": section["description"], "icon": section["icon"], "section": section["id"]})
+	return out
+
+
 def get_sections(user: str | None = None) -> list[dict]:
-	"""The sections of all apps for the user: merged by id, filtered by read permission."""
+	"""The sections of all apps for the user: merged by id, filtered by the role desk and by read permission."""
 	user = user or frappe.session.user
 	if user == "Guest":
 		return []
 	user_roles = set(frappe.get_roles(user))
+	desk = role_desk(user)
+	allowed = desk["sections"] if desk else None
 	merged: dict[str, dict] = {}
 	for result in _call_hooks("beeone_sections", user):
 		for section in result or []:
 			sid = section.get("id")
-			if not sid or not _roles_ok(section, user_roles):
+			if not sid or not _roles_ok(section, user_roles) or (allowed is not None and sid not in allowed):
 				continue
 			target = merged.setdefault(
 				sid,
@@ -555,6 +632,7 @@ def boot_session(bootinfo):
 		"enabled": bool(sections),
 		"sections": sections,
 		"widgets": widget_catalog(user) if sections else None,
+		"tiles": get_tiles(user, sections) if sections else [],
 	}
 	if sections:
 		# the desk of the shell is the home page: Frappe's own desktop is not built

@@ -126,6 +126,12 @@ export function close_panel() {
 	document.querySelectorAll("#bo-rail .is-active").forEach((b) => b.classList.remove("is-active"));
 }
 
+export function open_section(id) {
+	const panel = document.getElementById("bo-panel");
+	if (panel && !panel.hidden && panel_section === id) return;
+	toggle_panel(id);
+}
+
 function toggle_panel(id) {
 	const panel = document.getElementById("bo-panel");
 	if (!id) {

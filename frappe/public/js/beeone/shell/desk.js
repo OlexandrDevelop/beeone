@@ -1,7 +1,7 @@
 // Desktop: greeting and widgets (docs/platform/SHELL.md §6). Data comes only from the server method
 // frappe.beeone.shell.widget_data, which checks the permission on every call. No timers.
 import { wins } from "./windows.js";
-import { open_route } from "./panel.js";
+import { open_route, open_section, open_command } from "./panel.js";
 
 const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 const icon = (n, c) => beeone.ui.icon(n, c);
@@ -37,7 +37,7 @@ export const desk = {
 		const hour = new Date().getHours();
 		const hello = hour < 5 ? __("Good night, {0}", [first_name()]) : hour < 12 ? __("Good morning, {0}", [first_name()]) : hour < 18 ? __("Good afternoon, {0}", [first_name()]) : __("Good evening, {0}", [first_name()]);
 		host.innerHTML =
-			`<div class="bo-desk-hello"><div class="bo-desk-title">${esc(hello)}</div><p>${esc(__("Documents, lists and reports open as windows."))}</p></div>` +
+			`<div class="bo-desk-hello"><div class="bo-desk-title">${esc(hello)}</div><p>${esc(__("Documents, lists and reports open as windows."))}</p>${this.tiles()}</div>` +
 			`<section class="bo-widgets" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
 			`<button type="button" class="bo-btn bo-btn--sm bo-btn--ghost" data-w="add">${icon("plus", "bo-i-sm")}${esc(__("Add widget"))}</button>` +
 			`<button type="button" class="bo-btn bo-btn--sm" data-w="edit">${esc(editing ? __("Done") : __("Customize"))}</button></div></div>` +
@@ -45,6 +45,24 @@ export const desk = {
 			(list.length ? "" : `<div class="bo-widgets-empty">${icon("layout")}<p>${esc(__("Your widgets will be here"))}</p></div>`) +
 			`</section>`;
 		list.forEach((w) => this.fill(w));
+	},
+
+	// the home page of the role: tiles of its sections and commands (the role desk, SHELL.md §6.6)
+	tiles() {
+		const list = beeone.shell.tiles || [];
+		if (!list.length) return "";
+		return (
+			`<section class="bo-tiles" aria-label="${esc(__("Role desk"))}">` +
+			list
+				.map(
+					(t, i) =>
+						`<button type="button" class="bo-tile" data-tile="${i}">${icon(t.icon)}<span class="bo-tile-label">${esc(t.label)}</span>` +
+						(t.description ? `<span class="bo-tile-sub">${esc(t.description)}</span>` : "") +
+						`</button>`
+				)
+				.join("") +
+			`</section>`
+		);
 	},
 
 	card(w, i, n) {
@@ -80,6 +98,12 @@ export const desk = {
 	},
 
 	on_click(e) {
+		const tile = e.target.closest("[data-tile]");
+		if (tile) {
+			const t = (beeone.shell.tiles || [])[+tile.dataset.tile];
+			if (t) t.section ? open_section(t.section) : open_command(t);
+			return;
+		}
 		const btn = e.target.closest("[data-w]");
 		const card = e.target.closest(".bo-w");
 		if (!btn) {

@@ -294,6 +294,42 @@ body.bo-shell .sticky-top.navbar {
 	font-size: 14px;
 }
 
+.bo-tiles {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+	gap: 12px;
+	margin-top: 20px;
+}
+
+.bo-tile {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	padding: 14px;
+	border: 1px solid var(--bo-border);
+	border-radius: 12px;
+	background: var(--bo-surface);
+	box-shadow: var(--bo-shadow-xs);
+	color: var(--bo-text);
+	text-align: left;
+	cursor: pointer;
+}
+
+.bo-tile:hover {
+	border-color: var(--bo-border-strong);
+}
+
+.bo-tile-label {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.bo-tile-sub {
+	font-size: 12px;
+	color: var(--bo-text-2);
+}
+
 #bo-wins {
 	position: absolute;
 	inset: 0;
