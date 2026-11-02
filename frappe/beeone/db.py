@@ -85,6 +85,16 @@ class Dialect:
 		q = self.quote
 		self.ddl(f"CREATE INDEX IF NOT EXISTS {q(name)} ON {q(table)} ({', '.join(q(c) for c in columns)})")
 
+	def _require_not_null(self, table: str, column: str):
+		"""The partition key is part of the primary key, so the column must be NOT NULL already."""
+		row = frappe.db.sql(
+			f"SELECT is_nullable FROM information_schema.columns WHERE {self._schema_rule()} "
+			"AND table_name = %s AND column_name = %s",
+			(table, column),
+		)
+		if not row or row[0][0] != "NO":
+			frappe.throw(_("Column {0} of {1} must be NOT NULL to partition the table").format(column, table))
+
 	def partitions(self, table: str) -> list[str]:
 		"""Names of the partitions of a table, empty when it is not partitioned."""
 		raise NotImplementedError
@@ -178,11 +188,11 @@ class MariaDB(Dialect):
 
 	def partition_by_year(self, table: str, column: str, first_year: int, last_year: int):
 		q = self.quote
+		self._require_not_null(table, column)
 		existing = self.partitions(table)
 		if not existing:
 			parts = [f"PARTITION p{y} VALUES LESS THAN ('{y + 1}-01-01')" for y in range(first_year, last_year + 1)]
 			parts.append("PARTITION pmax VALUES LESS THAN (MAXVALUE)")
-			self.ddl(f"ALTER TABLE {q(table)} MODIFY {q(column)} DATE NOT NULL")
 			self.ddl(
 				f"ALTER TABLE {q(table)} DROP PRIMARY KEY, ADD PRIMARY KEY ({q('name')}, {q(column)}) "
 				f"PARTITION BY RANGE COLUMNS({q(column)}) ({', '.join(parts)})"
@@ -265,6 +275,7 @@ class Postgres(Dialect):
 	def partition_by_year(self, table: str, column: str, first_year: int, last_year: int):
 		q = self.quote
 		part = self._partition_name
+		self._require_not_null(table, column)
 		existing = self.partitions(table)
 		frappe.db.commit()
 		try:

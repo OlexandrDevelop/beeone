@@ -37,7 +37,7 @@ FIELDS = [
 	{"fieldname": "voucher_type", "fieldtype": "Data", "length": 60},
 	{"fieldname": "voucher_no", "fieldtype": "Data", "length": 60},
 	{"fieldname": "line", "fieldtype": "Int"},
-	{"fieldname": "posting_date", "fieldtype": "Date"},
+	{"fieldname": "posting_date", "fieldtype": "Date", "not_nullable": 1},
 	{"fieldname": "posting_time", "fieldtype": "Time"},
 	{"fieldname": "warehouse", "fieldtype": "Data", "length": 40, "label": "Warehouse"},
 	{"fieldname": "item", "fieldtype": "Data", "length": 40, "label": "Item"},
@@ -88,6 +88,7 @@ def remove_register():
 	totals.drop_totals_tables(REGISTER)
 	if frappe.db.exists("DocType", REGISTER):
 		frappe.delete_doc("DocType", REGISTER, force=1, ignore_permissions=True)
+	db.drop_table("tab" + REGISTER)
 	frappe.db.commit()
 	clear_cache()
 

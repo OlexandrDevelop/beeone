@@ -67,6 +67,13 @@ def partition_register(register: str, first_year: int | None = None, last_year: 
 	table = "tab" + reg.register_doctype
 	if not db.table_exists(table):
 		frappe.throw(frappe._("Table {0} does not exist").format(table))
+	if not frappe.get_meta(reg.register_doctype).get_field(reg.date_field).not_nullable:
+		# the date joins the primary key; without "Not Nullable" the next migrate would try to make it nullable again
+		frappe.throw(
+			frappe._("Set Not Nullable on the field {0} of {1}, migrate, then partition").format(
+				reg.date_field, reg.register_doctype
+			)
+		)
 	if first_year is None:
 		oldest = frappe.db.sql(
 			f"SELECT MIN({db.quote(reg.date_field)}) FROM {db.quote(table)}"  # noqa: S608

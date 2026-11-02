@@ -92,6 +92,9 @@ class TestBeeoneBenchmark(IntegrationTestCase):
 		issues = [i for i in result["issues"] if i.check not in (CHECK_CANCELLED, CHECK_MOMENT)]
 		self.assertFalse(issues, issues)
 		benchmark.measure(seed=7, repeat=3, items=30, warehouses=4, years=2)
+		# a schema sync (migrate) of the DocType keeps the partitioned table as it is
+		frappe.db.updatedb(benchmark.REGISTER)
+		self.assertEqual(db.partitions(table), partitions)
 		# a second run only adds the missing years
 		benchmark.ensure_partitions()
 		self.assertEqual(db.partitions(table), partitions)
