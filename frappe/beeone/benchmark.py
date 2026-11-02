@@ -96,13 +96,13 @@ def insert_rows(columns: list[str], rows: list[list]):
 	"""Multi-row insert with bound parameters. Faster than building the query with pypika, and the same on both
 	databases. A step of 4000 rows keeps a query under the 65535 parameters of PostgreSQL."""
 	step = 4000
-	quote = '"' if frappe.db.db_type == "postgres" else "`"
-	names = ", ".join(f"{quote}{c}{quote}" for c in columns)
+	names = ", ".join(db.quote(c) for c in columns)
+	table = db.quote("tab" + REGISTER)
 	one = "(" + ", ".join(["%s"] * len(columns)) + ")"
 	for start in range(0, len(rows), step):
 		part = rows[start : start + step]
 		values = [v for row in part for v in row]
-		frappe.db.sql(f"insert into {quote}tab{REGISTER}{quote} ({names}) values {', '.join([one] * len(part))}", values)
+		frappe.db.sql(f"insert into {table} ({names}) values {', '.join([one] * len(part))}", values)
 
 
 def generate(movements: int, seed: int = 42, items: int = 5000, warehouses: int = 20, years: int = 3) -> int:
