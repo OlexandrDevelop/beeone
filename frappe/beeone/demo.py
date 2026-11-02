@@ -80,10 +80,7 @@ def tag_records(tag: str, doctype: str, names: list[str]):
 	"""Put the demo tag on records of one doctype (chunks keep the query short)."""
 	for i in range(0, len(names), 500):
 		chunk = names[i : i + 500]
-		frappe.db.sql(
-			f"update `tab{doctype}` set `_user_tags` = %s where name in ({', '.join(['%s'] * len(chunk))})",
-			[tag_value(tag), *chunk],
-		)
+		frappe.db.set_value(doctype, {"name": ("in", chunk)}, "_user_tags", tag_value(tag), update_modified=False)
 
 
 def tagged(tag: str, doctype: str, order_by: str = "creation desc") -> list[str]:
