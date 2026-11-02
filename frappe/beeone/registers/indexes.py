@@ -29,7 +29,8 @@ def index_plan(reg) -> dict[str, list[str]]:
 	dims = totals.dimensions(reg)[:MAX_INDEX_DIMENSIONS]
 	if reg.date_field:
 		plan["period"] = [reg.date_field]
-		if dims:
+		# an information register is read by slices on the period: it keeps the one period index
+		if dims and not totals.is_information(reg):
 			plan["dimensions_date"] = [*dims, reg.date_field]
 	recorder = [f for f in (reg.registrar_type_field, reg.registrar_field) if f]
 	if recorder:
