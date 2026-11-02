@@ -1,0 +1,80 @@
+{
+  "autoname": "hash",
+  "creation": "2026-11-02",
+  "doctype": "DocType",
+  "document_type": "Setup",
+  "engine": "InnoDB",
+  "field_order": [
+    "report",
+    "title",
+    "user",
+    "is_default",
+    "is_shared",
+    "settings"
+  ],
+  "fields": [
+    {
+      "fieldname": "report",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Report",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Title",
+      "reqd": 1
+    },
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "User",
+      "options": "User",
+      "reqd": 1,
+      "search_index": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "is_default",
+      "fieldtype": "Check",
+      "label": "Default for the user"
+    },
+    {
+      "default": "0",
+      "fieldname": "is_shared",
+      "fieldtype": "Check",
+      "label": "Shared with all users"
+    },
+    {
+      "fieldname": "settings",
+      "fieldtype": "JSON",
+      "label": "Settings"
+    }
+  ],
+  "index_web_pages_as_search_results": 0,
+  "istable": 0,
+  "links": [],
+  "modified": "2026-11-02",
+  "modified_by": "Administrator",
+  "module": "Beeone Core",
+  "name": "Report Variant",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}
