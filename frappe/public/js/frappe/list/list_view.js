@@ -185,21 +185,6 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		super.setup_page();
 	}
 
-	setup_paging_area() {
-		super.setup_paging_area();
-		// Start loading the virtualization bundle as soon as the user picks a
-		// large page size. (The old version of this hook bound to $paging_area
-		// from setup_page, which runs BEFORE the paging area exists — the ?.
-		// made it a silent no-op, so the preload never actually happened.)
-		this.paging_button_group.$el.on("click", () => {
-			if (cint(this.paging_button_group.get_value()) >= this.virtualization_threshold) {
-				ensure_list_virtualization_loaded().catch(() => {
-					this._virtualization_bundle_failed = true;
-				});
-			}
-		});
-	}
-
 	setup_page_head() {
 		super.setup_page_head();
 		this.set_primary_action();
@@ -434,11 +419,8 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		if (refresh_header) {
 			this._refresh_header_on_render = true;
 		}
-		// Load virtualization bundle in parallel with the list fetch (e.g. 2500 page size).
-		const load_virtualization =
-			this.selected_page_count >= this.virtualization_threshold
-				? ensure_list_virtualization_loaded()
-				: Promise.resolve();
+		// Load virtualization bundle in parallel with the list fetch.
+		const load_virtualization = ensure_list_virtualization_loaded();
 		return load_virtualization
 			.catch(() => {
 				this._virtualization_bundle_failed = true;

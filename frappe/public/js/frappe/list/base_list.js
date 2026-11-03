@@ -51,7 +51,6 @@ frappe.views.BaseList = class BaseList {
 		// Lists are an infinite stream. Fetch a small first window and grow it as
 		// the user approaches the end; page-size controls are not part of the UI.
 		this.page_length = frappe.is_large_screen() ? 100 : 40;
-		this.selected_page_count = this.page_length;
 		this.infinite_scroll = true;
 		this.virtual_page_size = frappe.is_large_screen() ? 100 : 40;
 		this.total_count = null;
@@ -381,7 +380,9 @@ frappe.views.BaseList = class BaseList {
 	}
 
 	setup_paging_area() {
-		const paging_values = [20, 100, 500, 2500];
+		// lists are an infinite stream: no page-size or "Load More" controls.
+		// The area stays an empty container for views (gantt, map, report,
+		// app footers) that put their own content into it.
 		this.$paging_area = $(
 			`<div class="list-paging-area level">
 				<div class="level-left"></div>
@@ -389,44 +390,6 @@ frappe.views.BaseList = class BaseList {
 			</div>`
 		).hide();
 		this.$frappe_list.append(this.$paging_area);
-
-		// the page-size choice is a radio group — TabButtons keeps exactly one
-		// pill selected (the old markup hand-rolled this with btn-info +
-		// disabled), and the selection survives "Load More" growing the page
-		this.paging_button_group = new frappe.ui.TabButtons({
-			label: __("Page Size"),
-			options: paging_values.map((value) => ({
-				label: String(value),
-				value: value,
-			})),
-			value: this.selected_page_count,
-			on_change: (value) => {
-				this.selected_page_count = value;
-				if (this.page_length > value) {
-					this.start = 0;
-					this.page_length = value;
-				} else {
-					// growing: fetch only the difference on top of what's loaded
-					this.start = this.page_length;
-					this.page_length = value - this.page_length;
-				}
-				this.refresh();
-			},
-		});
-		this.$paging_area.find(".level-left").append(this.paging_button_group.$el);
-
-		this.$paging_area.find(".level-right").append(
-			frappe.ui.button({
-				label: __("Load More"),
-				css_class: "btn-more",
-				onclick: () => {
-					this.start = this.data.length;
-					this.page_length = this.selected_page_count;
-					this.refresh();
-				},
-			})
-		);
-		if (this.infinite_scroll) this.$paging_area.hide();
 	}
 
 	setup_resize_handler() {
@@ -640,11 +603,6 @@ frappe.views.BaseList = class BaseList {
 		this.$result.toggle(this.data.length > 0);
 		this.$paging_area.toggle(!this.infinite_scroll && this.data.length > 0);
 		this.$no_result.toggle(this.data.length == 0);
-
-		if (this.data.length) {
-			const show_more = this.start + this.page_length <= this.data.length;
-			this.$paging_area.find(".btn-more").toggle(show_more);
-		}
 	}
 
 	call_for_selected_items(method, args = {}) {
