@@ -165,6 +165,11 @@ body.bo-shell {
 	--bo-w-sidebar-collapsed: 60px;
 	--bo-w-fpanel: 980px;
 
+	/* density of a page inside a window (narrow windows lower them in _shell.scss, by data-bw) */
+	--bo-page-pad-x: 16px;
+	--bo-page-head-pad-y: 6px;
+	--bo-page-gap: 12px;
+
 	/* radius */
 	--bo-r-xs: 4px;
 	--bo-r-sm: 6px;

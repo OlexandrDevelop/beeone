@@ -34,31 +34,35 @@ function _is_subordination_supported(doctype) {
 	return false;
 }
 
+function _container_of(frm) {
+	// one container per form, inside this form's own layout (several forms can be open in windows)
+	const root = frm.layout && frm.layout.wrapper && frm.layout.wrapper[0] ? frm.layout.wrapper[0] : null;
+	return root ? root.querySelector(":scope > .bo-subordination") : null;
+}
+
 function _ensure_subordination_container(frm) {
-	// Create container if it doesn't exist
-	if (document.getElementById("subordination_tree_container")) {
+	if (_container_of(frm)) {
 		return;
 	}
-
-	// Find the form layout and add our container
-	const form_layout = document.querySelector(".form-layout");
-	if (!form_layout) return;
+	const root = frm.layout && frm.layout.wrapper && frm.layout.wrapper[0];
+	if (!root) return;
 
 	const container = document.createElement("div");
-	container.id = "subordination_tree_container";
-	container.style.marginTop = "20px";
+	container.className = "bo-subordination";
+	container.style.marginTop = "12px";
 	container.style.padding = "12px";
 	container.style.backgroundColor = "var(--bg-light)";
 	container.style.borderRadius = "4px";
 	container.style.borderLeft = "3px solid var(--primary)";
-	form_layout.appendChild(container);
+	root.appendChild(container);
 }
 
 function _load_subordination_data(frm) {
 	if (!_is_subordination_supported(frm.doctype) || frm.doc.name === "__new" || frm.is_new()) {
-		const container = document.getElementById("subordination_tree_container");
+		_ensure_subordination_container(frm);
+		const container = _container_of(frm);
 		if (container) {
-			container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No related documents</p>';
+			container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">' + __("No related documents") + '</p>';
 		}
 		return;
 	}
@@ -81,11 +85,12 @@ function _load_subordination_data(frm) {
 }
 
 function _render_subordination_tree(frm, related) {
-	const container = document.getElementById("subordination_tree_container");
+	_ensure_subordination_container(frm);
+	const container = _container_of(frm);
 	if (!container) return;
 
 	if (!related || related.length === 0) {
-		container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No related documents</p>';
+		container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">' + __("No related documents") + '</p>';
 		return;
 	}
 
@@ -94,18 +99,18 @@ function _render_subordination_tree(frm, related) {
 	const derived = related.filter(r => r.role === "derived");
 
 	let html = '<div style="padding: 0;">';
-	html += '<div style="font-weight: 600; font-size: 13px; color: var(--text-dark); margin-bottom: 12px;">Subordination Tree</div>';
+	html += '<div style="font-weight: 600; font-size: 13px; color: var(--text-dark); margin-bottom: 12px;">' + __("Subordination Tree") + '</div>';
 
 	if (basis.length > 0) {
 		html += '<div style="margin-bottom: 12px;">';
-		html += '<div style="font-weight: 500; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📋 Basis Documents</div>';
+		html += '<div style="font-weight: 500; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📋 ' + __("Basis Documents") + '</div>';
 		html += _render_document_list(basis);
 		html += '</div>';
 	}
 
 	if (derived.length > 0) {
 		html += '<div>';
-		html += '<div style="font-weight: 500; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📄 Derived Documents</div>';
+		html += '<div style="font-weight: 500; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📄 ' + __("Derived Documents") + '</div>';
 		html += _render_document_list(derived);
 		html += '</div>';
 	}
@@ -147,10 +152,10 @@ function _render_document_list(docs) {
 
 function _get_status_label(docstatus) {
 	switch (docstatus) {
-		case 0: return "Draft";
-		case 1: return "Submitted";
-		case 2: return "Cancelled";
-		default: return "Unknown";
+		case 0: return __("Draft");
+		case 1: return __("Submitted");
+		case 2: return __("Cancelled");
+		default: return __("Unknown");
 	}
 }
 

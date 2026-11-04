@@ -108,6 +108,38 @@ function place(win) {
 	s.width = g.w + "px";
 	s.height = g.h + "px";
 	s.transform = tf(g.x, g.y);
+	tell_size(win, g);
+}
+
+// The page layout follows the WINDOW width, not the viewport (SHELL.md §13): `data-bw` on .bo-win lists the thresholds the body
+// is narrower than ("lt560 lt720 ..."), `--bo-body-h` is the body height. No ResizeObserver and no CSS container: both made every
+// window animation of the T-539 budget slower. The size is known here, so nothing is measured.
+const BW = [560, 720, 900, 1024, 1440, 1600];
+
+function tell_size(win, g) {
+	if (!win.body) return;
+	const compact = document.body.classList.contains("bo-compact");
+	const full = compact || win.state === "maximized";
+	const dw = compact ? desk_size().w : g.w;
+	const dh = compact ? desk_size().h : g.h;
+	const w = dw - (full ? 0 : 2);
+	const h = dh - 44 - (full ? 0 : 2);
+	const set = () => {
+		const tokens = BW.filter((n) => w < n).map((n) => "lt" + n).join(" ");
+		if (win.el.dataset.bw !== tokens) win.el.dataset.bw = tokens;
+		if (win.body_h !== h) {
+			win.body_h = h;
+			win.body.style.setProperty("--bo-body-h", h + "px");
+		}
+	};
+	// the first size at once; a later one when the window has settled: restyling the whole page of a window in the middle of
+	// its maximize/restore animation, or on every step of a drag, costs frames (T-539 B6)
+	if (!win.size_set) {
+		win.size_set = true;
+		return set();
+	}
+	clearTimeout(win.size_timer);
+	win.size_timer = setTimeout(set, 280);
 }
 
 function clamp(win) {
@@ -583,6 +615,7 @@ export function close(key, force) {
 	if (win.dirty && !force) return confirm_close(win);
 	const finish = () => {
 		destroy_page(win);
+		clearTimeout(win.size_timer);
 		win.el.remove();
 		wins.map.delete(key);
 		wins.order = wins.order.filter((k) => k !== key);

@@ -618,7 +618,17 @@ body.bo-shell .sticky-top.navbar {
 	flex-wrap: wrap;
 }
 
-/* ---------- Frappe pages inside a window ---------- */
+/* ---------- Frappe pages inside a window ----------
+ * The layout of a page follows the WINDOW, not the viewport. The shell (windows.js, place()) sets
+ * `data-bw` on .bo-win to the thresholds the body is narrower than ("lt560 lt720 lt900 lt1024 lt1440 lt1600") and
+ * `--bo-body-h` on the body; apps write `.bo-win[data-bw~="lt720"] ...` (narrow) or `.bo-win:not([data-bw~="lt1024"]) ...` (wide).
+ * CSS container queries are not used: with them every window resize re-evaluated the page style (T-539 B6 failed).
+ * Density tokens: --bo-page-pad-x, --bo-page-head-pad-y, --bo-page-gap. */
+.bo-win[data-bw~="lt720"] .bo-win-body > * {
+	--bo-page-pad-x: 12px;
+	--bo-page-gap: 8px;
+}
+
 .bo-win-body .page-container {
 	display: block;
 	padding: 0;
@@ -629,25 +639,123 @@ body.bo-shell .sticky-top.navbar {
 .bo-win-body .page-head {
 	position: sticky;
 	top: 0;
-	z-index: 5;
+	z-index: var(--bo-z-sticky);
 	background: var(--bo-surface);
 	border-bottom: 1px solid var(--bo-border);
+	box-shadow: none;
 	margin: 0;
 }
 
-.bo-win-body .page-head .title-area {
+/* breadcrumbs, the more button and the sidebar toggle are replaced by the window bar; the status pill stays */
+.bo-win-body .page-head .title-area .es-breadcrumbs,
+.bo-win-body .page-head .title-area .more-button,
+.bo-win-body .page-head .page-title .sidebar-toggle-btn {
 	display: none;
 }
 
-.bo-win-body .page-head .page-head-content {
-	padding-top: 6px;
-	padding-bottom: 6px;
-	min-height: 0;
+.bo-win-body .page-head .title-area {
+	gap: var(--bo-s-2);
+	align-items: center;
 }
 
-.bo-win-body .container,
+.bo-win-body .page-head .container,
+.bo-win-body .page-body.container,
+.bo-win-body .page-container > .container,
 .bo-win-body .page-body > .container {
+	width: 100%;
 	max-width: none;
+	padding-left: var(--bo-page-pad-x);
+	padding-right: var(--bo-page-pad-x);
+}
+
+.bo-win-body .page-head .page-head-content {
+	height: auto;
+	min-height: 0;
+	margin-left: 0;
+	margin-right: 0;
+	padding: var(--bo-page-head-pad-y) 0;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--bo-s-2);
+}
+
+.bo-win-body .page-head .page-title {
+	flex: 1 1 0;
+	min-width: 0;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.bo-win-body .page-head .page-actions {
+	gap: var(--bo-s-2);
+	align-items: center;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.bo-win-body .page-head .standard-actions {
+	gap: var(--bo-s-2);
+}
+
+.bo-win-body .page-body {
+	padding-top: var(--bo-page-gap);
+}
+
+/* standard Frappe form */
+.bo-win-body .form-layout .form-page {
+	padding: 0;
+}
+
+.bo-win-body .form-layout .form-section .section-head {
+	padding: var(--bo-s-2) var(--bo-page-pad-x);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.bo-win-body .form-layout .form-section .section-body {
+	padding: var(--bo-s-2) var(--bo-page-pad-x) var(--bo-s-3);
+}
+
+.bo-win-body .form-layout .frappe-control {
+	margin-bottom: var(--bo-s-1);
+}
+
+.bo-win-body .form-layout .form-group {
+	margin-bottom: var(--bo-s-1);
+}
+
+.bo-win-body .form-layout .frappe-control .control-label,
+.bo-win-body .form-layout .frappe-control .label-area {
+	margin-bottom: 2px;
+	font-size: 12px;
+	line-height: 16px;
+	letter-spacing: 0;
+}
+
+.bo-win-body .form-dashboard:empty,
+.bo-win-body .form-message.hidden,
+.bo-win-body .form-message:empty {
+	display: none;
+}
+
+.bo-win-body .form-grid .grid-heading-row,
+.bo-win-body .form-grid .grid-body .grid-row {
+	min-height: var(--bo-h-row-dense);
+}
+
+/* standard Frappe list */
+.bo-win-body .page-form {
+	padding: var(--bo-s-2) var(--bo-page-pad-x);
+	margin: 0;
+}
+
+.bo-win-body .list-row-head {
+	min-height: var(--bo-h-row-dense);
+}
+
+.bo-win-body .list-paging-area {
+	padding-top: var(--bo-s-2);
+	padding-bottom: var(--bo-s-2);
 }
 
 /* ---------- task bar ---------- */
