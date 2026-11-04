@@ -21,11 +21,12 @@ body.bo-shell .sticky-top.navbar {
 
 /* ---------- frame ---------- */
 #bo-app {
+	--bo-rail-width: 208px;
 	position: fixed;
 	inset: 0;
 	z-index: 100;
 	display: grid;
-	grid-template-columns: 60px minmax(0, 1fr);
+	grid-template-columns: var(--bo-rail-width) minmax(0, 1fr);
 	grid-template-rows: 48px minmax(0, 1fr) 44px;
 	grid-template-areas: "rail top" "rail desk" "rail task";
 	background: var(--bo-desk);
@@ -47,16 +48,17 @@ body.bo-shell .sticky-top.navbar {
 	background: var(--bo-rail);
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	padding: 10px 0;
-	gap: 6px;
+	align-items: stretch;
+	padding: 14px 10px;
+	gap: 10px;
 	z-index: 40;
 }
 
 .bo-rail-top {
 	height: 40px;
-	display: grid;
-	place-items: center;
+	display: flex;
+	align-items: center;
+	padding-left: 10px;
 }
 
 .bo-logo {
@@ -80,27 +82,28 @@ body.bo-shell .sticky-top.navbar {
 	flex-direction: column;
 	gap: 4px;
 	width: 100%;
-	align-items: center;
+	align-items: stretch;
 	overflow-y: auto;
 	scrollbar-width: none;
 }
 
 .bo-rail-btn {
 	position: relative;
-	width: 44px;
-	height: 56px;
+	width: 100%;
+	min-height: 44px;
 	border: 0;
 	border-radius: 10px;
 	background: transparent;
 	color: var(--bo-rail-text);
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	align-items: center;
-	justify-content: center;
-	gap: 2px;
+	justify-content: flex-start;
+	gap: 12px;
 	cursor: pointer;
 	flex: none;
-	padding: 4px 0;
+	padding: 9px 12px;
+	text-align: left;
 }
 
 .bo-rail-btn:hover {
@@ -116,7 +119,7 @@ body.bo-shell .sticky-top.navbar {
 .bo-rail-btn.is-active::before {
 	content: "";
 	position: absolute;
-	left: -8px;
+	left: -10px;
 	top: 9px;
 	bottom: 9px;
 	width: 3px;
@@ -131,14 +134,13 @@ body.bo-shell .sticky-top.navbar {
 }
 
 .bo-rail-label {
-	font-size: 0.6rem;
-	line-height: 1;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	width: 40px;
-	text-align: center;
-	flex: none;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.3;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-align: left;
+	min-width: 0;
 }
 
 .bo-avatar {
@@ -767,10 +769,10 @@ body.bo-shell .sticky-top.navbar {
 /* ---------- function panel ---------- */
 #bo-panel {
 	position: absolute;
-	left: 60px;
+	left: var(--bo-rail-width);
 	top: 0;
 	bottom: 0;
-	width: min(880px, calc(100vw - 60px));
+	width: min(880px, calc(100vw - var(--bo-rail-width)));
 	background: var(--bo-surface);
 	border-right: 1px solid var(--bo-border);
 	box-shadow: var(--bo-shadow-lg);
