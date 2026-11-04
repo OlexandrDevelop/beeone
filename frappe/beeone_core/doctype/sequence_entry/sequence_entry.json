@@ -12,7 +12,8 @@
   "posting_time",
   "doc_creation",
   "document_type",
-  "document_name"
+  "document_name",
+  "document_part"
  ],
  "fields": [
   {
@@ -67,6 +68,13 @@
    "fieldtype": "Data",
    "label": "Document Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "document_part",
+   "fieldtype": "Data",
+   "label": "Document Part",
+   "read_only": 1,
+   "default": ""
   }
  ],
  "index_web_pages_for_search": 1,

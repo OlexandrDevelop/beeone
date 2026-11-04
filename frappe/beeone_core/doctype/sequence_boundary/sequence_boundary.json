@@ -17,7 +17,8 @@
   "boundary_time",
   "boundary_creation",
   "boundary_name",
-  "boundary_doctype"
+  "boundary_doctype",
+  "boundary_part"
  ],
  "fields": [
   {
@@ -113,6 +114,13 @@
    "fieldtype": "Data",
    "label": "Boundary Doctype",
    "read_only": 1
+  },
+  {
+   "fieldname": "boundary_part",
+   "fieldtype": "Data",
+   "label": "Boundary Part",
+   "read_only": 1,
+   "default": ""
   }
  ],
  "index_web_pages_for_search": 1,

@@ -20,6 +20,7 @@ SYSTEM_FIELDS = (
 	"registrar_type_field",
 	"registrar_field",
 	"line_no_field",
+	"part_field",
 	"date_field",
 	"time_field",
 	"direction_field",

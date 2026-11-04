@@ -12,6 +12,7 @@
   "registrar_type_field",
   "registrar_field",
   "line_no_field",
+  "part_field",
   "column_system",
   "date_field",
   "time_field",
@@ -70,6 +71,12 @@
    "fieldname": "line_no_field",
    "fieldtype": "Data",
    "label": "Line Number Field"
+  },
+  {
+   "description": "Optional. A recorder may write its rows in parts that are posted and cancelled one by one.",
+   "fieldname": "part_field",
+   "fieldtype": "Data",
+   "label": "Part Field"
   },
   {
    "fieldname": "column_system",

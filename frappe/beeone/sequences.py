@@ -7,6 +7,8 @@ A Sequence lists document types and a key (for example the organization). For ev
 keeps a boundary: the moment up to which all documents are posted correctly. A document that
 is posted, cancelled or amended behind the boundary moves it back to the document before it.
 The restore posts the documents after the boundary again, in the order of their moment.
+A document may take part in a sequence with several parts (for example the shipments of one invoice),
+each with its own moment: `mark_part` writes or deletes the entry of one part.
 The restore is synchronous by default. A Sequence in mode Background restores in a job,
 and one worker runs for one key.
 """
@@ -34,7 +36,7 @@ from frappe.beeone.sequence_meta import (
 from frappe.utils import get_datetime, getdate, now
 
 LOCK_WAIT = 60
-ORDER = ["posting_date", "posting_time", "doc_creation", "document_name", "document_type"]
+ORDER = ["posting_date", "posting_time", "doc_creation", "document_name", "document_type", "document_part"]
 BOUNDARY_FIELDS = [
 	"name",
 	"sequence",
@@ -49,6 +51,7 @@ BOUNDARY_FIELDS = [
 	"boundary_creation",
 	"boundary_name",
 	"boundary_doctype",
+	"boundary_part",
 ]
 KEEP = object()
 
@@ -61,6 +64,7 @@ class Position(NamedTuple):
 	creation: datetime
 	name: str
 	doctype: str
+	part: str = ""
 
 
 def _time_str(value: timedelta) -> str:
@@ -68,15 +72,20 @@ def _time_str(value: timedelta) -> str:
 
 
 def _params(pos: Position) -> tuple:
-	return (pos.date, _time_str(pos.time), pos.creation, pos.name, pos.doctype)
+	return (pos.date, _time_str(pos.time), pos.creation, pos.name, pos.doctype, pos.part)
 
 
-def _position(moment, doctype: str | None = None) -> Position:
+def _position(moment, doctype: str | None = None, part: str = "") -> Position:
 	"""A Position from a Moment of a document (or from a Position)."""
 	if isinstance(moment, Position):
 		return moment
 	return Position(
-		getdate(moment.date), _timedelta(moment.time), get_datetime(moment.creation), moment.name, doctype or ""
+		getdate(moment.date),
+		_timedelta(moment.time),
+		get_datetime(moment.creation),
+		moment.name,
+		doctype or "",
+		part or "",
 	)
 
 
@@ -87,6 +96,7 @@ def _entry_position(row) -> Position:
 		get_datetime(row.doc_creation),
 		row.document_name,
 		row.document_type,
+		row.document_part or "",
 	)
 
 
@@ -100,6 +110,7 @@ def _row_position(row) -> Position | None:
 		get_datetime(row.boundary_creation),
 		row.boundary_name,
 		row.boundary_doctype or "",
+		row.boundary_part or "",
 	)
 
 
@@ -182,6 +193,7 @@ def _save(name: str, position=KEEP, **values):
 			boundary_creation=pos.creation if pos else None,
 			boundary_name=pos.name if pos else None,
 			boundary_doctype=pos.doctype if pos else None,
+			boundary_part=pos.part if pos else None,
 		)
 	frappe.db.set_value("Sequence Boundary", name, values, update_modified=False)
 
@@ -213,6 +225,7 @@ def _insert_entry(sequence: str, key: tuple, pos: Position):
 			"doc_creation": pos.creation,
 			"document_type": pos.doctype,
 			"document_name": pos.name,
+			"document_part": pos.part,
 		}
 	).insert(ignore_permissions=True, ignore_links=True)
 
@@ -225,10 +238,14 @@ def _active(doctype: str) -> list[str]:
 	return [name for name in sequences_of(doctype) if name not in skip]
 
 
-def _stored_entries(sequence: str, doc) -> list:
+def _stored_entries(sequence: str, doc, part: str | None = None) -> list:
+	"""The entries of a document: all its parts, or one part when `part` is given."""
+	filters = {"sequence": sequence, "document_type": doc.doctype, "document_name": doc.name}
+	if part is not None:
+		filters["document_part"] = part
 	return frappe.get_all(
 		"Sequence Entry",
-		filters={"sequence": sequence, "document_type": doc.doctype, "document_name": doc.name},
+		filters=filters,
 		fields=[*ORDER, "key"],
 		order_by=None,
 	)
@@ -244,6 +261,9 @@ def lock_sequences(doc) -> None:
 	if not names:
 		return
 	cancel = doc._action == "cancel"
+	if getattr(doc, "sequence_by_parts", False) and not cancel:
+		# the entries of such a document are its parts, written by `mark_part`
+		return
 	keys = {}
 	for name in names:
 		seq = get_sequence(name)
@@ -275,7 +295,8 @@ def mark_sequences(doc) -> None:
 			stored = [e for e in _stored_entries(name, doc) if tuple(frappe.parse_json(e.key)) == key]
 			if not stored:
 				continue
-			pos = _entry_position(stored[0])
+			# a document with parts: all parts go, the boundary moves before the first one
+			pos = min(_entry_position(e) for e in stored)
 			frappe.db.delete(
 				"Sequence Entry",
 				{"sequence": name, "key_hash": khash, "document_type": doc.doctype, "document_name": doc.name},
@@ -294,6 +315,74 @@ def mark_sequences(doc) -> None:
 		extra = {"version": row.version + 1} if new != old else {}
 		_save(bname, new, **extra)
 		_schedule(seq, key, bname, doc)
+
+
+def mark_part(doc, part: str, moment, cancel: bool = False) -> None:
+	"""Write (or, with `cancel`, delete) the entry of one part of a document and move the boundary back.
+
+	The part has its own moment. The document is the one whose controller lists the sequence keys of
+	its parts in `get_sequence_keys`. A part is reposted by `doc.repost_part_in_sequence(part, sequence)`.
+	"""
+	part = part or ""
+	names = _active(doc.doctype)
+	todo = {}
+	for name in names:
+		seq = get_sequence(name)
+		if cancel:
+			found = [tuple(frappe.parse_json(e.key)) for e in _stored_entries(name, doc, part)]
+		else:
+			found = document_keys(seq, doc)
+		for key in found:
+			todo[boundary_name(name, key)] = (name, key)
+	for bname in sorted(todo):
+		name, key = todo[bname]
+		seq = get_sequence(name)
+		khash = key_hash(key)
+		_ensure_row(name, key)
+		row = _lock_row(bname)
+		old = _row_position(row)
+		if cancel:
+			stored = [e for e in _stored_entries(name, doc, part) if tuple(frappe.parse_json(e.key)) == key]
+			if not stored:
+				continue
+			pos = _entry_position(stored[0])
+			frappe.db.delete(
+				"Sequence Entry",
+				{
+					"sequence": name,
+					"key_hash": khash,
+					"document_type": doc.doctype,
+					"document_name": doc.name,
+					"document_part": part,
+				},
+			)
+		else:
+			pos = _position(moment, doc.doctype, part)
+			frappe.db.delete(
+				"Sequence Entry",
+				{
+					"sequence": name,
+					"key_hash": khash,
+					"document_type": doc.doctype,
+					"document_name": doc.name,
+					"document_part": part,
+				},
+			)
+			_insert_entry(name, key, pos)
+		before = _entries(name, khash, before=_params(pos), descending=True, limit=1)
+		pred = _entry_position(before[0]) if before else None
+		new = _lowest(old, pred)
+		extra = {"version": row.version + 1} if new != old else {}
+		_save(bname, new, **extra)
+		trigger = frappe._dict(
+			doctype=doc.doctype,
+			name=doc.name,
+			part=part,
+			posting_date=pos.date,
+			creation=pos.creation,
+			docstatus=2 if cancel else 1,
+		)
+		_schedule(seq, key, bname, trigger)
 
 
 def _schedule(seq, key: tuple, bname: str, trigger=None):
@@ -330,7 +419,13 @@ def _repost_entry(seq, entry):
 	doc = frappe.get_doc(entry.document_type, entry.document_name)
 	if doc.docstatus != 1:
 		return
-	if hasattr(doc, "repost_in_sequence"):
+	if entry.document_part:
+		if not hasattr(doc, "repost_part_in_sequence"):
+			frappe.throw(
+				_("Document type {0} is in sequence {1} but cannot repost a part").format(doc.doctype, seq.name)
+			)
+		doc.repost_part_in_sequence(entry.document_part, seq.name)
+	elif hasattr(doc, "repost_in_sequence"):
 		doc.repost_in_sequence(seq.name)
 	elif movement_registers(doc.doctype):
 		repost(doc)
@@ -366,7 +461,11 @@ def _restore(seq, key: tuple, bname: str, until: Position | None = None, trigger
 					frappe.db.commit()
 				return
 			entry = entries[0]
-			if not (trigger and (entry.document_type, entry.document_name) == (trigger.doctype, trigger.name)):
+			if not (
+				trigger
+				and (entry.document_type, entry.document_name, entry.document_part or "")
+				== (trigger.doctype, trigger.name, trigger.get("part") or "")
+			):
 				_repost_entry(seq, entry)
 				if _lock_row(bname).version != row.version:
 					# the boundary moved back while the document was reposted: start again from the new one
@@ -427,9 +526,17 @@ def rebuild_entries(sequence: str) -> None:
 		for name in frappe.get_all(row.document_type, filters={"docstatus": 1}, pluck="name", order_by=None):
 			doc = frappe.get_doc(row.document_type, name)
 			pos = _position(document_moment(doc), doc.doctype)
-			for key in document_keys(seq, doc):
-				_insert_entry(sequence, key, pos)
-				last[key] = max(last.get(key, pos), pos)
+			if not getattr(doc, "sequence_by_parts", False):
+				for key in document_keys(seq, doc):
+					_insert_entry(sequence, key, pos)
+					last[key] = max(last.get(key, pos), pos)
+			# a document with parts: one entry per part
+			if hasattr(doc, "get_sequence_parts"):
+				for part, moment in doc.get_sequence_parts(sequence):
+					ppos = _position(moment, doc.doctype, part)
+					for key in document_keys(seq, doc):
+						_insert_entry(sequence, key, ppos)
+						last[key] = max(last.get(key, ppos), ppos)
 	for key, pos in last.items():
 		_save(_ensure_row(sequence, key), pos)
 

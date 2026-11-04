@@ -26,19 +26,27 @@ def register_write():
 		frappe.flags.beeone_register_write = previous
 
 
-def record_set(register: str, recorder_type: str, recorder: str, keep_blank: bool = False) -> "RecordSet":
-	return RecordSet(register, recorder_type, recorder, keep_blank=keep_blank)
+def record_set(
+	register: str, recorder_type: str, recorder: str, keep_blank: bool = False, part: str | None = None
+) -> "RecordSet":
+	return RecordSet(register, recorder_type, recorder, keep_blank=keep_blank, part=part)
 
 
 class RecordSet:
 	"""The rows of `register` whose recorder is (`recorder_type`, `recorder`).
 
+	With `part` the set is one part of the recorder: only the rows whose part field equals `part`.
+	`delete` and `replace` then leave the other parts alone. Without `part` the set is the whole recorder.
+
 	`replace` and `delete` write the rows in one statement and apply the change to
 	the totals of the register in the same transaction.
 	"""
 
-	def __init__(self, register: str, recorder_type: str | None, recorder: str, moment=None, keep_blank: bool = False):
+	def __init__(self, register: str, recorder_type: str | None, recorder: str, moment=None, keep_blank: bool = False, part: str | None = None):
 		self.reg = get_register(register)
+		if part is not None and not self.reg.part_field:
+			frappe.throw(_("Register {0} has no part field").format(self.reg.name))
+		self.part = part
 		self.recorder_type = recorder_type
 		self.recorder = recorder
 		self.moment = moment
@@ -56,6 +64,8 @@ class RecordSet:
 		filters = {reg.registrar_field: self.recorder}
 		if reg.registrar_type_field:
 			filters[reg.registrar_type_field] = self.recorder_type
+		if self.part is not None:
+			filters[reg.part_field] = self.part
 		return filters
 
 	def read(self) -> list[dict]:
@@ -125,6 +135,8 @@ class RecordSet:
 			values[reg.registrar_field] = self.recorder
 			if reg.registrar_type_field:
 				values[reg.registrar_type_field] = self.recorder_type
+			if self.part is not None:
+				values[reg.part_field] = self.part
 
 			doc = frappe.get_doc({"doctype": self.doctype, **values})
 			doc.set_user_and_timestamp()
