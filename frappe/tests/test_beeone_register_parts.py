@@ -8,6 +8,7 @@ from datetime import date
 import frappe
 from frappe.beeone.registers import record_set, register_write
 from frappe.beeone.registers.meta import clear_cache
+from frappe.beeone.registers.totals import current_table
 from frappe.tests import IntegrationTestCase
 
 PARTS = "Beeone Part Ledger"
@@ -74,6 +75,7 @@ class TestBeeoneRegisterParts(IntegrationTestCase):
 	def setUp(self):
 		frappe.db.delete(PARTS)
 		frappe.db.delete(PLAIN)
+		frappe.db.sql(f"DELETE FROM `{current_table(PARTS)}`")
 		clear_cache()
 
 	def _qty(self, **filters):
@@ -104,8 +106,6 @@ class TestBeeoneRegisterParts(IntegrationTestCase):
 		self.assertEqual(self._qty(part="p2"), [7, 8])
 
 	def test_the_totals_follow_the_parts(self):
-		from frappe.beeone.registers.totals import current_table
-
 		self._write("p1", _rows(1, 2))
 		self._write("p2", _rows(10))
 		current = lambda: frappe.db.sql(f"SELECT COALESCE(SUM(qty), 0) FROM `{current_table(PARTS)}`")[0][0]
