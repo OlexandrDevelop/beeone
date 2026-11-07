@@ -381,6 +381,8 @@ def _try_action(handler, step, doc, context, params, savepoint, idx, started):
 		if not handler:
 			raise ValueError(f"Unknown action type: {step.get('action_type')}")
 		handler.validate(params, target.doctype if target else None)
+		if frappe.flags.get("in_automation_trial") and not handler.transactional:
+			return "Success", handler.simulate(target, params, context), _ms(started)
 		if not handler.transactional:
 			# Before the call, not after: a webhook that answers 500, or times out, has still left
 			# this process, and nothing here can tell whether it arrived. Marking a step that turns

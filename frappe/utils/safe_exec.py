@@ -463,10 +463,12 @@ def _get_ssrf_guarded_adapter_class():
 	return SSRFGuardedAdapter
 
 
-def get_safe_request_session():
+def get_safe_request_session(max_retries=None):
 	from requests.adapters import Retry
 
-	adapter = _get_ssrf_guarded_adapter_class()(max_retries=Retry(total=5, status_forcelist=[500]))
+	if max_retries is None:
+		max_retries = Retry(total=5, status_forcelist=[500])
+	adapter = _get_ssrf_guarded_adapter_class()(max_retries=max_retries)
 	session = frappe.utils.get_request_session(adapter=adapter)
 	# Env-configured proxies would send the request somewhere the guard can't see.
 	session.trust_env = False

@@ -2,6 +2,7 @@
 # License: MIT. See LICENSE
 
 import json
+from unittest.mock import patch
 
 import frappe
 from frappe.automation_engine.events import (
@@ -21,6 +22,28 @@ REPLY_EVENT = "tests.reply"
 
 
 class TestAutomationEvents(IntegrationTestCase):
+	def test_event_depth_is_counted_and_limited(self):
+		from frappe.automation_engine import settings
+
+		auto = make_automation(
+			[{"action_type": "CreateDocument", "params": '{"doctype":"ToDo","values":{"description":"depth"}}'}],
+			trigger_type="Custom Event", document_type=None, custom_event="tests.created",
+		)
+		previous = frappe.flags.get("automation_depth")
+		try:
+			for parent in (0, 1):
+				frappe.flags.automation_depth = parent
+				emit("tests.created")
+				self.assertEqual(frappe.db.get_value(QUEUE, {"automation": auto}, "depth"), parent + 1)
+				frappe.db.delete(QUEUE, {"automation": auto})
+			frappe.flags.automation_depth = settings.get("max_depth")
+			with patch("frappe.automation_engine.events._log_depth_refusal") as log:
+				emit("tests.created")
+				emit(REPLY_EVENT)
+				self.assertEqual(log.call_count, 1)
+			self.assertFalse(frappe.db.exists(QUEUE, {"automation": auto}))
+		finally:
+			frappe.flags.automation_depth = previous
 	def setUp(self):
 		frappe.set_user("Administrator")
 		self.hooks = self.patch_hooks({"automation_events": [REPLY_EVENT, "tests.created"]})

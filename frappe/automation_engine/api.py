@@ -78,6 +78,8 @@ def get_param_options(
 	by the param's declared `options_source` are callable.
 	"""
 	_check_config_permission()
+	if doctype:
+		frappe.has_permission(doctype, throw=True)
 	action = get_action(action_type)
 	field = next((f for f in action.params_schema if f["fieldname"] == fieldname), None)
 	if not field:
@@ -97,6 +99,8 @@ def run_manually(automation: str, docname: str | None = None) -> dict:
 		frappe.has_permission(rule.document_type, "read", doc=docname, throw=True)
 	elif docname:
 		frappe.throw(_("Document-less automations do not accept a document name"))
+	if not rule.enabled:
+		frappe.throw(_("Automation Flow {0} is disabled").format(rule.title or rule.name))
 
 	payload = {"manual": True, "manual_run_id": frappe.generate_hash(length=12)}
 	queue_trigger(automation, rule.document_type, docname, payload=payload, depth=1)
@@ -108,7 +112,7 @@ def run_manually(automation: str, docname: str | None = None) -> dict:
 def get_runs(reference_doctype: str, reference_name: str) -> list:
 	"""Return the run history for a document (timeline feed)."""
 	frappe.has_permission(reference_doctype, "read", doc=reference_name, throw=True)
-	return frappe.get_all(
+	runs = frappe.get_all(
 		RUN,
 		filters={"reference_doctype": reference_doctype, "reference_name": reference_name},
 		fields=[
@@ -122,6 +126,10 @@ def get_runs(reference_doctype: str, reference_name: str) -> list:
 		],
 		order_by="creation desc",
 	)
+	if not frappe.has_permission(RUN, "read"):
+		for run in runs:
+			run.error_summary = None
+	return runs
 
 
 def _doc_fields(doctype: str) -> list:
@@ -238,6 +246,9 @@ def _trial_mode(branch_overrides: dict):
 	and realtime updates are not covered by a rollback either.
 	"""
 	original = frappe.db.commit
+	before_commit, after_commit = frappe.db.before_commit, frappe.db.after_commit
+	frappe.db.before_commit = frappe.utils.CallbackManager()
+	frappe.db.after_commit = frappe.utils.CallbackManager()
 	previous = frappe.flags.get("in_automation_trial")
 	previous_overrides = frappe.flags.get("automation_branch_overrides")
 	frappe.db.commit = lambda *args, **kwargs: None
@@ -247,6 +258,7 @@ def _trial_mode(branch_overrides: dict):
 		yield
 	finally:
 		frappe.db.commit = original
+		frappe.db.before_commit, frappe.db.after_commit = before_commit, after_commit
 		frappe.flags.in_automation_trial = previous
 		frappe.flags.automation_branch_overrides = previous_overrides
 

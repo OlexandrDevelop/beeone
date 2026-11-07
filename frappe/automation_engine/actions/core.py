@@ -374,22 +374,23 @@ class CallWebhook(AutomationAction):
 		headers = _rendered_json(params.get("headers"), doc, context, "headers")
 		payload = _rendered_json(params.get("payload"), doc, context, "payload")
 		timeout = cint(params.get("timeout")) or DEFAULT_WEBHOOK_TIMEOUT
-		if frappe.flags.get("in_automation_trial"):
-			# The one step a rollback cannot undo. Guard the URL anyway, so a trial reports the
-			# same refusal a live run would.
-			_guard_url(url)
-			return {"detail": _("Would {0} {1} (not sent)").format(method, url)}
 		response = _send_guarded_request(method, url, headers, payload, timeout)
 		body = (response.text or "")[:WEBHOOK_RESPONSE_LIMIT]
 		if response.status_code >= 400:
 			raise frappe.ValidationError(
-				_("{0} {1} returned {2}: {3}").format(method, url, response.status_code, body)
+				_("{0} {1} returned {2}: {3}").format(method, _display_url(url), response.status_code, body)
 			)
 		return {
-			"detail": _("{0} {1} returned {2}").format(method, url, response.status_code),
+			"detail": _("{0} {1} returned {2}").format(method, _display_url(url), response.status_code),
 			"status_code": response.status_code,
 			"response": body,
 		}
+
+	def simulate(self, doc, params, context):
+		url = render_value(params.get("url"), doc, context)
+		method = (params.get("method") or "POST").upper()
+		_guard_url(url)
+		return {"detail": _("Would {0} {1} (not sent)").format(method, _display_url(url))}
 
 
 class RunScript(AutomationAction):
@@ -497,6 +498,16 @@ class RunScript(AutomationAction):
 		return params.get("script") or "", f"automation_{rule.name}" if rule else "automation"
 
 
+def _display_url(url: str):
+	parsed = urlparse(url)
+	host = parsed.hostname or ""
+	if ":" in host:
+		host = f"[{host}]"
+	if parsed.port:
+		host = f"{host}:{parsed.port}"
+	return f"{parsed.scheme}://{host}{parsed.path}"
+
+
 def _check_url_shape(url: str):
 	parsed = urlparse(url)
 	if parsed.scheme not in ALLOWED_SCHEMES:
@@ -531,13 +542,14 @@ def _guard_url(url: str):
 
 def _send_guarded_request(method, url, headers, payload, timeout):
 	"""Follow redirects by hand so every hop is guarded; requests would only check the first."""
-	import requests
+	from frappe.utils.safe_exec import get_safe_request_session
 
 	body = frappe.as_json(payload) if payload else None
 	headers = {"Content-Type": "application/json", **(headers or {})} if body else dict(headers or {})
+	session = get_safe_request_session(max_retries=0)
 	for _hop in range(MAX_REDIRECTS + 1):
 		_guard_url(url)
-		response = requests.request(
+		response = session.request(
 			method=method, url=url, data=body, headers=headers, timeout=timeout, allow_redirects=False
 		)
 		location = response.headers.get("Location") if response.is_redirect else None

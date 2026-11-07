@@ -44,6 +44,37 @@ def committing_action():
 
 
 class TestTrialRun(AutomationRunnerTestCase):
+	def test_script_is_not_executed_in_trial(self):
+		from frappe.tests.classes.context_managers import enable_safe_exec
+
+		with enable_safe_exec():
+			auto = make_automation([{"action_type": "RunScript", "params": json.dumps({"script": "result.x = 1"})}])
+			with patch("frappe.utils.safe_exec.safe_exec") as execute:
+				result = trial_run(auto, make_todo().name)
+				execute.assert_not_called()
+		self.assertEqual(result["status"], "Success")
+		self.assertIn("not run in a trial", result["steps"][0]["detail"])
+	def test_non_transactional_action_is_simulated(self):
+		todo = make_todo()
+		auto = make_automation([set_field("priority", "High")])
+		handler = get_action_registry()["SetFieldValue"]
+		with patch.object(handler, "transactional", False), patch.object(handler, "execute") as execute:
+			result = trial_run(auto, todo.name)
+			execute.assert_not_called()
+		self.assertEqual(result["status"], "Success")
+		self.assertIn("not run in a trial", result["steps"][0]["detail"])
+
+	def test_trial_commit_callbacks_are_discarded(self):
+		from frappe.automation_engine.api import _trial_mode
+
+		before, after = frappe.db.before_commit, frappe.db.after_commit
+		with _trial_mode({}):
+			self.assertIsNot(frappe.db.before_commit, before)
+			self.assertIsNot(frappe.db.after_commit, after)
+			frappe.db.before_commit.add(lambda: None)
+			frappe.db.after_commit.add(lambda: None)
+		self.assertIs(frappe.db.before_commit, before)
+		self.assertIs(frappe.db.after_commit, after)
 	def test_successful_trial_leaves_nothing_behind(self):
 		todo = make_todo(priority="Low")
 		auto = make_automation([set_field("priority", "High")])
@@ -204,7 +235,7 @@ class TestTrialRun(AutomationRunnerTestCase):
 
 		with (
 			public_dns({"example.com": "93.184.216.34"}),
-			patch("requests.request") as request,
+			patch("requests.Session.request") as request,
 		):
 			result = trial_run(auto, todo.name)
 			request.assert_not_called()

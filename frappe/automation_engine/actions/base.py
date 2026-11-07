@@ -93,6 +93,10 @@ class AutomationAction:
 		"""Run the action against `doc`. Return a short detail string for the run log."""
 		raise NotImplementedError
 
+	def simulate(self, doc, params: dict, context: dict):
+		"""What a trial reports instead of executing a non-transactional action."""
+		return {"detail": _("Would run {0} (not run in a trial)").format(self.label or self.action_type), "simulated": True}
+
 	@property
 	def app(self) -> str:
 		"""The app that registered this action, taken from the module it is defined in."""

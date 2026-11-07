@@ -38,10 +38,9 @@ def run_automations(doc, method):
 
 	# Enforce recursion depth only once we know there's real work to do. Checking earlier
 	# would log a refusal for every unrelated save (Run logs, ToDos, Notification Logs)
-	depth = cint(frappe.flags.get("automation_depth")) + 1
-	max_depth = settings.get("max_depth")
-	if depth > max_depth:
-		_log_depth_refusal(doc, max_depth)
+	depth = next_depth()
+	if depth is None:
+		_log_depth_refusal(f"{doc.doctype} {doc.name}", settings.get("max_depth"))
 		return
 
 	for rule in matched:
@@ -60,13 +59,18 @@ def _dispatch_allowed() -> bool:
 	return settings.is_enabled()
 
 
-def _log_depth_refusal(doc, max_depth):
+def next_depth():
+	depth = cint(frappe.flags.get("automation_depth")) + 1
+	return depth if depth <= settings.get("max_depth") else None
+
+
+def _log_depth_refusal(subject, max_depth):
 	previous = frappe.flags.get("skip_automations")
 	frappe.flags.skip_automations = True
 	try:
 		frappe.log_error(
 			title="Automation Flow depth limit reached",
-			message=f"Skipped automations for {doc.doctype} {doc.name} at depth {max_depth}",
+			message=f"Skipped automations for {subject} at depth {max_depth}",
 		)
 	finally:
 		frappe.flags.skip_automations = previous

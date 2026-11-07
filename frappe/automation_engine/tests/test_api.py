@@ -22,6 +22,24 @@ def make_automation():
 
 
 class TestApi(IntegrationTestCase):
+	def test_disabled_flow_cannot_run_manually(self):
+		auto = make_automation()
+		frappe.db.set_value("Automation Flow", auto, "enabled", 0)
+		self.assertRaises(frappe.ValidationError, api.run_manually, auto)
+
+	def test_param_options_checks_doctype_permission(self):
+		from unittest.mock import patch
+
+		with patch("frappe.automation_engine.api.frappe.has_permission", side_effect=[True, frappe.PermissionError]):
+			self.assertRaises(frappe.PermissionError, api.get_param_options, "SetFieldValue", "field", "ToDo")
+
+	def test_runs_hide_errors_without_run_permission(self):
+		from unittest.mock import patch
+
+		with patch("frappe.automation_engine.api.frappe.has_permission", side_effect=[True, False]), patch(
+			"frappe.automation_engine.api.frappe.get_all", return_value=[frappe._dict(error_summary="secret")]
+		):
+			self.assertIsNone(api.get_runs("ToDo", "x")[0].error_summary)
 	def setUp(self):
 		frappe.set_user("Administrator")
 		clear_automation_cache()

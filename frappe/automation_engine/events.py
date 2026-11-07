@@ -5,7 +5,7 @@
 import frappe
 from frappe import _
 from frappe.automation_engine import settings
-from frappe.automation_engine.dispatch import kick_drainer, matches_rule, queue_trigger
+from frappe.automation_engine.dispatch import _log_depth_refusal, kick_drainer, matches_rule, next_depth, queue_trigger
 from frappe.automation_engine.queue import QUEUE
 from frappe.automation_engine.registry import get_custom_event_map
 from frappe.utils import add_to_date, cint, get_datetime, now, now_datetime
@@ -172,11 +172,16 @@ def _queue_event_flows(event, doc, payload) -> int:
 			continue
 		if target and not matches_rule(rule, target):
 			continue
+		depth = next_depth()
+		if depth is None:
+			_log_depth_refusal(f"event {event}", settings.get("max_depth"))
+			return queued
 		queue_trigger(
 			rule.name,
 			target.doctype if target else None,
 			target.name if target else occurrence,
 			payload=payload,
+			depth=depth,
 		)
 		queued += 1
 	return queued
