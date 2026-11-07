@@ -72,7 +72,7 @@ class TestQRCode(unittest.TestCase):
 			with self.assertRaises(frappe.ValidationError):
 				get_qr_code("x" * 2001, format=fmt)
 			with self.assertRaises(frappe.ValidationError):
-				get_qr_code("ї" * 1500, format=fmt)
+				get_qr_code("\u0457" * 1500, format=fmt)
 
 	def test_normal_requests_still_work(self):
 		"""String scale, default scale, the boundary scale and a long ASCII payload work."""
