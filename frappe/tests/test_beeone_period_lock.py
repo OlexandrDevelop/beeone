@@ -64,3 +64,97 @@ class TestPeriodLock(IntegrationTestCase):
 			self.check(date(2026, 3, 10), ["Guest"])
 		finally:
 			frappe.flags.beeone_period_closure = False
+
+
+class TestPeriodLockPostAndCancel(IntegrationTestCase):
+	"""post and unpost go through the guard; the exception role is read from the real user's roles."""
+
+	EMAIL = "t723-lock@example.com"
+
+	def setUp(self):
+		frappe.db.delete("Period Lock")
+		frappe.db.delete("Period Lock Role")
+		frappe.get_doc(
+			{"doctype": "Period Lock", "lock_date": LOCK, "roles": [{"role": "Report Manager"}]}
+		).insert()
+		self.addCleanup(frappe.set_user, frappe.session.user)
+
+	def tearDown(self):
+		frappe.flags.beeone_period_closure = False
+		frappe.set_user("Administrator")
+		frappe.db.rollback()
+
+	def user(self, roles):
+		frappe.set_user("Administrator")
+		if frappe.db.exists("User", self.EMAIL):
+			frappe.delete_doc("User", self.EMAIL, force=True)
+		frappe.get_doc(
+			{
+				"doctype": "User",
+				"email": self.EMAIL,
+				"first_name": "T723",
+				"send_welcome_email": 0,
+				"roles": [{"role": role} for role in roles],
+			}
+		).insert()
+		frappe.set_user(self.EMAIL)
+
+	def run_guarded(self, function, day=date(2026, 3, 10)):
+		doc = frappe._dict(doctype="Beeone Move Document", name="X", posting_date=day, organization=None, creation=day)
+		real_get_hooks = frappe.get_hooks
+
+		def get_hooks(hook=None, *args, **kwargs):
+			if hook == "beeone_lock_date":
+				return ["frappe.tests.test_beeone_period_lock.lock_date_hook"]
+			return real_get_hooks(hook, *args, **kwargs)
+
+		with patch("frappe.get_hooks", side_effect=get_hooks):
+			return function(doc)
+
+	def test_real_user_with_exception_role_passes_without_patching_roles(self):
+		self.user(["Report Manager"])
+		self.run_guarded(check_period_lock)
+
+	def test_real_user_without_exception_role_is_refused(self):
+		self.user(["Translator"])
+		with self.assertRaises(frappe.ValidationError):
+			self.run_guarded(check_period_lock)
+
+	def test_unpost_in_closed_period_is_refused(self):
+		from frappe.beeone.registers import unpost
+
+		self.user(["Translator"])
+		with patch("frappe.beeone.registers.posting.RecordSet") as record_set:
+			with self.assertRaises(frappe.ValidationError):
+				self.run_guarded(unpost)
+			record_set.assert_not_called()
+
+	def test_unpost_in_closed_period_is_allowed_for_exception_role_and_closure(self):
+		from frappe.beeone.registers import unpost
+
+		self.user(["Report Manager"])
+		self.run_guarded(unpost)
+		self.user(["Translator"])
+		frappe.flags.beeone_period_closure = True
+		self.run_guarded(unpost)
+
+	def test_unpost_in_open_period_is_allowed(self):
+		from frappe.beeone.registers import unpost
+
+		self.user(["Translator"])
+		self.run_guarded(unpost, day=date(2026, 4, 1))
+
+	def test_repost_checks_the_lock_once(self):
+		from frappe.beeone.registers import repost
+
+		self.user(["Report Manager"])
+		doc = frappe._dict(
+			doctype="Beeone Move Document", name="X", docstatus=1,
+			posting_date=date(2026, 3, 10), organization=None, creation=date(2026, 3, 10),
+		)
+		with (
+			patch("frappe.beeone.registers.posting.check_period_lock") as check,
+			patch("frappe.beeone.registers.posting.movement_registers", return_value=[]),
+		):
+			repost(doc)
+		self.assertEqual(check.call_count, 1)

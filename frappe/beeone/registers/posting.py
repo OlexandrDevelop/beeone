@@ -142,8 +142,10 @@ def post(doc, _check_period=True) -> None:
 			RecordSet(register, doc.doctype, doc.name, movements.moment).replace(movements.rows[register])
 
 
-def unpost(doc) -> None:
+def unpost(doc, _check_period=True) -> None:
 	"""Delete the rows of every register of the document."""
+	if _check_period:
+		check_period_lock(doc)
 	with register_write():
 		for register in movement_registers(doc.doctype):
 			RecordSet(register, doc.doctype, doc.name).delete()
@@ -154,5 +156,5 @@ def repost(doc) -> None:
 	check_period_lock(doc)
 	if doc.docstatus != 1:
 		frappe.throw(_("Only a submitted document can be reposted"))
-	unpost(doc)
+	unpost(doc, _check_period=False)
 	post(doc, _check_period=False)

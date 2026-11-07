@@ -10,7 +10,7 @@ from datetime import timedelta
 import frappe
 from frappe import _
 from frappe.utils import get_datetime
-from frappe.beeone import accounting_totals
+from frappe.beeone import accounting_totals, db
 from frappe.beeone.registers import rights, totals
 from frappe.beeone.registers.meta import get_register
 
@@ -75,12 +75,33 @@ class RecordSet:
 
 	def delete(self) -> list[dict]:
 		"""Delete the rows of the set. Returns the deleted rows."""
-		old, _new = self._write(self.read(), [])
+		old, _new = self._write(self._read_locked(), [])
 		return old
 
 	def replace(self, rows: list[dict]) -> None:
 		"""Delete the old rows of the set and insert `rows` in one statement."""
-		self._write(self.read(), rows)
+		self._write(self._read_locked(), rows)
+
+	def _read_locked(self) -> list[dict]:
+		"""The rows of the set, locked until the end of the transaction.
+
+		The totals change by what is deleted, so the rows must be the ones that are deleted. When
+		another transaction replaced or deleted them after our snapshot, the deltas would be wrong:
+		the caller must start again (QueryDeadlockError).
+		"""
+		rows = self.read()
+		conflict = frappe.QueryDeadlockError(_("Another user changes the same data. Try again."))
+		try:
+			locked = db.select_range(
+				self.doctype, ["name"], ["creation", "name"], filters=self._filters(), lock=True
+			)
+		except Exception as error:
+			if db.dialect().is_lock_conflict(error):
+				raise conflict from error
+			raise
+		if {row.name for row in rows} != {row.name for row in locked}:
+			raise conflict
+		return rows
 
 	def append(self, rows: list[dict]) -> list[dict]:
 		"""Insert `rows` and keep the rows the set already has. Returns the written rows."""

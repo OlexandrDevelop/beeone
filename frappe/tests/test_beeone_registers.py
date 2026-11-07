@@ -4,6 +4,7 @@
 """Document moment, RecordSet and post/unpost/repost of the beeone registers."""
 
 from datetime import date, datetime, timedelta
+import threading
 from unittest.mock import patch
 
 import frappe
@@ -353,3 +354,93 @@ class TestBeeoneRegisters(IntegrationTestCase):
 			}
 		)
 		validate_register(register)
+
+	# concurrent changes of one set
+
+	def _commit_set(self, rows=("a", "b")):
+		rs = record_set(LEDGER, "Month Closing", "MC-T723")
+		rs.replace([{"posting_date": "2026-05-31", "item": item, "qty": 5} for item in rows])
+		frappe.db.commit()
+
+	def _clean_committed(self):
+		from frappe.beeone.registers import get_register
+		from frappe.beeone.registers.totals import rebuild_totals
+
+		frappe.db.rollback()
+		frappe.db.delete(LEDGER, {"voucher_no": "MC-T723"})
+		rebuild_totals(get_register(LEDGER))
+		frappe.db.commit()
+
+	def _race(self, functions):
+		"""Run the functions in own connections; every one has read its snapshot before any of them locks."""
+		site = frappe.local.site
+		sync, result = threading.Barrier(len(functions)), [None] * len(functions)
+		original = RecordSet.read
+
+		def read(self_):
+			rows = original(self_)
+			sync.wait(30)
+			return rows
+
+		def work(index, function):
+			frappe.init(site, force=True)
+			frappe.connect()
+			frappe.set_user("Administrator")
+			try:
+				function()
+				frappe.db.commit()
+				result[index] = "done"
+			except Exception as error:
+				frappe.db.rollback()
+				result[index] = error
+			finally:
+				frappe.destroy()
+
+		with patch.object(RecordSet, "read", read):
+			threads = [threading.Thread(target=work, args=(i, f)) for i, f in enumerate(functions)]
+			for thread in threads:
+				thread.start()
+			for thread in threads:
+				thread.join(120)
+		frappe.db.rollback()
+		return result
+
+	def _assert_consistent(self, items=("a", "b")):
+		rows = record_set(LEDGER, "Month Closing", "MC-T723").read()
+		for item in items:
+			expected = sum(r.qty for r in rows if r.item == item)
+			self.assertEqual(self._current(item), expected, item)
+			self.assertEqual(sum(t.qty for t in self._turnover(item)), expected, item)
+		return rows
+
+	def test_parallel_deletes_of_one_set_keep_totals_equal_to_rows(self):
+		self.addCleanup(self._clean_committed)
+		self._commit_set()
+		rs = lambda: record_set(LEDGER, "Month Closing", "MC-T723").delete()
+		result = self._race([rs, rs])
+		self.assertEqual(result.count("done"), 1, result)
+		self.assertTrue(all(isinstance(r, frappe.QueryDeadlockError) for r in result if r != "done"), result)
+		self.assertEqual(self._assert_consistent(), [])
+
+	def test_parallel_replace_and_delete_of_one_set_keep_totals_equal_to_rows(self):
+		self.addCleanup(self._clean_committed)
+		self._commit_set()
+		replace = lambda: record_set(LEDGER, "Month Closing", "MC-T723").replace(
+			[{"posting_date": "2026-05-31", "item": "a", "qty": 7}]
+		)
+		delete = lambda: record_set(LEDGER, "Month Closing", "MC-T723").delete()
+		result = self._race([replace, delete])
+		self.assertEqual(result.count("done"), 1, result)
+		self.assertTrue(all(isinstance(r, frappe.QueryDeadlockError) for r in result if r != "done"), result)
+		self._assert_consistent()
+
+	def test_parallel_replaces_of_one_set_keep_totals_equal_to_rows(self):
+		self.addCleanup(self._clean_committed)
+		self._commit_set()
+		replace = lambda qty: (lambda: record_set(LEDGER, "Month Closing", "MC-T723").replace(
+			[{"posting_date": "2026-05-31", "item": "a", "qty": qty}]
+		))
+		result = self._race([replace(7), replace(9)])
+		self.assertEqual(result.count("done"), 1, result)
+		rows = self._assert_consistent()
+		self.assertEqual(len(rows), 1)
