@@ -51,6 +51,8 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 						{"fieldname": "title", "fieldtype": "Data"},
 						{"fieldname": "note", "fieldtype": "Data"},
 						{"fieldname": "amount", "fieldtype": "Currency"},
+						{"fieldname": "secret", "fieldtype": "Data", "permlevel": 1},
+						{"fieldname": "pin", "fieldtype": "Password"},
 					],
 					"permissions": [{"role": ROLE, "read": 1, "write": 1, "create": 1, "submit": 1, "delete": 1}],
 				}
@@ -80,6 +82,24 @@ class TestBeeoneChangeLog(IntegrationTestCase):
 
 	def _entries(self, name):
 		return frappe.get_all("Version", filters={"ref_doctype": DOCTYPE, "docname": name, "action": ("is", "set")})
+
+	def test_field_rights_and_password_storage(self):
+		with patch("frappe.get_hooks", _hooks([DOCTYPE])):
+			doc = frappe.get_doc({"doctype": DOCTYPE, "title": "secret-1"}).insert()
+			entry = change_log.record_change(doc, [
+				{"field": "note", "old_value": "", "new_value": "visible"},
+				{"field": "secret", "old_value": "", "new_value": "restricted"},
+				{"field": "pin", "old_value": "old-secret", "new_value": "plain-password"},
+				{"field": "removed", "old_value": "", "new_value": "unknown"},
+			])
+		self.assertNotIn("plain-password", entry.data)
+		self.assertNotIn("old-secret", entry.data)
+		self.assertIn("*****", entry.data)
+		frappe.set_user(USER_ALL)
+		for entries in (change_log.get_history(DOCTYPE, doc.name), change_log.get_log(doctype=DOCTYPE)):
+			rows = next(e["rows"] for e in entries if e["action"] == "Update")
+			self.assertEqual({r["field"] for r in rows}, {"note", "pin"})
+			self.assertEqual(next(r["new_value"] for r in rows if r["field"] == "pin"), "*****")
 
 	def test_off_by_default(self):
 		doc = frappe.get_doc({"doctype": DOCTYPE, "title": "off-1"}).insert()

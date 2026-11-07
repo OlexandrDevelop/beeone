@@ -6,6 +6,7 @@
 import frappe
 from frappe.beeone.registers import query, totals
 from frappe.beeone.registers.meta import get_register, register_doctypes
+from frappe.utils import sbool
 
 
 @frappe.whitelist()
@@ -89,10 +90,13 @@ def balance_and_turnover(register: str, start, end, filters=None, group_by=None,
 
 @frappe.whitelist()
 def current_balance(register: str, filters=None, lock=False, resources=None):
+	lock = sbool(lock) is True
+	if lock:
+		frappe.has_permission(get_register(register).register_doctype, "write", throw=True)
 	return query.current_balance(
 		register,
 		frappe.parse_json(filters) if filters else None,
-		bool(lock),
+		lock,
 		frappe.parse_json(resources) if resources else None,
 	)
 

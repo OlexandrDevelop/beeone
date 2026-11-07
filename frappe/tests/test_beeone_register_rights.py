@@ -3,6 +3,8 @@
 
 """Row-level rights of a register by its restricting dimensions."""
 
+from unittest.mock import patch
+
 import frappe
 from frappe.beeone.registers import RecordSet, query, register_write
 from frappe.beeone.registers.meta import clear_cache
@@ -158,6 +160,23 @@ class TestBeeoneRegisterRights(IntegrationTestCase):
 		self.assertEqual([(r["unit"], r["qty"]) for r in cur_own], [(OWN, 10)])
 		api_res = frappe.call("frappe.beeone.api.registers.current_balance", register=LEDGER)
 		self.assertEqual([(r["unit"], r["qty"]) for r in api_res], [(OWN, 10)])
+
+	def test_api_lock_requires_write_and_parses_boolean(self):
+		from frappe.beeone.api import registers
+
+		frappe.set_user(USER_ONE)
+		with patch("frappe.beeone.api.registers.frappe.has_permission", wraps=frappe.has_permission) as permission:
+			with patch("frappe.beeone.api.registers.query.current_balance", wraps=query.current_balance) as current:
+				for value in ("false", "0", "unknown"):
+					registers.current_balance(LEDGER, lock=value)
+					self.assertIs(current.call_args.args[2], False)
+				registers.current_balance(LEDGER, lock="true")
+				self.assertIs(current.call_args.args[2], True)
+				permission.assert_any_call(LEDGER, "write", throw=True)
+		with patch("frappe.beeone.api.registers.frappe.has_permission", side_effect=frappe.PermissionError):
+			with self.assertRaises(frappe.PermissionError):
+				registers.current_balance(LEDGER, lock="1")
+		self.assertTrue(query.current_balance(LEDGER, lock=True))
 
 	def test_filter_by_foreign_value_is_empty(self):
 		frappe.set_user(USER_ONE)

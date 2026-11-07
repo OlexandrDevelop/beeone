@@ -16,7 +16,8 @@ holds `{"change_log": {"rows": [{"field", "old_value", "new_value"}], "user": ..
 standard `track_changes` have an empty `action` and are never returned here.
 
 Reading is checked per record: a user sees the history of a document only when they may read that
-document. Entries are never readable through the Version doctype itself (only Administrator).
+document. Field values follow the reader's field rights; Password values are never stored.
+Entries are never readable through the Version doctype itself (only Administrator).
 A deleted document cannot be checked any more, so its history is shown only to Administrator or
 when an app hook (`beeone_change_log_deleted_access`) allows it from the data kept at delete time
 (`beeone_change_log_context` plus the owner). When a name is used again, the entries of the old
@@ -95,6 +96,67 @@ def changed_rows(doc) -> list[dict]:
 	return rows
 
 
+def _field_path(meta, path):
+	"""Resolve a field or one child-table field; unknown fields fail closed."""
+	parts = (path or "").split(".")
+	if len(parts) > 2:
+		return []
+	field = meta.get_field(parts[0])
+	if not field:
+		return []
+	result = [(meta, field, None)]
+	if len(parts) == 2:
+		if field.fieldtype not in table_fields or not field.options:
+			return []
+		child_meta = frappe.get_meta(field.options)
+		child = child_meta.get_field(parts[1])
+		if not child:
+			return []
+		result.append((child_meta, child, meta.name))
+	return result
+
+
+def _safe_rows(meta, rows):
+	result = []
+	for row in rows:
+		row = dict(row)
+		fields = _field_path(meta, row.get("field"))
+		if fields and fields[-1][1].fieldtype == "Password":
+			for key in ("old_value", "new_value"):
+				if row.get(key):
+					row[key] = "*****"
+		result.append(row)
+	return result
+
+
+def _readable_rows(doctype, rows, cache):
+	from frappe.model.utils.mask import mask_field_value
+
+	if frappe.session.user == "Administrator":
+		return rows
+	if doctype not in cache:
+		cache[doctype] = frappe.get_meta(doctype) if frappe.db.exists("DocType", doctype) else None
+	meta = cache[doctype]
+	if not meta:
+		return []
+	result = []
+	for original in rows:
+		fields = _field_path(meta, original.get("field"))
+		if not fields or any((df.permlevel or 0) not in m.get_permlevel_access("read", parenttype=parent)
+			for m, df, parent in fields):
+			continue
+		row = dict(original)
+		field_meta, field, parent = fields[-1]
+		masked = {df.fieldname for df in field_meta.get_masked_fields(parenttype=parent)}
+		for key in ("old_value", "new_value"):
+			if field.fieldtype == "Password" and row.get(key):
+				row[key] = "*****"
+			elif field.fieldname in masked:
+				row[key] = mask_field_value(field, row.get(key))
+		result.append(row)
+	return result
+
+
 # ------------------------------------------------------------------ write
 def record(doc, action: str, rows: list[dict] | None = None):
 	"""Write one entry for a document. Returns the Version row (or None when the log is off)."""
@@ -102,7 +164,7 @@ def record(doc, action: str, rows: list[dict] | None = None):
 		frappe.throw(_("Unknown change log action {0}").format(action))
 	if not is_tracked(doc):
 		return None
-	info = {"user": frappe.session.user, "rows": rows or []}
+	info = {"user": frappe.session.user, "rows": _safe_rows(doc.meta, rows or [])}
 	retired = None
 	if action == "Create":
 		retired = _retire(doc.doctype, doc.name)
@@ -214,7 +276,7 @@ def _readable_names(doctype: str, names: list[str]) -> set[str]:
 	return set(frappe.get_list(doctype, filters={"name": ("in", names)}, pluck="name", limit_page_length=0))
 
 
-def _present(row) -> dict:
+def _present(row, cache) -> dict:
 	data = json.loads(row.data or "{}").get("change_log") or {}
 	return {
 		"name": row.name,
@@ -223,7 +285,7 @@ def _present(row) -> dict:
 		"action": row.action,
 		"user": data.get("user") or row.owner,
 		"timestamp": row.creation,
-		"rows": data.get("rows") or [],
+		"rows": _readable_rows(row.ref_doctype, data.get("rows") or [], cache),
 	}
 
 
@@ -268,7 +330,8 @@ def get_history(doctype: str, name: str, limit: int = 100) -> list[dict]:
 		order_by="creation desc, name desc",
 		limit_page_length=min(cint(limit) or 100, MAX_LIMIT),
 	)
-	return [_present(frappe._dict(r)) for r in rows]
+	cache = {}
+	return [_present(frappe._dict(r), cache) for r in rows]
 
 
 @frappe.whitelist()
@@ -281,6 +344,7 @@ def get_log(doctype=None, user=None, action=None, limit: int = 100) -> list[dict
 		filters["action"] = action
 	limit = min(cint(limit) or 100, MAX_LIMIT)
 	result, start = [], 0
+	cache = {}
 	while len(result) < limit:
 		page = frappe.get_all(
 			"Version",
@@ -295,7 +359,7 @@ def get_log(doctype=None, user=None, action=None, limit: int = 100) -> list[dict
 		start += len(page)
 		page = [frappe._dict(r) for r in page]
 		for entry in _visible(page):
-			item = _present(entry)
+			item = _present(entry, cache)
 			if user and item["user"] != user:
 				continue
 			result.append(item)

@@ -8,7 +8,7 @@ import json
 import frappe
 from frappe import _
 from frappe.beeone.qr import get_qr_code, qr_code
-from frappe.utils.print_format import download_multi_pdf as frappe_download_multi_pdf
+from frappe.utils.print_format import get_max_bulk_print_docs
 
 
 def title_of(doctype, name):
@@ -31,12 +31,17 @@ def _names(name):
 def download_multi_pdf(doctype, name, format=None, no_letterhead=False, letterhead=None, options=None):
 	"""Download multiple documents as one PDF. One wrong name fails the whole batch
 	(a silent gap in a stack of forms is worse than an error)."""
-	if isinstance(doctype, str):
-		for docname in _names(name):
-			if not frappe.db.exists(doctype, docname):
-				frappe.throw(_("{0} {1} not found").format(_(doctype), docname), frappe.DoesNotExistError)
-	if isinstance(name, str) and not name.strip().startswith("["):
-		name = json.dumps([name])
-	elif isinstance(name, list):
-		name = json.dumps(name)
+	if isinstance(doctype, str) and doctype.strip().startswith("{"):
+		doctype = frappe.parse_json(doctype)
+	batches = doctype if isinstance(doctype, dict) else {doctype: _names(name)}
+	max_docs = get_max_bulk_print_docs()
+	if sum(len(names) for names in batches.values()) > max_docs:
+		frappe.throw(_("Cannot generate PDF for more than {0} documents at a time").format(max_docs))
+	for dt, names in batches.items():
+		frappe.has_permission(dt, "read", throw=True)
+		for docname in names:
+			if not frappe.db.exists(dt, docname) or not frappe.has_permission(dt, "read", docname):
+				frappe.throw(_("{0} {1} not found").format(_(dt), docname), frappe.DoesNotExistError)
+	if not isinstance(doctype, dict):
+		name = json.dumps(_names(name))
 	return frappe.utils.print_format.download_multi_pdf(doctype, name, format, no_letterhead, letterhead, options)
