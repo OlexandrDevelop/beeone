@@ -17,53 +17,149 @@ def lock_date_hook(doc=None):
 	return LOCK
 
 
+ORG_A = "Report Manager"  # a Role stands for an organization: any DocType may be the organization type
+ORG_B = "Translator"
+
+
+def none_hook(doc=None):
+	return None
+
+
+def string_hook(doc=None):
+	return "2026-02-28"
+
+
+def lock(lock_date, organization=None, roles=()):
+	values = {"doctype": "Period Lock", "lock_date": lock_date, "roles": [{"role": r} for r in roles]}
+	if organization:
+		values.update(organization_type="Role", organization=organization)
+	return frappe.get_doc(values).insert()
+
+
 class TestPeriodLock(IntegrationTestCase):
 	def setUp(self):
 		frappe.db.delete("Period Lock")
 		frappe.db.delete("Period Lock Role")
-		self.lock = frappe.get_doc(
-			{"doctype": "Period Lock", "lock_date": LOCK, "roles": [{"role": "System Manager"}]}
-		).insert()
 
 	def tearDown(self):
+		frappe.flags.beeone_period_closure = False
 		frappe.db.rollback()
 
-	def check(self, day, roles):
-		"""Run the guard for a document of `day` posted by a user who has `roles`."""
-		doc = frappe._dict(posting_date=day, organization=None, creation=day)
+	def check(self, day, roles=("Guest",), organization=None, hook=None, **extra):
+		"""Run the guard for a document of `day` posted by a user who has `roles`; `hook` is a hook path or None."""
+		doc = frappe._dict(posting_date=day, organization=organization, creation=day, **extra)
 		real_get_hooks = frappe.get_hooks
 
-		def get_hooks(hook=None, *args, **kwargs):
-			if hook == "beeone_lock_date":
-				return ["frappe.tests.test_beeone_period_lock.lock_date_hook"]
-			return real_get_hooks(hook, *args, **kwargs)
+		def get_hooks(name=None, *args, **kwargs):
+			if name == "beeone_lock_date":
+				return [hook] if hook else []
+			return real_get_hooks(name, *args, **kwargs)
 
 		with (
 			patch("frappe.get_hooks", side_effect=get_hooks),
-			patch("frappe.get_roles", return_value=roles),
+			patch("frappe.get_roles", return_value=list(roles)),
 		):
 			check_period_lock(doc)
+
+	def closed(self, *args, **kwargs):
+		with self.assertRaises(frappe.ValidationError):
+			self.check(*args, **kwargs)
 
 	def test_doctype_table_exists(self):
 		self.assertTrue(frappe.db.table_exists("Period Lock"))
 		self.assertTrue(frappe.db.table_exists("Period Lock Role"))
 
-	def test_date_after_lock_is_open(self):
-		self.check(date(2026, 4, 1), ["Guest"])
+	def test_global_record_without_hook(self):
+		lock(LOCK, roles=["System Manager"])
+		self.closed(LOCK)
+		self.closed(date(2026, 3, 10))
+		self.check(date(2026, 4, 1))
 
-	def test_lock_day_is_closed_for_plain_user(self):
-		with self.assertRaises(frappe.ValidationError):
-			self.check(LOCK, ["Guest"])
+	def test_no_record_no_hook_is_open(self):
+		self.check(date(2026, 1, 1))
+
+	def test_global_record_closes_documents_of_any_organization(self):
+		lock(LOCK)
+		self.closed(date(2026, 3, 10), organization=ORG_A)
+
+	def test_organization_record(self):
+		lock(LOCK, organization=ORG_A)
+		self.closed(date(2026, 3, 10), organization=ORG_A)
+		self.check(date(2026, 3, 10), organization=ORG_B)
+		self.check(date(2026, 3, 10))
+
+	def test_organization_records_replace_global_ones(self):
+		lock(LOCK)
+		lock(date(2026, 1, 31), organization=ORG_A)
+		self.check(date(2026, 2, 15), organization=ORG_A)
+		self.closed(date(2026, 1, 15), organization=ORG_A)
+		self.closed(date(2026, 2, 15), organization=ORG_B)
+
+	def test_any_covering_record_of_a_scope_closes(self):
+		lock(date(2026, 1, 31), roles=["Report Manager"])
+		lock(LOCK, roles=["Translator"])
+		self.check(date(2026, 1, 10), roles=["Report Manager", "Translator"])
+		self.closed(date(2026, 1, 10), roles=["Report Manager"])
+		self.closed(date(2026, 1, 10), roles=["Translator"])
+		self.check(date(2026, 2, 10), roles=["Translator"])
 
 	def test_exception_role_may_post_in_closed_period(self):
-		self.check(date(2026, 3, 10), ["Guest", "System Manager"])
+		lock(LOCK, roles=["System Manager"])
+		self.check(date(2026, 3, 10), roles=["Guest", "System Manager"])
+		self.closed(date(2026, 3, 10), roles=["Guest"])
 
-	def test_closure_flag_bypasses_the_check(self):
+	def test_exception_role_of_an_organization_record(self):
+		lock(LOCK, organization=ORG_A, roles=["System Manager"])
+		self.check(date(2026, 3, 10), roles=["System Manager"], organization=ORG_A)
+		self.closed(date(2026, 3, 10), roles=["Guest"], organization=ORG_A)
+
+	def test_hook_alone_closes_without_records(self):
+		hook = "frappe.tests.test_beeone_period_lock.lock_date_hook"
+		self.closed(date(2026, 3, 10), hook=hook)
+		self.closed(LOCK, hook=hook)
+		self.check(date(2026, 4, 1), hook=hook)
+
+	def test_hook_may_return_a_string_or_none(self):
+		self.closed(date(2026, 2, 10), hook="frappe.tests.test_beeone_period_lock.string_hook")
+		self.check(date(2026, 3, 1), hook="frappe.tests.test_beeone_period_lock.string_hook")
+		self.check(date(2026, 1, 1), hook="frappe.tests.test_beeone_period_lock.none_hook")
+
+	def test_exception_roles_of_records_do_not_exempt_from_the_hook_date(self):
+		lock(date(2026, 1, 31), roles=["System Manager"])
+		self.closed(date(2026, 3, 10), roles=["System Manager"], hook="frappe.tests.test_beeone_period_lock.lock_date_hook")
+
+	def test_hook_none_leaves_records_in_force(self):
+		lock(LOCK)
+		self.closed(date(2026, 3, 10), hook="frappe.tests.test_beeone_period_lock.none_hook")
+
+	def test_closure_flag_bypasses_records_and_hook(self):
+		lock(LOCK)
 		frappe.flags.beeone_period_closure = True
-		try:
-			self.check(date(2026, 3, 10), ["Guest"])
-		finally:
-			frappe.flags.beeone_period_closure = False
+		self.check(date(2026, 3, 10), hook="frappe.tests.test_beeone_period_lock.lock_date_hook")
+
+	def test_document_without_business_date_is_not_checked(self):
+		lock(LOCK)
+		doc = frappe._dict(doctype="Beeone Move Document", creation=date(2026, 3, 10), organization=None)
+		with patch("frappe.beeone.registers.posting.movement_registers", return_value=[]):
+			check_period_lock(doc)
+		with patch("frappe.beeone.registers.posting.movement_registers", return_value=["R"]):
+			with self.assertRaises(frappe.ValidationError):
+				check_period_lock(doc)
+
+	def test_movement_moment_gives_the_date(self):
+		lock(LOCK)
+
+		class Doc(frappe._dict):
+			def get_movement_moment(self):
+				return date(2026, 3, 10), None
+
+		with self.assertRaises(frappe.ValidationError):
+			check_period_lock(Doc(posting_date=date(2026, 5, 1), organization=None))
+
+	def test_organization_needs_a_type(self):
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_doc({"doctype": "Period Lock", "lock_date": LOCK, "organization": ORG_A}).insert()
+		self.assertTrue(lock(LOCK, organization=ORG_A).name)
 
 
 class TestPeriodLockPostAndCancel(IntegrationTestCase):
@@ -101,15 +197,7 @@ class TestPeriodLockPostAndCancel(IntegrationTestCase):
 
 	def run_guarded(self, function, day=date(2026, 3, 10)):
 		doc = frappe._dict(doctype="Beeone Move Document", name="X", posting_date=day, organization=None, creation=day)
-		real_get_hooks = frappe.get_hooks
-
-		def get_hooks(hook=None, *args, **kwargs):
-			if hook == "beeone_lock_date":
-				return ["frappe.tests.test_beeone_period_lock.lock_date_hook"]
-			return real_get_hooks(hook, *args, **kwargs)
-
-		with patch("frappe.get_hooks", side_effect=get_hooks):
-			return function(doc)
+		return function(doc)
 
 	def test_real_user_with_exception_role_passes_without_patching_roles(self):
 		self.user(["Report Manager"])

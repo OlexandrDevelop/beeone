@@ -13,52 +13,87 @@ from frappe.beeone.registers.record_set import RecordSet, register_write
 from frappe.utils import get_datetime, getdate, get_time
 
 
-def check_period_lock(doc) -> None:
-	"""Check if the document's date is locked by Period Lock.
+def _lock_day(doc):
+	"""Business date of the document for the period lock, or None when it has none.
 
-	Calls the hook beeone_lock_date to get the lock date from the application.
-	Raises an error if the document date is on or before the lock date and the user's
-	role is not in the exception list. Context flag beeone_period_closure bypasses the check.
+	Order: `get_movement_moment()`, `posting_date`, `transaction_date`. The date of
+	creation counts only for a document type that writes core registers.
+	"""
+	moment = getattr(doc, "get_movement_moment", None)
+	if callable(moment):
+		return getdate(moment()[0])
+	value = doc.get("posting_date") or doc.get("transaction_date")
+	if not value and movement_registers(doc.get("doctype")):
+		value = doc.get("creation")
+	return getdate(value) if value else None
+
+
+def _record_locks(doc, day) -> bool:
+	"""True when a Period Lock record closes `day` for the current user.
+
+	Records of the document's organization replace the records without organization.
+	Within one scope any covering record closes the day, unless the user has one of
+	the exception roles of that record.
+	"""
+	organization = doc.get("organization")
+	scoped = []
+	if organization:
+		scoped = frappe.get_all(
+			"Period Lock", filters={"organization": organization}, fields=["name", "lock_date"]
+		)
+	if not scoped:
+		scoped = frappe.get_all(
+			"Period Lock", filters=[["organization", "is", "not set"]], fields=["name", "lock_date"]
+		)
+
+	user_roles = None
+	for record in scoped:
+		if day > getdate(record.lock_date):
+			continue
+		if user_roles is None:
+			user_roles = set(frappe.get_roles())
+		exception_roles = set(
+			frappe.get_all(
+				"Period Lock Role",
+				filters={"parent": record.name, "parenttype": "Period Lock"},
+				pluck="role",
+			)
+		)
+		if not user_roles & exception_roles:
+			return True
+	return False
+
+
+def _hook_locks(doc, day) -> bool:
+	"""True when the lock date of an application (hook beeone_lock_date) closes `day`.
+
+	The application owns the exceptions of its date: it returns None for an exempt user.
+	"""
+	for hook_method in frappe.get_hooks("beeone_lock_date") or []:
+		lock_date = frappe.call(hook_method, doc=doc)
+		if lock_date and day <= getdate(lock_date):
+			return True
+	return False
+
+
+def check_period_lock(doc) -> None:
+	"""Refuse to post or unpost a document in a locked period.
+
+	The day of the document is closed when a Period Lock record covers it (the records
+	of its organization, or else the records without organization) and the user has none
+	of the exception roles of the record, or when the optional hook beeone_lock_date
+	returns a date on or after it. The records apply with or without the hook.
+	The context flag beeone_period_closure bypasses the check.
 	"""
 	if frappe.flags.get("beeone_period_closure"):
 		return
 
-	hook_result = frappe.get_hooks("beeone_lock_date")
-	if not hook_result:
+	day = _lock_day(doc)
+	if not day:
 		return
 
-	for hook_method in hook_result:
-		lock_date = frappe.call(hook_method, doc=doc)
-		if not lock_date:
-			continue
-
-		doc_date = getdate(doc.get("posting_date") or doc.get("transaction_date") or doc.creation)
-		if doc_date > lock_date:
-			continue
-
-		doc_org = doc.get("organization")
-		period_lock = None
-		if doc_org:
-			period_lock = frappe.db.get_value("Period Lock", {"organization": doc_org, "lock_date": lock_date}, "name")
-
-		if not period_lock:
-			# A lock without an organization applies to all organizations (stored as NULL or empty).
-			period_lock = frappe.db.get_value(
-				"Period Lock",
-				[["organization", "is", "not set"], ["lock_date", "=", lock_date]],
-				"name",
-			)
-
-		if not period_lock:
-			continue
-
-		user_roles = set(frappe.get_roles())
-		exception_roles = set(
-			frappe.get_all("Period Lock Role", filters={"parent": period_lock}, pluck="role")
-		)
-
-		if not user_roles & exception_roles:
-			frappe.throw(_("Cannot edit locked period"))
+	if _record_locks(doc, day) or _hook_locks(doc, day):
+		frappe.throw(_("Cannot edit locked period"))
 
 
 class Moment(NamedTuple):

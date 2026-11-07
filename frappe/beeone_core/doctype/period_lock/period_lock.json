@@ -6,16 +6,24 @@
   "editable_grid": 1,
   "engine": "InnoDB",
   "field_order": [
+    "organization_type",
     "organization",
     "lock_date",
     "roles"
   ],
   "fields": [
     {
-      "fieldname": "organization",
+      "fieldname": "organization_type",
       "fieldtype": "Link",
+      "label": "Organization Type",
+      "mandatory_depends_on": "eval:doc.organization",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "organization",
+      "fieldtype": "Dynamic Link",
       "label": "Organization",
-      "options": "Organization"
+      "options": "organization_type"
     },
     {
       "fieldname": "lock_date",
@@ -33,7 +41,7 @@
   "index_web_pages_as_search_results": 0,
   "istable": 0,
   "links": [],
-  "modified": "2026-10-28",
+  "modified": "2026-11-07",
   "modified_by": "Administrator",
   "module": "Beeone Core",
   "name": "Period Lock",
