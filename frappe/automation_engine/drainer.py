@@ -51,7 +51,7 @@ def drain(batch_size=DEFAULT_BATCH_SIZE, max_batches=None, executor=None):
 				break
 
 	if _has_due_pending():
-		kick_drainer()
+		kick_drainer(handoff=True)
 
 
 @contextmanager
@@ -107,15 +107,18 @@ def execute_batch(executor, names):
 	"""Run a claimed batch in commit groups rather than one transaction per row."""
 	size = max(1, cint(settings.get("commit_every")))
 	for start in range(0, len(names), size):
-		_execute_group(executor, names[start : start + size])
+		_execute_group(executor, names[start : start + size], names[start:])
 
 
-def _execute_group(executor, names):
+def _execute_group(executor, names, remaining=None):
 	"""Run one commit group. Each row gets a savepoint so a failure cannot take the group down.
 
 	A group commit that fails as a whole (deadlock, lock wait, dropped connection) rolls every row
 	back, so they are re-run one at a time instead.
 	"""
+	queue = frappe.qb.DocType(QUEUE)
+	(frappe.qb.update(queue).set(queue.modified, now()).where(queue.name.isin(remaining or names)).where(queue.status == "Running")).run()
+	frappe.db.commit()  # nosemgrep: publish the heartbeat before executing this group
 	for position, name in enumerate(names):
 		_execute_in_savepoint(executor, name, position)
 	try:
@@ -164,11 +167,24 @@ def _settle_escaped_row(name):
 		return _fail_delivered_row(name)
 
 	attempt = cint(frappe.db.get_value(QUEUE, name, "attempt")) + 1
-	exhausted = attempt >= cint(settings.get("max_attempts"))
+	_release(name, attempt)
+
+
+def _release(name, attempt):
+	row = frappe.db.get_value(QUEUE, name, ["automation", "ref_doctype", "ref_name", "resume_run"], as_dict=True)
+	if not row:
+		return
+	if attempt >= cint(settings.get("max_attempts")):
+		status = "Failed"
+		frappe.log_error(title=f"Automation run not retried: {name}", message=f"{attempt} attempts exhausted")
+	elif not row.resume_run and frappe.db.exists(QUEUE, {"name": ("!=", name), "automation": row.automation, "ref_doctype": row.ref_doctype, "ref_name": row.ref_name, "resume_run": ("is", "not set"), "status": ("in", WAITING_STATES)}):
+		status = "Skipped"
+	else:
+		status = "Pending"
 	frappe.db.set_value(
 		QUEUE,
 		name,
-		{"attempt": attempt, "status": "Failed" if exhausted else "Pending"},
+		{"attempt": attempt, "status": status},
 		update_modified=False,
 	)
 
@@ -318,13 +334,20 @@ def drain_due():
 def requeue_stale_running():
 	"""Flip Running rows stuck past the claim timeout back to Pending"""
 	cutoff = add_to_date(now(), minutes=-cint(settings.get("stale_running_minutes")))
-	queue = frappe.qb.DocType(QUEUE)
-	(
-		frappe.qb.update(queue)
-		.set(queue.status, "Pending")
-		.where(queue.status == "Running")
-		.where(queue.modified < cutoff)
-	).run()
+	rows = frappe.get_all(QUEUE, filters={"status": "Running", "modified": ("<", cutoff)}, fields=["name", "attempt"])
+	for i, row in enumerate(rows):
+		savepoint = f"auto_stale_{i}"
+		frappe.db.savepoint(savepoint)
+		try:
+			locked = frappe.db.sql(
+				"SELECT attempt FROM `tabAutomation Trigger Queue` WHERE name = %s AND status = 'Running' AND modified < %s FOR UPDATE",
+				(row.name, cutoff),
+			)
+			if locked:
+				_release(row.name, cint(locked[0][0]) + 1)
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.log_error(title=f"Automation stale row release failed: {row.name}")
 
 
 def purge_queue():

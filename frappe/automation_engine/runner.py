@@ -39,6 +39,7 @@ STEP_FIELDS = (
 )
 STEP_JSON_FIELDS = ("condition_values", "output")
 WAIT_UNIT_SECONDS = {"Seconds": 1, "Minutes": 60, "Hours": 3600, "Days": 86400}
+FAILURE_WINDOW = 24 * 3600
 
 
 def execute_automation(queue_name: str):
@@ -49,9 +50,11 @@ def execute_automation(queue_name: str):
 	doc = _load_target(row)
 	run, steps, snapshot = _run_state(rule, row, doc)
 
+	if not frappe.flags.get("in_automation_trial") and not frappe.db.get_value("Automation Flow", row.automation, "enabled"):
+		return _finalize(run, rule, row, "Skipped", steps, error="Automation Flow is disabled")
 	if doc is None and row.ref_doctype and row.ref_name:
 		return _finalize(run, rule, row, "Skipped", steps, error="Target document not found")
-	if rule.revalidate_on_run and doc and not matches_rule(rule, doc):
+	if rule.revalidate_on_run and doc and not matches_rule(rule, doc, check_transition=False):
 		return _finalize(run, rule, row, "Skipped", steps, error="Rule no longer matches")
 	status, context = _execute_plan(rule, row, run, doc, steps, snapshot, event)
 	_finalize(run, rule, row, status, steps, context=context)
@@ -65,15 +68,16 @@ def _execute_plan(rule, row, run, doc, steps, snapshot, event):
 	# from the flow being authored, so a save-time gate is not re-applied to the run.
 	frappe.flags.in_automation_run = True
 	context = None
+	messages_before = len(frappe.local.message_log)
 	try:
 		with _execution_identity(rule, row, doc):
 			_ensure_trigger_access(doc)
 			context = _context(row, run, rule, doc, event)
 			status = _run_plan(steps, rule, doc, context, snapshot, cint(row.resume_from_idx))
 		return status, context
-	except Exception:
+	except Exception as error:
 		# Setting up the run (identity, trigger access, alias resolution) failed.
-		_append_step(steps, {"step_key": "setup"}, len(steps), "Failed", frappe.get_traceback(), 0)
+		_append_step(steps, {"step_key": "setup"}, len(steps), "Failed", _failure_detail(error, messages_before), 0)
 		return "Failed", context
 	finally:
 		frappe.flags.automation_depth = previous_depth
@@ -224,8 +228,8 @@ def _run_plan(steps, rule, doc, context, snapshot, start_idx=0) -> str:
 def _safe_step_outcome(registry, step, doc, context, pos, start_idx, taken):
 	try:
 		return _step_outcome(registry, step, doc, context, pos, start_idx, taken)
-	except Exception:
-		return "Failed", frappe.get_traceback(), 0
+	except Exception as error:
+		return "Failed", _failure_detail(error, len(frappe.local.message_log)), 0
 
 
 def _step_outcome(registry, step, doc, context, pos, start_idx, taken):
@@ -521,7 +525,7 @@ def _finalize(run, rule, row, status, steps, error=None, context=None):
 		clear_effects(row.name)
 		return
 
-	if status == "Failed":
+	if status == "Failed" and all(step.get("exception") != f"{frappe.PermissionError.__module__}.{frappe.PermissionError.__name__}" for step in steps if step["status"] == "Failed"):
 		_record_failure(rule)
 	elif status == "Success":
 		_reset_failures(rule)
@@ -601,7 +605,10 @@ def _failure_key(rule_name) -> str:
 
 def _record_failure(rule):
 	threshold = settings.get("failure_threshold")
-	if frappe.cache.incr(_failure_key(rule.name)) >= threshold:
+	key = _failure_key(rule.name)
+	count = frappe.cache.incr(key)
+	frappe.cache.expire(key, FAILURE_WINDOW)
+	if count >= threshold:
 		_trip_breaker(rule, threshold)
 
 

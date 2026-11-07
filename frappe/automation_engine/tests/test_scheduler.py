@@ -67,27 +67,36 @@ class TestScheduler(IntegrationTestCase):
 	def rows(self, automation):
 		return frappe.get_all(QUEUE, filters={"automation": automation.name}, fields=["*"])
 
+	def test_bad_cron_does_not_stop_other_rules(self):
+		bad = make_scheduled_rule()
+		good = make_scheduled_rule()
+		frappe.db.set_value("Automation Flow", bad.name, "cron_expression", "invalid cron")
+		process_cron(datetime(2026, 7, 15, 10, 5))
+		self.assertEqual(len(self.rows(good)), 1)
+		self.assertEqual(stored_next_run(bad), "2026-07-15 11:05:00")
+		self.assertTrue(frappe.db.exists("Error Log", {"method": f"Automation Flow schedule failed: {bad.name}"}))
+
 	def test_docless_scheduled_rule_queues_once_for_current_tick(self):
 		rule = make_scheduled_rule()
 		process_cron(datetime(2026, 7, 15, 10, 5))
 		process_cron(datetime(2026, 7, 15, 10, 5, 30))
 		rows = self.rows(rule)
 		self.assertEqual(len(rows), 1)
-		self.assertEqual(json.loads(rows[0].event_payload)["scheduled_fire_at"], "2026-07-15 10:05:00")
+		self.assertEqual(frappe.parse_json(rows[0].event_payload)["scheduled_fire_at"], "2026-07-15 10:05:00")
 
 	def test_missed_ticks_queue_only_latest_fire(self):
 		rule = make_scheduled_rule(cron_expression="* * * * *")
 		process_cron(datetime(2026, 7, 15, 10, 7, 30))
 		rows = self.rows(rule)
 		self.assertEqual(len(rows), 1)
-		self.assertEqual(json.loads(rows[0].event_payload)["scheduled_fire_at"], "2026-07-15 10:07:00")
+		self.assertEqual(frappe.parse_json(rows[0].event_payload)["scheduled_fire_at"], "2026-07-15 10:07:00")
 
 	def test_latest_fire_supports_intervals_between_scheduler_ticks(self):
 		for expression, expected in (("*/3 * * * *", "10:09:00"), ("*/7 * * * *", "10:07:00")):
 			with self.subTest(expression=expression):
 				rule = make_scheduled_rule(cron_expression=expression)
 				process_cron(datetime(2026, 7, 15, 10, 10))
-				payload = json.loads(self.rows(rule)[0].event_payload)
+				payload = frappe.parse_json(self.rows(rule)[0].event_payload)
 				self.assertTrue(payload["scheduled_fire_at"].endswith(expected))
 
 	def test_document_scheduled_rule_queues_matching_docs(self):
@@ -302,7 +311,7 @@ class TestDateBasedScheduler(IntegrationTestCase):
 		rows = self.rows(rule)
 		self.assertEqual(len(rows), 1)
 		self.assertEqual(rows[0].ref_name, todo.name)
-		self.assertEqual(json.loads(rows[0].event_payload)["trigger_type"], "Date Based")
+		self.assertEqual(frappe.parse_json(rows[0].event_payload)["trigger_type"], "Date Based")
 
 	def test_ignores_documents_outside_the_offset(self):
 		make_todo(self.days_out(5))

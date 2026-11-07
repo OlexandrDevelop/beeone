@@ -2,6 +2,7 @@
 # License: MIT. See LICENSE
 
 import json
+from unittest.mock import patch
 
 import frappe
 from frappe.automation_engine import api
@@ -81,6 +82,12 @@ class TestApi(IntegrationTestCase):
 		options = api.get_param_options("SetFieldValue", "field", "ToDo")
 		self.assertIn("priority", [o["fieldname"] for o in options])
 
+	def test_get_param_options_requires_doctype_read_permission(self):
+		user = frappe.get_doc({"doctype": "User", "email": "auto_options_noperm@example.com", "first_name": "No Perm"}).insert(ignore_permissions=True)
+		frappe.set_user(user.name)
+		with patch.object(api, "_check_config_permission"):
+			self.assertRaises(frappe.PermissionError, api.get_param_options, "SetFieldValue", "field", "Role")
+
 	def test_get_param_options_without_resolver_returns_empty(self):
 		# "value" declares no options_source, so no server function is callable for it.
 		self.assertEqual(api.get_param_options("SetFieldValue", "value", "ToDo"), [])
@@ -114,7 +121,12 @@ class TestApi(IntegrationTestCase):
 			)
 		)
 		payload = frappe.db.get_value("Automation Trigger Queue", {"automation": auto}, "event_payload")
-		self.assertTrue(json.loads(payload)["manual"])
+		self.assertTrue(frappe.parse_json(payload)["manual"])
+
+	def test_run_manually_rejects_disabled_flow(self):
+		auto = make_automation()
+		frappe.db.set_value("Automation Flow", auto, "enabled", 0)
+		self.assertRaises(frappe.ValidationError, api.run_manually, auto)
 
 	def test_get_runs_returns_history(self):
 		todo = frappe.get_doc({"doctype": "ToDo", "description": "history"}).insert()

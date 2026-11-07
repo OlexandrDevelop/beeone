@@ -83,11 +83,52 @@ class AutomationRunnerTestCase(IntegrationTestCase):
 
 	def run_result(self, automation):
 		run = frappe.get_doc(RUN, {"automation": automation})
-		state = json.loads(run.run_state or "{}")
+		state = frappe.parse_json(run.run_state or "{}")
 		return {"steps": run_steps(run), "branches": state.get("branches")}
 
 
 class TestRunner(AutomationRunnerTestCase):
+	def test_disabled_flow_skips_queued_run(self):
+		todo = make_todo(priority="Low")
+		auto = make_automation([set_field("priority", "High")])
+		row = self.queue_row(auto, todo.name)
+		frappe.db.set_value("Automation Flow", auto, "enabled", 0)
+		execute_automation(row)
+		self.assertEqual(self.run_status(auto), "Skipped")
+		self.assertEqual(frappe.db.get_value("ToDo", todo.name, "priority"), "Low")
+
+	def test_revalidation_does_not_recheck_transition(self):
+		todo = make_todo(priority="Low")
+		auto = make_automation([set_field("priority", "High")], trigger_type="Field Value Changed", trigger_field="status", revalidate_on_run=1, condition="doc.priority == 'Low'")
+		execute_automation(self.queue_row(auto, todo.name))
+		self.assertEqual(self.run_status(auto), "Success")
+
+	def test_permission_failure_does_not_count_against_breaker(self):
+		todo = make_todo()
+		auto = make_automation([set_field("priority", "High")])
+		frappe.cache.delete(_failure_key(auto))
+		try:
+			with patch("frappe.automation_engine.runner._ensure_trigger_access", side_effect=frappe.PermissionError):
+				execute_automation(self.queue_row(auto, todo.name))
+			self.assertEqual(self.run_status(auto), "Failed")
+			self.assertFalse(frappe.cache.get(_failure_key(auto)))
+		finally:
+			frappe.cache.delete(_failure_key(auto))
+
+	def test_failure_counter_expires(self):
+		from frappe.automation_engine.runner import FAILURE_WINDOW
+
+		todo = make_todo()
+		auto = make_broken_automation()
+		key = _failure_key(auto)
+		frappe.cache.delete(key)
+		try:
+			execute_automation(self.queue_row(auto, todo.name))
+			self.assertGreater(frappe.cache.ttl(key), 0)
+			self.assertLessEqual(frappe.cache.ttl(key), FAILURE_WINDOW)
+		finally:
+			frappe.cache.delete(key)
+
 	def test_success_applies_action_and_deletes_queue_row(self):
 		todo = make_todo()
 		auto = make_automation([set_field("priority", "High")])
@@ -99,7 +140,7 @@ class TestRunner(AutomationRunnerTestCase):
 		result = self.run_result(auto)
 		self.assertEqual(result["steps"][0]["status"], "Success")
 		snapshot = frappe.db.get_value(RUN, {"automation": auto}, "actions_snapshot")
-		self.assertEqual(json.loads(snapshot)[0]["action_type"], "SetFieldValue")
+		self.assertEqual(frappe.parse_json(snapshot)[0]["action_type"], "SetFieldValue")
 
 	def test_missing_target_is_skipped(self):
 		auto = make_automation([set_field("priority", "High")])
@@ -331,6 +372,16 @@ class TestBranching(AutomationRunnerTestCase):
 
 
 class TestWaitResume(AutomationRunnerTestCase):
+	def test_disabling_flow_closes_waiting_run(self):
+		todo = make_todo()
+		auto = self.wait_rule()
+		execute_automation(self.queue_row(auto, todo.name))
+		resume = self.resume_row(auto)[0]
+		frappe.db.set_value("Automation Flow", auto, "enabled", 0)
+		execute_automation(resume)
+		self.assertEqual(self.run_status(auto), "Skipped")
+		self.assertNotEqual(frappe.db.get_value("ToDo", todo.name, "status"), "Closed")
+
 	def wait_rule(self, seconds=5):
 		return make_automation([set_field("priority", "High"), wait(seconds), set_field("status", "Closed")])
 

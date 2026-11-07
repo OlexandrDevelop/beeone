@@ -2,6 +2,7 @@
 # License: MIT. See LICENSE
 
 import frappe
+from unittest.mock import patch
 from frappe.automation_engine.conditions import evaluate_filter_tree
 from frappe.automation_engine.dispatch import run_automations
 from frappe.automation_engine.registry import clear_automation_cache, get_automations_for
@@ -30,6 +31,40 @@ def pending(automation):
 
 
 class TestDispatch(IntegrationTestCase):
+	def test_drain_handoff_uses_the_other_job_id(self):
+		from frappe.automation_engine.dispatch import kick_drainer
+
+		base = f"automation_drain::{frappe.local.site}"
+		with patch("frappe.enqueue") as enqueue, patch("rq.get_current_job", return_value=frappe._dict(id=base)):
+			kick_drainer(handoff=True)
+			self.assertEqual(enqueue.call_args.kwargs["job_id"], base + "::handoff")
+		with patch("frappe.enqueue") as enqueue, patch("rq.get_current_job", return_value=frappe._dict(id=base + "::handoff")):
+			kick_drainer(handoff=True)
+			self.assertEqual(enqueue.call_args.kwargs["job_id"], base)
+	def test_claimed_row_is_not_reverted_by_touch(self):
+		from frappe.automation_engine.dispatch import _touch_row, queue_trigger
+
+		rule = make_automation()
+		todo = make_todo()
+		row = frappe.get_doc("Automation Trigger Queue", pending(rule.name)[0].name)
+		frappe.db.set_value("Automation Trigger Queue", row.name, "status", "Running")
+		self.assertIsNone(_touch_row(row, None))
+		fresh = queue_trigger(rule.name, "ToDo", todo.name)
+		self.assertNotEqual(row.name, fresh)
+		self.assertEqual(frappe.db.get_value("Automation Trigger Queue", row.name, "status"), "Running")
+
+	def test_duplicate_insert_rolls_back_and_folds_into_waiting_row(self):
+		from frappe.automation_engine.dispatch import _pending_row, queue_trigger
+
+		rule = make_automation()
+		todo = make_todo()
+		row = pending(rule.name)[0].name
+		messages_before = len(frappe.local.message_log)
+		with patch("frappe.automation_engine.dispatch._pending_row", side_effect=[None, _pending_row(rule.name, "ToDo", todo.name)]):
+			self.assertEqual(queue_trigger(rule.name, "ToDo", todo.name), row)
+		self.assertEqual(frappe.db.sql("select 1")[0][0], 1)
+		self.assertEqual(len(frappe.local.message_log), messages_before)
+
 	def setUp(self):
 		frappe.set_user("Administrator")
 		frappe.db.delete("Automation Trigger Queue")

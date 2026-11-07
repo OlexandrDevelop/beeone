@@ -78,6 +78,12 @@ def _waiting_states_sql() -> str:
 
 def _ensure_partial_dedup_index():
 	# Raw DDL throughout: the query builder does not create indexes or generated columns.
+	if frappe.db.db_type == "postgres":
+		existing = frappe.db.sql("SELECT indexdef FROM pg_indexes WHERE schemaname = current_schema() AND tablename = %s AND indexname = %s", (TABLE, DEDUP_INDEX))
+	else:
+		existing = frappe.db.sql("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = %s AND name = %s", (TABLE, DEDUP_INDEX))
+	if existing and all(state in (existing[0][0] or "") for state in WAITING_STATES):
+		return
 	frappe.db.sql_ddl(f"DROP INDEX IF EXISTS `{DEDUP_INDEX}`")
 	frappe.db.sql_ddl(
 		f"""

@@ -76,6 +76,24 @@ class TestDrainer(IntegrationTestCase):
 	def count(self, status):
 		return frappe.db.count(QUEUE, {"status": status})
 
+	def test_stale_claim_exhausts_attempts(self):
+		name = self.add_row("poison", status="Running")
+		old = frappe.utils.add_to_date(None, days=-2)
+		with self.change_settings("Automation Settings", max_attempts=2):
+			for expected in ("Pending", "Failed"):
+				frappe.db.set_value(QUEUE, name, {"status": "Running", "modified": old}, update_modified=False)
+				requeue_stale_running()
+				self.assertEqual(frappe.db.get_value(QUEUE, name, "status"), expected)
+		self.assertEqual(frappe.db.get_value(QUEUE, name, "attempt"), 2)
+
+	def test_stale_claim_with_waiting_sibling_is_skipped(self):
+		old = self.add_row("same", status="Running")
+		new = self.add_row("same")
+		frappe.db.set_value(QUEUE, old, "modified", frappe.utils.add_to_date(None, days=-2), update_modified=False)
+		requeue_stale_running()
+		self.assertEqual(frappe.db.get_value(QUEUE, old, "status"), "Skipped")
+		self.assertEqual(frappe.db.get_value(QUEUE, new, "status"), "Pending")
+
 	def test_batch_claim_limits_and_marks_running(self):
 		for i in range(5):
 			self.add_row(f"T{i}")
@@ -257,7 +275,7 @@ class TestDrainer(IntegrationTestCase):
 
 		def failing_commit(*args, **kwargs):
 			calls.append(1)
-			if len(calls) == 1:
+			if len(calls) == 2:
 				raise frappe.db.SQLError("group commit failed")
 			return original_commit(*args, **kwargs)
 
@@ -305,7 +323,7 @@ class TestDrainer(IntegrationTestCase):
 
 		def failing_commit(*args, **kwargs):
 			calls.append(1)
-			if len(calls) == 1:
+			if len(calls) == 2:
 				raise frappe.db.SQLError("group commit failed")
 			return original_commit(*args, **kwargs)
 
@@ -342,7 +360,7 @@ class TestDrainer(IntegrationTestCase):
 
 		def flaky_commit(*args, **kwargs):
 			calls.append(1)
-			if len(calls) == 1:
+			if len(calls) == 2:
 				raise Exception("connection lost")
 			return original_commit(*args, **kwargs)
 
@@ -376,8 +394,8 @@ class TestDrainer(IntegrationTestCase):
 		finally:
 			frappe.db.commit = original_commit
 
-		# Four rows at two per group is two commits, not four.
-		self.assertEqual(len(commits), 2)
+		# Each group publishes its heartbeat and then commits its outcomes.
+		self.assertEqual(len(commits), 4)
 
 	def test_time_budget_stops_claiming_and_rekicks(self):
 		for i in range(4):
@@ -393,7 +411,7 @@ class TestDrainer(IntegrationTestCase):
 
 		self.assertEqual(len(processed), 2)
 		# Two rows are still due, so the drain hands off to a fresh job instead of running on.
-		self.assertEqual(kick.call_count, 1)
+		kick.assert_called_once_with(handoff=True)
 		self.assertEqual(self.count("Pending"), 2)
 
 	def test_budget_is_a_fraction_of_the_queue_timeout(self):

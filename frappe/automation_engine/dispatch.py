@@ -76,10 +76,10 @@ def _log_depth_refusal(subject, max_depth):
 		frappe.flags.skip_automations = previous
 
 
-def matches_rule(rule, doc) -> bool:
+def matches_rule(rule, doc, check_transition=True) -> bool:
 	"""Whether `doc` satisfies the rule's trigger field, filters and condition."""
 	try:
-		if rule.trigger_type == "Field Value Changed" and not _field_changed(rule, doc):
+		if check_transition and rule.trigger_type == "Field Value Changed" and not _field_changed(rule, doc):
 			return False
 		if rule.filters and not evaluate_filter_tree(doc, frappe.parse_json(rule.filters)):
 			return False
@@ -111,12 +111,20 @@ def queue_trigger(automation, doctype, docname, run_after=None, payload=None, de
 
 	The `dedup_key` unique index is the real guard; the lookup below only avoids the failed insert.
 	"""
-	existing = _pending_row(automation, doctype, docname)
-	if existing:
-		return _touch_row(existing, run_after, payload, depth)
-
-	row = frappe.new_doc(QUEUE)
-	row.update(
+	for attempt in range(2):
+		savepoint = f"auto_queue_{attempt}"
+		frappe.db.savepoint(savepoint)
+		messages_before = len(frappe.local.message_log)
+		try:
+			existing = _pending_row(automation, doctype, docname)
+			if existing:
+				touched = _touch_row(existing, run_after, payload, depth)
+				if touched:
+					return touched
+			# A failed insert must not leave PostgreSQL's transaction aborted.
+			frappe.db.savepoint(savepoint)
+			row = frappe.new_doc(QUEUE)
+			row.update(
 		{
 			"automation": automation,
 			"ref_doctype": doctype,
@@ -128,13 +136,18 @@ def queue_trigger(automation, doctype, docname, run_after=None, payload=None, de
 			"event_payload": frappe.as_json(payload) if payload else None,
 			"depth": depth,
 		}
-	)
+			)
+			row.insert(ignore_permissions=True)
+			return row.name
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			del frappe.local.message_log[messages_before:]
 	try:
-		row.insert(ignore_permissions=True)
-		return row.name
-	except (frappe.UniqueValidationError, frappe.DuplicateEntryError):
-		existing = _pending_row(automation, doctype, docname)
-		return _touch_row(existing, run_after, payload, depth) if existing else None
+		frappe.db.savepoint("auto_queue_log")
+		frappe.log_error(title="Automation trigger not queued", message=f"{automation}: {doctype} {docname}")
+	except Exception:
+		frappe.db.rollback(save_point="auto_queue_log")
+	return None
 
 
 def _pending_row(automation, doctype, docname):
@@ -174,15 +187,26 @@ def _touch_row(row, run_after, payload=None, depth=0):
 	}
 	if payload is not None:
 		values["event_payload"] = frappe.as_json(payload)
-	frappe.db.set_value(QUEUE, row.name, values, update_modified=False)
-	return row.name
+	queue = frappe.qb.DocType(QUEUE)
+	query = frappe.qb.update(queue)
+	for field, value in values.items():
+		query = query.set(getattr(queue, field), value)
+	query.where(queue.name == row.name).where(queue.status.isin(WAITING_STATES)).where(queue.resume_run.isnull()).run()
+	return row.name if frappe.db._cursor.rowcount else None
 
 
-def kick_drainer():
+def kick_drainer(handoff=False):
 	"""Enqueue a single deduplicated drain job (registered via after_commit)."""
+	job_id = f"automation_drain::{frappe.local.site}"
+	if handoff:
+		from rq import get_current_job
+
+		job = get_current_job()
+		if not job or not job.id.endswith("::handoff"):
+			job_id += "::handoff"
 	frappe.enqueue(
 		"frappe.automation_engine.drainer.drain",
 		queue=DRAIN_QUEUE,
-		job_id=f"automation_drain::{frappe.local.site}",
+		job_id=job_id,
 		deduplicate=True,
 	)

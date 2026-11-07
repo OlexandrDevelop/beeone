@@ -21,13 +21,24 @@ def process_cron(now: datetime | None = None):
 		return
 	now = get_datetime(now or now_datetime())
 	queued = 0
-	for rule in _due_scheduled_rules(now):
-		fire_at = _latest_fire(rule.cron_expression, now)
-		if fire_at and fire_at >= get_datetime(rule.creation):
-			queued += _queue_rule(rule, fire_at)
+	for i, rule in enumerate(_due_scheduled_rules(now)):
+		savepoint = f"auto_cron_{i}"
+		frappe.db.savepoint(savepoint)
+		try:
+			fire_at = _latest_fire(rule.cron_expression, now)
+			if fire_at and fire_at >= get_datetime(rule.creation):
+				queued += _queue_rule(rule, fire_at)
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.log_error(title=f"Automation Flow schedule failed: {rule.name}")
 		# Advance even when nothing was queued: leaving next_run behind would put the rule
 		# back in the due set on every following tick.
-		set_next_run(rule.name, rule.cron_expression, now)
+		try:
+			set_next_run(rule.name, rule.cron_expression, now)
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.log_error(title=f"Automation Flow schedule failed: {rule.name}")
+			frappe.db.set_value("Automation Flow", rule.name, "next_run", now + timedelta(hours=1), update_modified=False)
 	if queued:
 		frappe.db.after_commit.add(kick_drainer)
 
@@ -184,7 +195,15 @@ def process_date_based(now: datetime | None = None):
 	if not settings.is_enabled():
 		return
 	today = getdate(now or now_datetime())
-	queued = sum(_queue_date_rule(rule, today) for rule in _date_based_rules())
+	queued = 0
+	for i, rule in enumerate(_date_based_rules()):
+		savepoint = f"auto_date_{i}"
+		frappe.db.savepoint(savepoint)
+		try:
+			queued += _queue_date_rule(rule, today)
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.log_error(title=f"Automation Flow schedule failed: {rule.name}")
 	if queued:
 		frappe.db.after_commit.add(kick_drainer)
 

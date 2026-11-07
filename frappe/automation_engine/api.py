@@ -95,6 +95,8 @@ def run_manually(automation: str, docname: str | None = None) -> dict:
 	"""Queue a one-off run of `automation` against `docname` (Manual trigger / test button)."""
 	rule = frappe.get_doc("Automation Flow", automation)
 	frappe.has_permission("Automation Flow", "write", doc=rule, throw=True)
+	if not rule.enabled:
+		frappe.throw(_("Enable the Automation Flow before running it; use Test Run to try a disabled flow"))
 	if rule.document_type:
 		frappe.has_permission(rule.document_type, "read", doc=docname, throw=True)
 	elif docname:
