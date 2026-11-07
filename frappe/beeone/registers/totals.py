@@ -99,14 +99,16 @@ def rebuild_totals(reg):
 		period_expr = db.month_start(date_col)
 		key_exprs = [period_expr] + [db.text_key(q(d)) for d in dims]
 		sum_exprs = [f"SUM(COALESCE({q(r)}, 0))" for r in res]
+		group_cols = ", ".join(str(i + 1) for i in range(len(key_exprs)))
+		having_clause = " OR ".join(f"SUM(COALESCE({q(r)}, 0)) <> 0" for r in res)
 
 		sql = (
 			f"INSERT INTO {q(totals_table(reg.name))} ({', '.join(q(c) for c in ['period', *dims, *res])}) "
 			f"SELECT {', '.join(key_exprs + sum_exprs)} "
 			f"FROM {q('tab' + reg.register_doctype)} "
 			f"WHERE {date_col} IS NOT NULL "
-			f"GROUP BY 1, {', '.join(str(i + 2) for i in range(len(dims)))} "
-			f"HAVING {' OR '.join(f'{db.quote(r)} <> 0' for r in res)}"
+			f"GROUP BY {group_cols} "
+			f"HAVING {having_clause}"
 		)
 		frappe.db.sql(sql)
 
@@ -116,18 +118,23 @@ def rebuild_totals(reg):
 		sum_exprs = [f"SUM(COALESCE({q(r)}, 0))" for r in res]
 
 		if key_exprs:
+			group_cols = ", ".join(str(i + 1) for i in range(len(key_exprs)))
+			having_clause = " OR ".join(f"SUM(COALESCE({q(r)}, 0)) <> 0" for r in res)
 			sql = (
 				f"INSERT INTO {q(current_table(reg.name))} ({', '.join(q(c) for c in [*dims, *res])}) "
 				f"SELECT {', '.join(key_exprs + sum_exprs)} "
 				f"FROM {q('tab' + reg.register_doctype)} "
-				f"GROUP BY {', '.join(str(i + 1) for i in range(len(dims)))} "
-				f"HAVING {' OR '.join(f'{db.quote(r)} <> 0' for r in res)}"
+				f"GROUP BY {group_cols} "
+				f"HAVING {having_clause}"
 			)
 		else:
+			# No dimensions: check if any sum is non-zero before inserting
+			having_clause = " OR ".join(f"SUM(COALESCE({q(r)}, 0)) <> 0" for r in res)
 			sql = (
 				f"INSERT INTO {q(current_table(reg.name))} ({', '.join(q(r) for r in res)}) "
 				f"SELECT {', '.join(sum_exprs)} "
-				f"FROM {q('tab' + reg.register_doctype)}"
+				f"FROM {q('tab' + reg.register_doctype)} "
+				f"HAVING {having_clause}"
 			)
 		frappe.db.sql(sql)
 

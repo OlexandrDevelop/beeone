@@ -230,6 +230,12 @@ def run_rule(rule, **kwargs) -> dict:
 		raise RuleBusyError(_("Exchange rule {0} is already running").format(frappe.bold(rule.name)))
 
 	try:
+		# For scheduled runs, re-check if still due after acquiring the lock
+		if kwargs.get("scheduled"):
+			rule.reload()  # Get the latest last_run from the DB
+			if not is_due(rule):
+				return {"created": 0, "updated": 0, "errors": [], "log": None}  # Skip, no longer due
+
 		handler = get_handler(rule.handler)
 		options = rule.get_options()
 		log_kwargs = {"rule": rule.name}
@@ -276,8 +282,6 @@ def run_due(handler=None):
 	`handler` limits the run to the rules of one handler (an app job that wants its own trigger).
 	Skips busy rules (already running).
 	"""
-	from frappe.beeone import db
-
 	filters = {"enabled": 1, "schedule": ("in", list(PERIODS))}
 	if handler:
 		filters["handler"] = handler
@@ -287,20 +291,9 @@ def run_due(handler=None):
 		if not is_due(rule):
 			continue
 		try:
-			lock_name = f"exchange-rule:{rule.name}"
-			if not db.try_lock(lock_name):
-				# Skip busy rule, re-check due from the locked last_run
-				continue
-			try:
-				if not is_due(rule):
-					db.release_lock(lock_name)
-					continue
-				result = run_rule(rule, scheduled=True)
-				frappe.db.commit()
-				ran.append(name)
-			except RuleBusyError:
-				db.release_lock(lock_name)
-				continue
+			result = run_rule(rule, scheduled=True)
+			frappe.db.commit()
+			ran.append(name)
 		except RuleBusyError:
 			# Already running, skip
 			continue

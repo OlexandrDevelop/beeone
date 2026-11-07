@@ -299,3 +299,25 @@ class TestExchange(IntegrationTestCase):
 				text = path.read_text()
 				self.assertFalse(re.search("[Ѐ-ӿ]", text), path)
 				self.assertNotIn("frappe.db.sql", text, path)
+
+	def test_run_due_lock_is_released(self):
+		"""Verify run_due releases the lock on a rule so subsequent calls can acquire it."""
+		from frappe.beeone import db
+		from frappe.beeone.exchange import RULE as RULE_DOCTYPE
+
+		# Run the rule once via run_due
+		exchange.run_due()
+
+		# Verify the lock is released by checking we can acquire it
+		lock_name = f"exchange-rule:{RULE}"
+		acquired = db.try_lock(lock_name)
+		self.assertTrue(acquired, "Lock was not released by run_due")
+		if acquired:
+			db.release_lock(lock_name)
+
+		# Second run should also work (no lock contention)
+		exchange.run_due()
+		acquired = db.try_lock(lock_name)
+		self.assertTrue(acquired, "Lock leaked on second run_due")
+		if acquired:
+			db.release_lock(lock_name)

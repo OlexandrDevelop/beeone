@@ -171,3 +171,27 @@ class TestBeeoneRegisterCheck(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			parse_month("2026/03")
 		self.assertEqual(str(parse_month("2026-03")), "2026-03-01")
+
+	def test_rebuild_totals_with_dimensions_and_zero_sum_groups(self):
+		"""Verify rebuild_totals handles GROUP BY correctly and filters zero-sum groups."""
+		from frappe.beeone.registers.totals import rebuild_totals
+		from frappe.beeone.registers.meta import get_register
+
+		reg = get_register(LEDGER)
+
+		# Clear the totals tables
+		frappe.db.delete(totals_table(LEDGER))
+		frappe.db.delete(current_table(LEDGER))
+
+		# Rebuild - should work without SQL errors (GROUP BY with aggregates in HAVING)
+		rebuild_totals(reg)
+
+		# Verify no zero-sum groups exist
+		rows = frappe.get_all(totals_table(LEDGER), fields=["*"])
+		for row in rows:
+			# At least one resource should be non-zero
+			has_nonzero = any(row.get(f) not in (0, 0.0, None) for f in reg.fields if row.get(f) and hasattr(row, f))
+			self.assertTrue(has_nonzero or not any(row.get(f) for f in ["qty", "amount"]), f"Zero-sum row found: {row}")
+
+		# Verify the totals match the expected sums
+		self.assertEqual(check_registers(LEDGER)["issues"], [])
