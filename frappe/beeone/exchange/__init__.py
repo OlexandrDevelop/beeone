@@ -56,6 +56,11 @@ class ExchangeError(frappe.ValidationError):
 		self.errors = errors or []
 
 
+class RuleBusyError(frappe.ValidationError):
+	"""Exchange rule is already running in another session."""
+	pass
+
+
 # ------------------------------------------------------------------ handlers
 def handlers() -> dict[str, str]:
 	"""name -> dotted path. The first app that gives a name wins."""
@@ -211,35 +216,48 @@ def run_logged(handler, direction, fn, *, rule=None, file_name=None, reference=N
 
 
 def run_rule(rule, **kwargs) -> dict:
-	"""Run the handler of a rule and write the journal. Returns the result of the handler."""
+	"""Run the handler of a rule and write the journal. Returns the result of the handler.
+
+	Takes a session lock on the rule. If already held raises RuleBusyError with no journal row.
+	"""
+	from frappe.beeone import db
+
 	rule = frappe.get_doc(RULE, rule) if isinstance(rule, str) else rule
 	check_enabled(rule)
-	handler = get_handler(rule.handler)
-	options = rule.get_options()
-	log_kwargs = {"rule": rule.name}
 
-	def call():
-		return handler(rule, **{**options, **kwargs})
+	lock_name = f"exchange-rule:{rule.name}"
+	if not db.try_lock(lock_name):
+		raise RuleBusyError(_("Exchange rule {0} is already running").format(frappe.bold(rule.name)))
 
-	result = run_logged(rule.handler, rule.direction, call, rule=rule, file_name=kwargs.get("file_name"))
-	result = result if isinstance(result, dict) else {}
-	errors = result.get("errors") or []
-	created, updated = cint(result.get("created")), cint(result.get("updated"))
-	status = status_of(errors, created, updated)
-	result["log"] = journal(
-		rule.handler,
-		rule.direction,
-		status,
-		file_name=result.get("file_name") or kwargs.get("file_name"),
-		reference=result.get("reference"),
-		created=created,
-		updated=updated,
-		errors=len(errors),
-		details=result.get("details") if result.get("details") is not None else {"errors": errors},
-		**log_kwargs,
-	)
-	frappe.db.set_value(RULE, rule.name, {"last_run": now_datetime(), "last_status": status}, update_modified=False)
-	return result
+	try:
+		handler = get_handler(rule.handler)
+		options = rule.get_options()
+		log_kwargs = {"rule": rule.name}
+
+		def call():
+			return handler(rule, **{**options, **kwargs})
+
+		result = run_logged(rule.handler, rule.direction, call, rule=rule, file_name=kwargs.get("file_name"))
+		result = result if isinstance(result, dict) else {}
+		errors = result.get("errors") or []
+		created, updated = cint(result.get("created")), cint(result.get("updated"))
+		status = status_of(errors, created, updated)
+		result["log"] = journal(
+			rule.handler,
+			rule.direction,
+			status,
+			file_name=result.get("file_name") or kwargs.get("file_name"),
+			reference=result.get("reference"),
+			created=created,
+			updated=updated,
+			errors=len(errors),
+			details=result.get("details") if result.get("details") is not None else {"errors": errors},
+			**log_kwargs,
+		)
+		frappe.db.set_value(RULE, rule.name, {"last_run": now_datetime(), "last_status": status}, update_modified=False)
+		return result
+	finally:
+		db.release_lock(lock_name)
 
 
 # ------------------------------------------------------------------ schedule
@@ -256,7 +274,10 @@ def run_due(handler=None):
 	"""Scheduler job: run every enabled rule whose schedule is due. One failing rule does not stop the others.
 
 	`handler` limits the run to the rules of one handler (an app job that wants its own trigger).
+	Skips busy rules (already running).
 	"""
+	from frappe.beeone import db
+
 	filters = {"enabled": 1, "schedule": ("in", list(PERIODS))}
 	if handler:
 		filters["handler"] = handler
@@ -266,9 +287,23 @@ def run_due(handler=None):
 		if not is_due(rule):
 			continue
 		try:
-			run_rule(rule, scheduled=True)
-			frappe.db.commit()
-			ran.append(name)
+			lock_name = f"exchange-rule:{rule.name}"
+			if not db.try_lock(lock_name):
+				# Skip busy rule, re-check due from the locked last_run
+				continue
+			try:
+				if not is_due(rule):
+					db.release_lock(lock_name)
+					continue
+				result = run_rule(rule, scheduled=True)
+				frappe.db.commit()
+				ran.append(name)
+			except RuleBusyError:
+				db.release_lock(lock_name)
+				continue
+		except RuleBusyError:
+			# Already running, skip
+			continue
 		except Exception:
 			# run_logged has written the journal row of the failure
 			frappe.db.set_value(RULE, name, {"last_run": now_datetime(), "last_status": FAILED}, update_modified=False)

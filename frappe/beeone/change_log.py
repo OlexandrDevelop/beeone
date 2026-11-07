@@ -35,6 +35,7 @@ SKIP_FIELDTYPES = {"Section Break", "Column Break", "Tab Break", "HTML", "Button
 SERVICE_DOCTYPES = {"Version"}
 ROW_KEYS = {"idx", "name", "parent", "parenttype", "parentfield"}
 MAX_LIMIT = 500
+MAX_SCAN = 5000
 
 
 # ------------------------------------------------------------------ switch
@@ -323,12 +324,13 @@ def check_history_access(doctype: str, name: str):
 def get_history(doctype: str, name: str, limit: int = 100) -> list[dict]:
 	"""Entries of one record, newest first. Needs the right to read that record."""
 	check_history_access(doctype, name)
+	limit = max(1, min(cint(limit) or 100, MAX_LIMIT))
 	rows = frappe.get_all(
 		"Version",
 		filters={"ref_doctype": doctype, "docname": name, "action": ("in", ACTIONS)},
 		fields=["name", "ref_doctype", "docname", "action", "data", "creation", "owner"],
 		order_by="creation desc, name desc",
-		limit_page_length=min(cint(limit) or 100, MAX_LIMIT),
+		limit_page_length=limit,
 	)
 	cache = {}
 	return [_present(frappe._dict(r), cache) for r in rows]
@@ -336,23 +338,28 @@ def get_history(doctype: str, name: str, limit: int = 100) -> list[dict]:
 
 @frappe.whitelist()
 def get_log(doctype=None, user=None, action=None, limit: int = 100) -> list[dict]:
-	"""The log across documents, newest first, only entries the user may read."""
+	"""The log across documents, newest first, only entries the user may read.
+
+	Scans at most MAX_SCAN rows. May return fewer than limit entries if MAX_SCAN is reached.
+	"""
 	filters = {"action": ("in", ACTIONS)}
 	if doctype:
 		filters["ref_doctype"] = doctype
 	if action:
 		filters["action"] = action
-	limit = min(cint(limit) or 100, MAX_LIMIT)
+	if user:
+		filters["owner"] = user
+	limit = max(1, min(cint(limit) or 100, MAX_LIMIT))
 	result, start = [], 0
 	cache = {}
-	while len(result) < limit:
+	while len(result) < limit and start < MAX_SCAN:
 		page = frappe.get_all(
 			"Version",
 			filters=filters,
 			fields=["name", "ref_doctype", "docname", "action", "data", "creation", "owner"],
 			order_by="creation desc, name desc",
 			limit_start=start,
-			limit_page_length=limit * 2,
+			limit_page_length=min(limit * 2, MAX_SCAN - start),
 		)
 		if not page:
 			break
@@ -360,8 +367,6 @@ def get_log(doctype=None, user=None, action=None, limit: int = 100) -> list[dict
 		page = [frappe._dict(r) for r in page]
 		for entry in _visible(page):
 			item = _present(entry, cache)
-			if user and item["user"] != user:
-				continue
 			result.append(item)
 		if len(page) < limit * 2:
 			break

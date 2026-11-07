@@ -78,17 +78,58 @@ def ensure_totals_tables(reg):
 
 
 def rebuild_totals(reg):
-	"""Fill the totals tables again from the movements of the register."""
+	"""Fill the totals tables again from the movements of the register.
+
+	Rebuilds via SQL INSERT...SELECT...GROUP BY...HAVING. Parallel posting during
+	a rebuild is not supported; run `bench check-registers --fix-totals` after.
+	"""
 	if not has_totals(reg):
 		return
-	rows = frappe.get_all(reg.register_doctype, fields=["*"], order_by=None)
-	turnover, current = defaultdict(lambda: defaultdict(float)), defaultdict(lambda: defaultdict(float))
-	for row in rows:
-		_collect(reg, row, 1, turnover, current)
+	dims, res = dimensions(reg), resources(reg)
+	q = db.quote
+
+	# Delete both tables
 	frappe.db.delete(totals_table(reg.name))
 	if has_current(reg):
 		frappe.db.delete(current_table(reg.name))
-	apply_deltas(reg, turnover, current)
+
+	# Rebuild monthly table if register has a date field
+	if reg.date_field:
+		date_col = q(reg.date_field)
+		period_expr = db.month_start(date_col)
+		key_exprs = [period_expr] + [db.text_key(q(d)) for d in dims]
+		sum_exprs = [f"SUM(COALESCE({q(r)}, 0))" for r in res]
+
+		sql = (
+			f"INSERT INTO {q(totals_table(reg.name))} ({', '.join(q(c) for c in ['period', *dims, *res])}) "
+			f"SELECT {', '.join(key_exprs + sum_exprs)} "
+			f"FROM {q('tab' + reg.register_doctype)} "
+			f"WHERE {date_col} IS NOT NULL "
+			f"GROUP BY 1, {', '.join(str(i + 2) for i in range(len(dims)))} "
+			f"HAVING {' OR '.join(f'{db.quote(r)} <> 0' for r in res)}"
+		)
+		frappe.db.sql(sql)
+
+	# Rebuild current table
+	if has_current(reg):
+		key_exprs = [db.text_key(q(d)) for d in dims]
+		sum_exprs = [f"SUM(COALESCE({q(r)}, 0))" for r in res]
+
+		if key_exprs:
+			sql = (
+				f"INSERT INTO {q(current_table(reg.name))} ({', '.join(q(c) for c in [*dims, *res])}) "
+				f"SELECT {', '.join(key_exprs + sum_exprs)} "
+				f"FROM {q('tab' + reg.register_doctype)} "
+				f"GROUP BY {', '.join(str(i + 1) for i in range(len(dims)))} "
+				f"HAVING {' OR '.join(f'{db.quote(r)} <> 0' for r in res)}"
+			)
+		else:
+			sql = (
+				f"INSERT INTO {q(current_table(reg.name))} ({', '.join(q(r) for r in res)}) "
+				f"SELECT {', '.join(sum_exprs)} "
+				f"FROM {q('tab' + reg.register_doctype)}"
+			)
+		frappe.db.sql(sql)
 
 
 def _collect(reg, row, sign: int, turnover: dict, current: dict):
@@ -117,6 +158,8 @@ def apply_deltas(reg, turnover: dict, current: dict):
 def _upsert(table: str, key_columns: list[str], reg, deltas: dict):
 	res = resources(reg)
 	keys = sorted(k for k, v in deltas.items() if any(v.values()))
+	if keys:
+		db.lock_keys(table, key_columns, keys)
 	rows = [(key, [flt(deltas[key].get(f)) for f in res]) for key in keys]
 	db.upsert(table, key_columns, res, rows)
 

@@ -153,6 +153,41 @@ def validate_register(doc):
 			_("Register {0}: current balance totals need at least one dimension").format(register),
 			title=_("Invalid Register"),
 		)
+
+	# Validate totals key length and part count (InnoDB DYNAMIC limits)
+	if totals != TOTALS_NONE and not doc.totals_doctype:
+		KEY_BYTES_LIMIT = 3072
+		KEY_PARTS_LIMIT = 16
+
+		dimensions = [row.fieldname for row in doc.get("fields") or [] if row.role == "Dimension"]
+		key_parts = len(dimensions)
+		if doc.register_kind == TOTALS_BALANCE or doc.totals == TOTALS_BALANCE:
+			key_parts += 1  # period column for monthly table
+
+		# Calculate key bytes: 4 bytes per character * (field length or 140) + 3 for date
+		key_bytes = 0
+		for dim in dimensions:
+			df = fields.get(dim)
+			length = df.length if df and df.length else 140
+			key_bytes += 4 * length
+		if doc.register_kind == TOTALS_BALANCE or doc.totals == TOTALS_BALANCE:
+			key_bytes += 3  # date column bytes
+
+		if key_bytes > KEY_BYTES_LIMIT:
+			frappe.throw(
+				_("Register {0}: the key of its totals is {1} bytes, the limit is {2}; set a shorter Length on the dimension fields or use fewer dimensions").format(
+					register, key_bytes, KEY_BYTES_LIMIT
+				),
+				title=_("Invalid Register"),
+			)
+		if key_parts > KEY_PARTS_LIMIT:
+			frappe.throw(
+				_("Register {0}: the key of its totals has {1} parts, the limit is {2}; use fewer dimensions").format(
+					register, key_parts, KEY_PARTS_LIMIT
+				),
+				title=_("Invalid Register"),
+			)
+
 	if doc.totals_doctype:
 		if totals == TOTALS_NONE:
 			frappe.throw(

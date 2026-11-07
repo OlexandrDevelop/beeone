@@ -626,36 +626,50 @@ def select_last(
 	filters: dict | None = None,
 	first: bool = False,
 	restrict: dict | None = None,
+	readable: tuple[str, dict] | None = None,
 ) -> list[dict]:
 	"""For every key, the row with the latest period on or before `at` (the earliest on or after it when `first`).
 
 	Rows of one key with the same date are ordered by time, then by creation and name, so the result is stable.
-	`filters` maps a column to a value or to a list of values; `restrict` limits columns to allowed values. The result has `columns` of the chosen rows,
-	keys in sorted order.
+	`filters` maps a column to a value or to a list of values; `restrict` limits columns to allowed values.
+	`readable` is a (sql, params) tuple from prepare_query for the user's readable names as a subquery.
+	The result has `columns` of the chosen rows, keys in sorted order.
 	"""
 	q = quote
-	where, params = [f"{q(date_column)} {'>=' if first else '<='} %s"], [at]
+	where, named_params = [f"{q(date_column)} {'>=' if first else '<='} %(bo_at)s"], {"bo_at": at}
+	counter = 0
 	for k, v in (filters or {}).items():
 		if isinstance(v, list | tuple):
 			if not v:
 				where.append("1 = 0")
 				continue
-			where.append(f"{q(k)} IN ({', '.join(['%s'] * len(v))})")
-			params.extend(v)
+			param_names = [f"%(bo_f{counter+i})s" for i in range(len(v))]
+			where.append(f"{q(k)} IN ({', '.join(param_names)})")
+			for i, val in enumerate(v):
+				named_params[f"bo_f{counter+i}"] = val
+			counter += len(v)
 		elif v in (None, ""):
 			# an empty link is NULL or an empty string
 			where.append(f"{dialect().text_key(q(k))} = ''")
 		else:
-			where.append(f"{q(k)} = %s")
-			params.append(v)
+			param_name = f"bo_f{counter}"
+			where.append(f"{q(k)} = %({param_name})s")
+			named_params[param_name] = v
+			counter += 1
 	# `restrict` maps a column to (allowed values, empty value allowed): rows outside it are not ranked
 	for k, (values, allow_empty) in (restrict or {}).items():
-		marks = ", ".join(["%s"] * len(values))
-		condition = f"{q(k)} IN ({marks})"
+		param_names = [f"%(bo_r{counter+i})s" for i in range(len(values))]
+		condition = f"{q(k)} IN ({', '.join(param_names)})"
 		if allow_empty:
 			condition = f"({dialect().text_key(q(k))} = '' OR {condition})"
 		where.append(condition)
-		params.extend(values)
+		for i, val in enumerate(values):
+			named_params[f"bo_r{counter+i}"] = val
+		counter += len(values)
+	if readable:
+		readable_sql, readable_params = readable
+		where.append(f"{q('name')} IN ({readable_sql})")
+		named_params.update(readable_params)
 	way = "ASC" if first else "DESC"
 	order = [f"{q(date_column)} {way}"]
 	if time_column:
@@ -672,7 +686,7 @@ def select_last(
 		f"SELECT {', '.join(q(c) for c in dict.fromkeys(columns))} FROM ({inner}) AS {q('s')} "
 		f"WHERE {q('__rn')} = 1{outer_order}"
 	)
-	return frappe.db.sql(sql, params, as_dict=True)
+	return frappe.db.sql(sql, named_params, as_dict=True)
 
 
 def table_name(prefix: str, register: str) -> str:

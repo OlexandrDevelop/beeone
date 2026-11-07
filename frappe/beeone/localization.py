@@ -36,7 +36,29 @@ def amount_in_words(value, currency=None, lang=None) -> str:
 	"""Write an amount in words in `lang` (default: the print or user language) with the handler of an app.
 
 	Without a handler for the language (or its base language) a plain number text is returned.
+	Coerces value to a finite float or raises ValidationError.
 	"""
+	import math
+
+	# Coerce value to float
+	try:
+		if value is None or value == "":
+			fvalue = 0.0
+		else:
+			fvalue = float(str(value).strip())
+	except (ValueError, TypeError):
+		frappe.throw(
+			frappe._("Amount {0} is not a number").format(frappe.bold(value)),
+			exc=frappe.ValidationError,
+		)
+
+	# Check if finite
+	if not math.isfinite(fvalue):
+		frappe.throw(
+			frappe._("Amount {0} is not a number").format(frappe.bold(value)),
+			exc=frappe.ValidationError,
+		)
+
 	if not lang:
 		local_doc = getattr(frappe.local, "doc", None)
 		if isinstance(local_doc, dict):
@@ -52,8 +74,8 @@ def amount_in_words(value, currency=None, lang=None) -> str:
 	base_lang = lang.replace("_", "-").split("-")[0]
 	handler = _handler("amount_in_words", lang) or _handler("amount_in_words", base_lang)
 	if handler:
-		return handler(value, currency)
-	text = f"{float(value or 0):.2f}"
+		return handler(fvalue, currency)
+	text = f"{fvalue:.2f}"
 	return f"{text} {currency}" if currency else text
 
 

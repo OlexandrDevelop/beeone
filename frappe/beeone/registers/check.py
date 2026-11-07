@@ -245,8 +245,9 @@ def check_totals(reg, from_month=None, batch: int = BATCH) -> list[Issue]:
 def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 	"""Write the sums of the movements into the totals tables, in batches. Returns the fixed rows.
 
-	Reads and writes `batch` keys at a time and commits after every batch. A missing
-	table is created empty and filled the same way. The movements are only read.
+	Fixes per page of `batch` differing keys under locks: commit, lock_keys, zero-upsert missing keys,
+	re-read movements and totals after the locks, write, commit. Retries a page up to 3 times on
+	lock conflict. The movements are only read.
 	"""
 	if not totals.has_totals(reg):
 		return 0
@@ -257,18 +258,55 @@ def fix_totals(reg, from_month=None, batch: int = BATCH) -> int:
 		if not db.table_exists(table):
 			db.create_totals_table(table, columns, res, totals.key_lengths(reg))
 		count = 0
+		diffs = []
 		for key, have_key, want, _have in _diff(reg, table, monthly, from_month, batch):
-			if _nonzero(want):
-				_set_row(table, columns, res, key, want)
-			else:
-				where = " AND ".join(f"{db.quote(c)} = %s" for c in columns)
-				frappe.db.sql(f"DELETE FROM {db.quote(table)}{' WHERE ' + where if where else ''}", list(have_key))
-			count += 1
-			if count % batch == 0:
-				frappe.db.commit()
-		frappe.db.commit()
+			diffs.append((key, have_key, want))
+			if len(diffs) >= batch:
+				count += _fix_page(reg, table, columns, res, from_month, monthly, diffs)
+				diffs = []
+		if diffs:
+			count += _fix_page(reg, table, columns, res, from_month, monthly, diffs)
 		fixed += count
 	return fixed
+
+
+def _fix_page(reg, table: str, columns: list[str], res: list[str], from_month, monthly: bool, page_diffs: list) -> int:
+	"""Fix one page of differing keys under locks, retrying on lock conflicts."""
+	max_retries = 3
+	for attempt in range(max_retries):
+		try:
+			frappe.db.commit()
+			keys_to_lock = [key for key, _, _ in page_diffs]
+			if keys_to_lock:
+				db.lock_keys(table, columns, keys_to_lock)
+
+			# Ensure all keys exist in the table (zero-upsert missing keys)
+			zero_rows = [(key, [0.0] * len(res)) for key, _, _ in page_diffs]
+			db.upsert(table, columns, res, zero_rows, add=True)
+
+			# Re-read expected values after the locks
+			expected = _expected_for(reg, monthly, from_month, keys_to_lock)
+			# Re-read actual values from the table after the locks
+			actual = _actual_for(reg, table, monthly, keys_to_lock)
+
+			# Write the corrected values
+			written = 0
+			for key, have_key, _want in page_diffs:
+				norm_key = db.key_norm(key)
+				want = expected.get(norm_key, (key, [0.0] * len(res)))[1]
+				if _nonzero(want):
+					_set_row(table, columns, res, key, want)
+				elif db.key_norm(have_key) in actual:
+					where = " AND ".join(f"{db.quote(c)} = %s" for c in columns)
+					frappe.db.sql(f"DELETE FROM {db.quote(table)}{' WHERE ' + where if where else ''}", list(have_key))
+				written += 1
+			frappe.db.commit()
+			return written
+		except (frappe.QueryDeadlockError, Exception) as e:
+			if db.dialect().is_lock_conflict(e) and attempt < max_retries - 1:
+				frappe.db.rollback()
+				continue
+			raise
 
 
 def _set_row(table: str, columns: list[str], res: list[str], key: tuple, values: list[float]):

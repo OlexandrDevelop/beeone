@@ -201,11 +201,15 @@ def balance_and_turnover(
 	if start > end:
 		frappe.throw(_("The start of the period is after its end"))
 
-	from frappe.utils import add_days, flt
+	from frappe.utils import add_days, flt, get_field_precision
 
 	res_list = _resources(reg, resources)
 	grp_list = _check_group_by(reg, group_by)
 	base_query = _check_filters(reg, filters)
+
+	# Get precision for each resource
+	meta = frappe.get_meta(reg.register_doctype)
+	precision = {res: get_field_precision(meta.get_field(res)) or 9 for res in res_list}
 
 	# 1. Opening balance on day before start
 	prev_day = add_days(start, -1)
@@ -223,7 +227,7 @@ def balance_and_turnover(
 		k = row_key(r)
 		results[k] = {g: r.get(g) for g in grp_list}
 		for res in res_list:
-			val = flt(r.get(res) or 0, 2)
+			val = flt(r.get(res) or 0, precision[res])
 			results[k][f"opening_{res}"] = val
 			results[k][f"inflow_{res}"] = 0.0
 			results[k][f"outflow_{res}"] = 0.0
@@ -247,7 +251,7 @@ def balance_and_turnover(
 					results[k]["opening"] = 0.0
 					results[k]["inflow"] = 0.0
 					results[k]["outflow"] = 0.0
-			val = flt(r.get(res) or 0, 2)
+			val = flt(r.get(res) or 0, precision[res])
 			results[k][f"inflow_{res}"] = val
 			if len(res_list) == 1:
 				results[k]["inflow"] = val
@@ -266,7 +270,7 @@ def balance_and_turnover(
 					results[k]["opening"] = 0.0
 					results[k]["inflow"] = 0.0
 					results[k]["outflow"] = 0.0
-			val = flt(abs(flt(r.get(res) or 0)), 2)
+			val = flt(abs(flt(r.get(res) or 0)), precision[res])
 			results[k][f"outflow_{res}"] = val
 			if len(res_list) == 1:
 				results[k]["outflow"] = val
@@ -277,12 +281,12 @@ def balance_and_turnover(
 			op = data.get(f"opening_{res}", 0.0)
 			inf = data.get(f"inflow_{res}", 0.0)
 			outf = data.get(f"outflow_{res}", 0.0)
-			data[f"closing_{res}"] = flt(op + inf - outf, 2)
+			data[f"closing_{res}"] = flt(op + inf - outf, precision[res])
 		if len(res_list) == 1:
 			op = data.get("opening", 0.0)
 			inf = data.get("inflow", 0.0)
 			outf = data.get("outflow", 0.0)
-			data["closing"] = flt(op + inf - outf, 2)
+			data["closing"] = flt(op + inf - outf, precision[res_list[0]])
 		out.append(data)
 	return out
 
@@ -402,22 +406,18 @@ def slice_last(
 	day = getdate(at)
 
 	from frappe.beeone import db
-
-	def readable_names(flt_values: dict) -> list[str]:
-		"""Rows the user may read by owner, share, User Permissions and permission hooks: what `get_list` allows."""
-		query = [[reg.register_doctype, f, "in" if isinstance(v, list | tuple) else "=", v] for f, v in flt_values.items()]
-		query.append([reg.register_doctype, reg.date_field, "<=" if not first else ">=", day])
-		return frappe.get_list(
-			reg.register_doctype, filters=query, pluck="name", order_by=None, limit_page_length=0
-		)
+	from frappe.query_builder.utils import prepare_query
 
 	def run(flt_values: dict) -> list[dict]:
 		restrict_now = restrict
+		readable = None
 		if frappe.session.user != "Administrator":
-			names = readable_names(flt_values)
-			if not names:
-				return []
-			restrict_now = {**restrict, "name": (names, False)}
+			query_filters = [[reg.register_doctype, f, "in" if isinstance(v, list | tuple) else "=", v] for f, v in flt_values.items()]
+			query_filters.append([reg.register_doctype, reg.date_field, "<=" if not first else ">=", day])
+			q = frappe.get_list(
+				reg.register_doctype, filters=query_filters, fields=["name"], order_by=None, run=False
+			)
+			readable = prepare_query(q)
 		return db.select_last(
 			reg.register_doctype,
 			group_by,
@@ -428,6 +428,7 @@ def slice_last(
 			flt_values,
 			first,
 			restrict_now,
+			readable,
 		)
 
 	def with_fallback(flt_values: dict, pending: list[str]) -> list[dict]:

@@ -50,12 +50,21 @@ def next_name(
 	same stem share one counter and never give the same name twice. A caller that moves an
 	existing numbering to the core passes its old key, so the counter goes on.
 	"""
+	from frappe.beeone import db
+
 	period = period_label(reset, date)
 	glue = separator or ""
 	head = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
 	if head:
 		head += glue
-	number = getseries(key or f"NS:{ref_doctype}:{head}", int(digits))
+	series_key = key or f"NS:{ref_doctype}:{head}"
+	try:
+		db.insert_missing("Series", {"name": series_key, "current": 0})
+	except Exception as e:
+		if db.dialect().is_lock_conflict(e):
+			raise frappe.QueryDeadlockError(_("Another user changes the same data. Try again."))
+		raise
+	number = getseries(series_key, int(digits))
 	return head + number
 
 
