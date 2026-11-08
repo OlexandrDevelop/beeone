@@ -35,8 +35,8 @@ def _hooks(hook=None, default="_KEEP_DEFAULT_LIST", app_name=None):
 class TestBeeoneLocalization(IntegrationTestCase):
 	def test_words_use_the_app_handler(self):
 		with patch("frappe.get_hooks", _hooks):
-			self.assertEqual(localization.amount_in_words(5, "ABC", lang="xx"), "words 5 ABC")
-			self.assertEqual(localization.amount_in_words(5, lang="xx-YY"), "words 5")
+			self.assertEqual(localization.amount_in_words(5, "ABC", lang="xx"), "words 5.0 ABC")
+			self.assertEqual(localization.amount_in_words(5, lang="xx-YY"), "words 5.0")
 
 	def test_words_without_handler_are_plain(self):
 		with patch("frappe.get_hooks", _hooks):

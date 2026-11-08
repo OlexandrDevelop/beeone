@@ -242,7 +242,7 @@ class MariaDB(Dialect):
 		frappe.db.sql("SELECT RELEASE_LOCK(%s)", self._lock_name(name))
 
 	def month_start(self, expr: str) -> str:
-		return f"DATE_FORMAT({expr}, '%%Y-%%m-01')"
+		return f"DATE_ADD(LAST_DAY(DATE_SUB({expr}, INTERVAL 1 MONTH)), INTERVAL 1 DAY)"
 
 	def text_key(self, expr: str) -> str:
 		return f"IFNULL({expr}, '')"

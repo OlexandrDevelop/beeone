@@ -52,7 +52,7 @@ class TestBeeoneDb(IntegrationTestCase):
 			"INSERT INTO `t` (`k`, `r`) VALUES (%s, %s), (%s, %s) ON DUPLICATE KEY UPDATE `r` = `r` + VALUES(`r`)",
 		)
 		self.assertTrue(d.upsert_sql("t", ["k"], ["r"], 1, add=False).endswith("`r` = VALUES(`r`)"))
-		self.assertEqual(d.month_start("`d`"), "DATE_FORMAT(`d`, '%%Y-%%m-01')")
+		self.assertNotIn("%", d.month_start("`d`"))
 		self.assertEqual(d.text_key("`x`"), "IFNULL(`x`, '')")
 		self.assertEqual(d.key_norm(("Nut ", 1)), ("nut", "1"))
 
@@ -92,6 +92,17 @@ class TestBeeoneDb(IntegrationTestCase):
 		self.assertNotIn("%", d.month_start('"d"'))
 		self.assertNotIn("%", d.text_key('"x"'))
 		self.assertEqual(d.key_norm(("Nut ", 1)), ("Nut ", "1"))
+
+	def test_month_start_runs_without_and_with_values(self):
+		# T-820 F-29: the expression is sent with values=None by rebuild_totals; no '%' may be in it.
+		expr = db.month_start("CAST(%s AS DATE)")
+		self.assertNotIn("DATE_FORMAT", expr)
+		sql = f"SELECT {expr}"
+		for value in ("2024-03-17", "2024-12-31", "2024-01-01"):
+			with_values = frappe.db.sql(sql, (value,))[0][0]
+			self.assertEqual(str(with_values), value[:8] + "01")
+		literal = db.month_start("CAST('2024-02-29' AS DATE)")
+		self.assertEqual(str(frappe.db.sql(f"SELECT {literal}")[0][0]), "2024-02-01")
 
 	def test_table_name_limit(self):
 		self.assertEqual(db.table_name("__beeone_tot_", "Stock Ledger"), "__beeone_tot_stock_ledger")

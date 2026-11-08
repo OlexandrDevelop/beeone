@@ -201,7 +201,8 @@ def balance_and_turnover(
 	if start > end:
 		frappe.throw(_("The start of the period is after its end"))
 
-	from frappe.utils import add_days, flt, get_field_precision
+	from frappe.model.meta import get_field_precision
+	from frappe.utils import add_days, flt
 
 	res_list = _resources(reg, resources)
 	grp_list = _check_group_by(reg, group_by)
