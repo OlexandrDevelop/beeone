@@ -101,3 +101,17 @@ $bo-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 	content: " *";
 	color: var(--bo-state-error);
 }
+
+// Side panel (assign, attachments, tags, share, timestamps): the default muted greys are
+// ~3.9:1 on the panel background, below the 4.5:1 text minimum (WCAG 1.4.3).
+.layout-side-section,
+.form-sidebar {
+	--text-muted: #4b5563;
+	--text-light: #4b5563;
+}
+
+[data-theme="dark"] .layout-side-section,
+[data-theme="dark"] .form-sidebar {
+	--text-muted: #b4bcc9;
+	--text-light: #b4bcc9;
+}

@@ -221,6 +221,10 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 				__(this.df.label, null, this.df.parent) || "&nbsp;";
 		this.show_description_on_click();
 		this._label = this.df.label;
+		// the visible <label> is not linked to the input: give assistive tech the name (WCAG 4.1.2)
+		if (this.$input && this.$input.length && this.df.label && this.df.fieldtype !== "Check") {
+			this.$input.attr("aria-label", __(this.df.label, null, this.df.parent));
+		}
 	}
 	show_description_on_click() {
 		const me = this;

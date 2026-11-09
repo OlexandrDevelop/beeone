@@ -279,6 +279,7 @@ frappe.ui.Page = class Page {
 		button.click(click);
 		button
 			.attr("title", __(tooltip_label))
+			.attr("aria-label", __(tooltip_label))
 			.tooltip({ delay: { show: 600, hide: 100 }, trigger: "hover" });
 
 		return button;
