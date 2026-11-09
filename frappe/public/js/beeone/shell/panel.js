@@ -3,6 +3,7 @@ import { wins, focus, minimize, toggle_max, toggle_min, close, show_desktop, lis
 
 const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 const icon = (n, c) => beeone.ui.icon(n, c);
+const RM = window.matchMedia("(prefers-reduced-motion: reduce)");
 const COLUMNS = [
 	{ key: "docs", title: () => __("Documents"), icon: "file" },
 	{ key: "refs", title: () => __("Catalogs"), icon: "book" },
@@ -65,13 +66,14 @@ export function build() {
 		`<button type="button" class="bo-top-btn" data-act="bell" title="${esc(__("Notifications"))}" aria-label="${esc(__("Notifications"))}">${icon("bell")}<i class="bo-dot-badge" hidden></i></button></div></header>` +
 		`<main id="bo-desk"><div id="bo-desk-bg"></div><div id="bo-wins"></div></main>` +
 		`<footer id="bo-task" role="toolbar" aria-label="${esc(__("Open windows"))}">` +
-		`<button type="button" class="bo-task-menu" data-act="sections" aria-label="${esc(__("Sections"))}">${icon("menu")}</button>` +
+		`<button type="button" class="bo-task-menu" data-act="sections" aria-label="${esc(__("Sections"))}" aria-expanded="false" aria-controls="bo-panel">${icon("menu")}</button>` +
 		`<button type="button" class="bo-task-desk" data-act="desktop" title="${esc(__("Show desktop"))} (Alt D)" aria-label="${esc(__("Show desktop"))}">${icon("layout")}</button>` +
 		`<div class="bo-task-list" id="bo-task-list"></div><span class="bo-task-count" id="bo-task-count"></span></footer>` +
-		`<div id="bo-panel" hidden></div><div id="bo-live" class="bo-sr" aria-live="polite"></div>`;
+		`<div id="bo-panel" role="dialog" aria-modal="false" aria-labelledby="bo-fp-title" hidden></div><div id="bo-live" class="bo-sr" aria-live="polite"></div>`;
 	document.body.appendChild(app);
 	render_rail();
 	app.addEventListener("click", on_click);
+	document.getElementById("bo-rail-list").addEventListener("keydown", rail_keys);
 	document.addEventListener("mousedown", (e) => {
 		const panel = document.getElementById("bo-panel");
 		if (!panel.hidden && !e.target.closest("#bo-panel, #bo-rail, .bo-task-menu")) close_panel();
@@ -95,7 +97,7 @@ function render_rail() {
 	list_el.innerHTML = (beeone.shell.sections || [])
 		.map(
 			(s) =>
-				`<button type="button" class="bo-rail-btn" data-section="${esc(s.id)}" title="${esc(s.label)}" aria-label="${esc(s.label)}">${icon(s.icon)}<span class="bo-rail-label">${esc(s.label)}</span></button>`
+				`<button type="button" class="bo-rail-btn" data-section="${esc(s.id)}" title="${esc(s.label)}" aria-label="${esc(s.label)}" aria-expanded="false" aria-controls="bo-panel">${icon(s.icon)}<span class="bo-rail-label">${esc(s.label)}</span></button>`
 		)
 		.join("");
 }
@@ -117,13 +119,30 @@ function on_click(e) {
 // ------------------------------------------------------------------ function panel
 
 let panel_section = null;
+let panel_opener = null;
 
-export function close_panel() {
+const route_key = (route) => route.map(String).join("/");
+const norm = (v) => String(v).toLowerCase().replace(/[’ʼ`]/g, "'");
+
+function sync_expanded(open) {
+	document.querySelectorAll("#bo-rail [data-section], .bo-task-menu").forEach((b) => {
+		const on = open && (b.classList.contains("bo-task-menu") ? panel_section === "*" : b.dataset.section === panel_section);
+		b.setAttribute("aria-expanded", on ? "true" : "false");
+	});
+}
+
+export function close_panel(return_focus) {
 	const panel = document.getElementById("bo-panel");
 	if (!panel) return;
+	const was = panel.hidden ? null : panel_section;
 	panel.hidden = true;
 	panel_section = null;
 	document.querySelectorAll("#bo-rail .is-active").forEach((b) => b.classList.remove("is-active"));
+	sync_expanded(false);
+	if (return_focus === true && was) {
+		const back = panel_opener && document.body.contains(panel_opener) ? panel_opener : document.querySelector(was === "*" ? ".bo-task-menu" : `#bo-rail [data-section="${was}"]`);
+		if (back) back.focus();
+	}
 }
 
 export function open_section(id) {
@@ -132,33 +151,129 @@ export function open_section(id) {
 	toggle_panel(id);
 }
 
+function rail_keys(e) {
+	if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+	const btns = [...document.querySelectorAll("#bo-rail-list .bo-rail-btn")];
+	const at = btns.indexOf(document.activeElement);
+	if (at < 0) return;
+	e.preventDefault();
+	const to = btns[Math.max(0, Math.min(btns.length - 1, at + (e.key === "ArrowDown" ? 1 : -1)))];
+	if (to) to.focus();
+}
+
+function animate_open(panel) {
+	if (RM.matches || !panel.animate) return;
+	panel.animate([{ opacity: 0, transform: "translateX(-8px)" }, { opacity: 1, transform: "none" }], {
+		duration: 160,
+		easing: "cubic-bezier(.16,1,.3,1)",
+	});
+}
+
+// order inside a column: main commands, commands without a group, then the groups as they first appear
+function column_blocks(items) {
+	const mains = items.filter((x) => x.main);
+	const rest = items.filter((x) => !x.main);
+	const loose = [...mains, ...rest.filter((x) => !x.group)];
+	const named = [];
+	rest.forEach((x) => {
+		if (!x.group) return;
+		let g = named.find((n) => n.name === x.group);
+		if (!g) named.push((g = { name: x.group, items: [] }));
+		g.items.push(x);
+	});
+	const heads = named.length >= 2 || (named.length === 1 && loose.length > 0);
+	const blocks = [];
+	if (loose.length) blocks.push({ name: "", items: loose });
+	named.forEach((g) => blocks.push({ name: heads ? g.name : "", items: g.items }));
+	return blocks;
+}
+
+function star_label(cmd, on) {
+	return `${on ? __("Remove from favorites") : __("Add to favorites")}: ${cmd.label}`;
+}
+
+function row_html(section, x) {
+	const i = section.commands.indexOf(x);
+	const on = beeone.shell.is_fav(command_route(x));
+	return (
+		`<div class="bo-fp-row" data-i="${i}"><button type="button" class="bo-fp-cmd${x.main ? " is-main" : ""}" data-i="${i}" title="${esc(x.label)}" tabindex="-1"><span class="bo-fp-lab">${esc(x.label)}</span></button>` +
+		`<button type="button" class="bo-fp-star" data-star="${i}" tabindex="-1" aria-pressed="${on}" aria-label="${esc(star_label(x, on))}">${icon("star")}</button></div>`
+	);
+}
+
+// favourites and recent of this section only: a strip is not drawn when it is empty
+function links_html(section) {
+	const own = new Set(section.commands.map((c) => route_key(command_route(c))));
+	const strip = (key, label, ic, rows) => {
+		const picked = rows.filter((r) => own.has(route_key(r.route))).slice(0, 6);
+		if (!picked.length) return "";
+		return (
+			`<div class="bo-fp-strip"><span class="bo-fp-strip-t">${icon(ic, "bo-i-sm")}${esc(label)}:</span>` +
+			picked.map((r) => `<button type="button" class="bo-fp-chip" data-link="${key}:${rows.indexOf(r)}">${esc(r.label)}</button>`).join("") +
+			"</div>"
+		);
+	};
+	return strip("f", __("Favorites"), "star", beeone.shell.state.favorites || []) + strip("r", __("Recent"), "clock", beeone.shell.state.recent || []);
+}
+
 function toggle_panel(id) {
 	const panel = document.getElementById("bo-panel");
+	const was_open = !panel.hidden;
 	if (!id) {
 		// compact screens: all sections as a list
-		if (!panel.hidden && panel_section === "*") return close_panel();
+		if (was_open && panel_section === "*") return close_panel();
+		panel_opener = document.activeElement;
 		panel_section = "*";
 		panel.hidden = false;
-		panel.innerHTML = `<div class="bo-fp-all">${(beeone.shell.sections || [])
-			.map((s) => `<button type="button" class="bo-fp-sec" data-section="${esc(s.id)}">${icon(s.icon)}<span>${esc(s.label)}</span></button>`)
-			.join("")}</div>`;
+		panel.innerHTML =
+			`<h2 id="bo-fp-title" class="bo-sr">${esc(__("Sections"))}</h2><div class="bo-fp-all">${(beeone.shell.sections || [])
+				.map((s) => `<button type="button" class="bo-fp-sec" data-section="${esc(s.id)}">${icon(s.icon)}<span>${esc(s.label)}</span></button>`)
+				.join("")}</div>`;
 		panel.querySelectorAll("[data-section]").forEach((b) => b.addEventListener("click", () => toggle_panel(b.dataset.section)));
+		panel.onclick = null;
+		panel.oninput = null;
+		panel.onkeydown = (e) => {
+			if (e.key === "Escape") {
+				e.preventDefault();
+				e.stopPropagation();
+				close_panel(true);
+			} else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+				const btns = [...panel.querySelectorAll(".bo-fp-sec")];
+				const at = btns.indexOf(document.activeElement);
+				e.preventDefault();
+				const to = btns[Math.max(0, Math.min(btns.length - 1, at + (e.key === "ArrowDown" ? 1 : -1)))];
+				if (to) to.focus();
+			}
+		};
+		sync_expanded(true);
+		animate_open(panel);
+		const first = panel.querySelector(".bo-fp-sec");
+		if (first) first.focus();
 		return;
 	}
-	if (!panel.hidden && panel_section === id) return close_panel();
+	if (was_open && panel_section === id) return close_panel();
 	const section = (beeone.shell.sections || []).find((s) => s.id === id);
 	if (!section) return;
+	if (!was_open || panel_section === "*") panel_opener = document.activeElement;
 	panel_section = id;
 	document.querySelectorAll("#bo-rail [data-section]").forEach((b) => b.classList.toggle("is-active", b.dataset.section === id));
-	const cols = COLUMNS.map((c) => {
+	const cols = COLUMNS.map((c, ci) => {
 		const items = section.commands.filter((x) => x.column === c.key);
 		if (!items.length) return "";
+		const body = column_blocks(items)
+			.map((g, gi) => {
+				const gid = `bo-fp-g${ci}-${gi}`;
+				return (
+					`<div class="bo-fp-grp"${g.name ? ` role="group" aria-labelledby="${gid}"` : ""}>` +
+					(g.name ? `<h4 class="bo-fp-group" id="${gid}">${esc(g.name)}</h4>` : "") +
+					g.items.map((x) => row_html(section, x)).join("") +
+					"</div>"
+				);
+			})
+			.join("");
 		return (
-			`<div class="bo-fp-col"><h3>${icon(c.icon)}${esc(c.title())}</h3>` +
-			items
-				.map((x, i) => `<button type="button" class="bo-fp-cmd" data-i="${section.commands.indexOf(x)}">${esc(x.label)}</button>`)
-				.join("") +
-			"</div>"
+			`<div class="bo-fp-col" role="group" aria-label="${esc(c.title())}, ${items.length}"><h3>${icon(c.icon)}${esc(c.title())}</h3>` +
+			`<span class="bo-fp-n" aria-hidden="true">${items.length}</span>${body}</div>`
 		);
 	}).join("");
 	const create = (section.create || [])
@@ -166,17 +281,185 @@ function toggle_panel(id) {
 		.join("");
 	panel.hidden = false;
 	panel.innerHTML =
-		`<div class="bo-fp-head"><div><h2>${esc(section.label)}</h2><p>${esc(section.description)}</p></div></div>` +
+		`<div class="bo-fp-head"><div><h2 id="bo-fp-title">${esc(section.label)}</h2><p>${esc(section.description)}</p></div>` +
+		`<div class="bo-fp-find"><label class="bo-fp-qbox">${icon("search")}<input type="search" class="bo-fp-q" autocomplete="off" spellcheck="false" aria-controls="bo-fp-cols" ` +
+		`aria-label="${esc(__("Find in section"))}" placeholder="${esc(__("Find in section…"))}"><kbd>Esc</kbd></label>` +
+		`<button type="button" class="bo-fp-all-btn" data-all>${esc(__("Search all sections"))}<kbd>Ctrl K</kbd></button></div></div>` +
 		(create ? `<div class="bo-fp-create"><span>${esc(__("Create"))}:</span>${create}</div>` : "") +
-		`<div class="bo-fp-cols">${cols}</div>`;
+		`<div class="bo-fp-links" id="bo-fp-links">${links_html(section)}</div>` +
+		`<div class="bo-fp-cols" id="bo-fp-cols">${cols}</div>` +
+		`<div class="bo-fp-none" hidden>${esc(__("Nothing found"))}</div>`;
+	set_stop(first_visible(panel));
 	panel.onclick = (e) => {
-		const cmd = e.target.closest("[data-i]");
+		const star = e.target.closest("[data-star]");
+		if (star) return toggle_star(panel, section, +star.dataset.star);
+		if (e.target.closest("[data-all]")) {
+			const q = panel.querySelector(".bo-fp-q").value;
+			return open_search(q);
+		}
+		const link = e.target.closest("[data-link]");
+		const cmd = e.target.closest(".bo-fp-cmd");
 		const nw = e.target.closest("[data-new]");
-		if (cmd) open_command(section.commands[+cmd.dataset.i]);
+		if (link) {
+			const [kind, at] = link.dataset.link.split(":");
+			const row = (kind === "f" ? beeone.shell.state.favorites : beeone.shell.state.recent)[+at];
+			if (row) open_route(row.route);
+		} else if (cmd) open_command(section.commands[+cmd.dataset.i]);
 		else if (nw) frappe.new_doc(nw.dataset.new);
 		else return;
 		if (!(e.ctrlKey || e.metaKey)) close_panel();
 	};
+	panel.oninput = (e) => {
+		if (e.target.classList.contains("bo-fp-q")) filter_panel(panel, section, e.target.value);
+	};
+	panel.onfocusin = (e) => {
+		if (e.target.classList.contains("bo-fp-cmd")) set_stop(e.target);
+	};
+	panel.onkeydown = (e) => panel_keys(e, panel, section);
+	sync_expanded(true);
+	if (!was_open) animate_open(panel);
+	panel.querySelector(".bo-fp-q").focus({ preventScroll: true });
+}
+
+function visible_cols(panel) {
+	return [...panel.querySelectorAll(".bo-fp-col:not([hidden])")].map((c) => [...c.querySelectorAll(".bo-fp-row:not([hidden]) .bo-fp-cmd")]);
+}
+
+function first_visible(panel) {
+	return panel.querySelector(".bo-fp-row:not([hidden]) .bo-fp-cmd");
+}
+
+// roving tabindex: the grid of commands is one tab stop
+function set_stop(btn) {
+	const panel = document.getElementById("bo-panel");
+	panel.querySelectorAll(".bo-fp-cmd").forEach((b) => b.setAttribute("tabindex", b === btn ? "0" : "-1"));
+}
+
+function go(btn) {
+	if (!btn) return;
+	set_stop(btn);
+	btn.focus({ preventScroll: true });
+	if (btn.scrollIntoView) btn.scrollIntoView({ block: "nearest" });
+}
+
+function run_cmd(section, btn, keep) {
+	open_command(section.commands[+btn.dataset.i]);
+	if (!keep) close_panel();
+}
+
+function toggle_star(panel, section, i) {
+	const cmd = section.commands[i];
+	if (!cmd) return;
+	const on = beeone.shell.toggle_fav({ route: command_route(cmd), label: cmd.label });
+	const star = panel.querySelector(`[data-star="${i}"]`);
+	if (star) {
+		star.setAttribute("aria-pressed", on ? "true" : "false");
+		star.setAttribute("aria-label", star_label(cmd, on));
+	}
+	panel.querySelector("#bo-fp-links").innerHTML = links_html(section);
+	beeone.shell.announce(on ? __("Added to favorites") : __("Removed from favorites"));
+}
+
+function paint_label(row, label, words) {
+	const el = row.querySelector(".bo-fp-lab");
+	const low = norm(label);
+	if (!words.length || low.length !== label.length) {
+		el.textContent = label;
+		return;
+	}
+	const marks = [];
+	words.forEach((w) => {
+		const at = low.indexOf(w);
+		if (at >= 0) marks.push([at, at + w.length]);
+	});
+	marks.sort((a, b) => a[0] - b[0]);
+	const merged = [];
+	marks.forEach((m) => {
+		const last = merged[merged.length - 1];
+		if (last && m[0] <= last[1]) last[1] = Math.max(last[1], m[1]);
+		else merged.push([...m]);
+	});
+	let out = "";
+	let pos = 0;
+	merged.forEach(([a, b]) => {
+		out += esc(label.slice(pos, a)) + `<mark class="bo-fp-hit">${esc(label.slice(a, b))}</mark>`;
+		pos = b;
+	});
+	el.innerHTML = out + esc(label.slice(pos));
+}
+
+// every word of the query must be a part of the label
+function filter_panel(panel, section, q) {
+	const words = norm(q).split(/\s+/).filter(Boolean);
+	let shown = 0;
+	panel.querySelectorAll(".bo-fp-row").forEach((row) => {
+		const cmd = section.commands[+row.dataset.i];
+		const low = norm(cmd.label);
+		const ok = words.every((w) => low.includes(w));
+		row.hidden = !ok;
+		if (ok) shown++;
+		paint_label(row, cmd.label, ok ? words : []);
+	});
+	panel.querySelectorAll(".bo-fp-grp").forEach((g) => (g.hidden = !g.querySelector(".bo-fp-row:not([hidden])")));
+	panel.querySelectorAll(".bo-fp-col").forEach((c) => (c.hidden = !c.querySelector(".bo-fp-row:not([hidden])")));
+	panel.querySelector(".bo-fp-none").hidden = shown > 0;
+	panel.querySelector("#bo-fp-links").hidden = words.length > 0;
+	set_stop(first_visible(panel));
+	beeone.shell.announce(shown ? __("{0} commands", [shown]) : __("Nothing found"));
+}
+
+function panel_keys(e, panel, section) {
+	const q = panel.querySelector(".bo-fp-q");
+	const t = e.target;
+	if (e.key === "Escape") {
+		e.preventDefault();
+		e.stopPropagation();
+		if (q.value) {
+			q.value = "";
+			filter_panel(panel, section, "");
+			q.focus();
+		} else close_panel(true);
+		return;
+	}
+	if (t === q) {
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			go(first_visible(panel));
+		} else if (e.key === "Enter") {
+			e.preventDefault();
+			const first = first_visible(panel);
+			if (first) run_cmd(section, first, e.ctrlKey || e.metaKey);
+		}
+		return;
+	}
+	const btn = t.closest && t.closest(".bo-fp-cmd");
+	if (!btn) return;
+	const cols = visible_cols(panel);
+	const ci = cols.findIndex((c) => c.includes(btn));
+	const ri = ci < 0 ? 0 : cols[ci].indexOf(btn);
+	const mod = e.ctrlKey || e.metaKey;
+	const key = e.key;
+	let handled = true;
+	if (key === "ArrowDown") go(cols[ci][ri + 1] || btn);
+	else if (key === "ArrowUp") {
+		if (ri > 0) go(cols[ci][ri - 1]);
+		else q.focus();
+	} else if (key === "ArrowRight" || key === "ArrowLeft") {
+		const next = cols[ci + (key === "ArrowRight" ? 1 : -1)];
+		go(next ? next[Math.min(ri, next.length - 1)] : btn);
+	} else if (key === "Home") go(mod ? cols[0][0] : cols[ci][0]);
+	else if (key === "End") {
+		const last = cols[cols.length - 1];
+		go(mod ? last[last.length - 1] : cols[ci][cols[ci].length - 1]);
+	} else if (key === "Enter") run_cmd(section, btn, mod);
+	else if (key === "*") toggle_star(panel, section, +btn.dataset.i);
+	else if (key.length === 1 && key !== " " && !mod && !e.altKey) {
+		// typing on a command goes to the search field
+		q.focus();
+		q.value += key;
+		filter_panel(panel, section, q.value);
+	} else handled = false;
+	if (handled) e.preventDefault();
 }
 
 // ------------------------------------------------------------------ task bar
@@ -257,7 +540,7 @@ export function init_taskbar() {
 
 // ------------------------------------------------------------------ search (Ctrl K)
 
-export function open_search() {
+export function open_search(query = "") {
 	close_panel();
 	if (document.querySelector(".bo-dialog-backdrop .bo-ks")) return;
 	const dlg = beeone.ui.dialog({
@@ -332,6 +615,7 @@ export function open_search() {
 		const row = e.target.closest("[data-i]");
 		if (row) run(+row.dataset.i);
 	});
+	input.value = query;
 	render();
 }
 
@@ -400,6 +684,9 @@ function user_menu(trigger) {
 export function help() {
 	const rows = [
 		["Ctrl K", __("Search")],
+		["\u2191 \u2193 \u2190 \u2192", __("Move between commands in a section panel")],
+		["Ctrl Enter", __("Open a command and keep the panel")],
+		["*", __("Add the command to favorites or remove it")],
 		["Alt 1 … Alt 9", __("Window N on the task bar")],
 		["Alt `", __("Next window")],
 		["Alt M", __("Minimize")],

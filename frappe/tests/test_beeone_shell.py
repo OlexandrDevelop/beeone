@@ -33,6 +33,19 @@ def sections_a(user):
 	]
 
 
+def sections_group(user):
+	return [
+		{
+			"id": "grouped",
+			"label": "Grouped",
+			"commands": [
+				{"column": "docs", "label": "Long group", "type": "doctype", "target": "ToDo", "group": "G" * 80},
+				{"column": "docs", "label": "No group", "type": "doctype", "target": "Role"},
+			],
+		}
+	]
+
+
 def sections_b(user):
 	return [
 		{
@@ -128,6 +141,13 @@ class TestBeeoneShell(IntegrationTestCase):
 		self.assertNotIn("Tasks twice", labels)  # same type and target and column: one command
 		self.assertIn("Settings", labels)
 		self.assertEqual(sales["create"], [{"doctype": "ToDo"}])
+
+	def test_command_group_is_passed_through_and_cut(self):
+		with hooks_for(sections=("sections_group",)):
+			section = next(s for s in shell.get_sections("Administrator") if s["id"] == "grouped")
+		by_label = {c["label"]: c for c in section["commands"]}
+		self.assertEqual(by_label["Long group"]["group"], "G" * 60)
+		self.assertEqual(by_label["No group"]["group"], "")
 
 	def test_unknown_column_and_missing_target_are_dropped(self):
 		with hooks_for(sections=("sections_a", "sections_b")):
@@ -340,6 +360,18 @@ class TestBeeoneShell(IntegrationTestCase):
 		for body in re.findall(r"@keyframes\s+[\w-]+\s*\{(.*?\})\s*\}", css, re.S):
 			for prop in re.findall(r"([\w-]+)\s*:", body):
 				self.assertIn(prop, {"transform", "opacity"}, body)
+
+	def test_panel_column_heads_are_not_upper_case(self):
+		css = (Path(frappe.get_app_path("frappe")) / "public" / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
+		block = css[css.index(".bo-fp-col h3 {") :].split("}", 1)[0]
+		self.assertNotIn("uppercase", block)
+		self.assertNotIn("letter-spacing", block)
+		self.assertNotIn("--bo-text-3", css[css.index("/* ---------- function panel") : css.index("/* ---------- search (Ctrl K)")])
+
+	def test_panel_has_search_and_roving_keyboard(self):
+		js = (Path(frappe.get_app_path("frappe")) / "public" / "js" / "beeone" / "shell" / "panel.js").read_text()
+		for needle in ('class="bo-fp-q"', 'aria-controls="bo-panel"', "aria-expanded", "set_stop", "ArrowLeft", "ArrowRight", '"Home"', '"End"'):
+			self.assertIn(needle, js)
 
 	def test_window_pages_never_get_wider_than_the_window(self):
 		css = (Path(frappe.get_app_path("frappe")) / "public" / "scss" / "beeone" / "shell" / "_shell.scss").read_text()

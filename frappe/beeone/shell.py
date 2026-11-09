@@ -225,6 +225,7 @@ def get_sections(user: str | None = None) -> list[dict]:
 					"type": command["type"],
 					"target": command["target"],
 					"main": bool(command.get("main")),
+					"group": str(command.get("group") or "")[:60],
 				}
 			)
 		section["commands"] = commands
