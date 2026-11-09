@@ -1,6 +1,7 @@
 import "./frappe/views/reports/link_side_panel.js";
 import "./frappe/views/reports/report_factory.js";
 import "./frappe/views/reports/report_view.js";
+import "./frappe/views/reports/beeone_report_tones.js";
 import "./frappe/views/reports/query_report.js";
 import "./frappe/views/reports/print_grid.html";
 import "./frappe/views/reports/print_tree.html";

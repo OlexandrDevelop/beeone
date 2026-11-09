@@ -14,6 +14,7 @@ The files write the cell values as they are: no number is recomputed, so a file 
 
 from io import BytesIO
 
+from frappe.beeone import report_tones as tones
 from frappe.utils import escape_html, flt
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -24,7 +25,8 @@ QTY = "#,##0.000;-#,##0.000;;"
 THIN = Side(style="thin", color="999999")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 HEAD_FILL = PatternFill("solid", fgColor="E8E8E8")
-SUM_FILL = PatternFill("solid", fgColor="F3F3F3")
+TOP_THICK = Side(style="medium", color="000000")
+LEVEL_KINDS = ("group", "item")
 NUMBER_KINDS = {"money": 2, "qty": 3}
 SUMMARY_KINDS = ("total", "open", "close")
 
@@ -52,6 +54,24 @@ def _argb(color):
 	return color.lstrip("#").upper()
 
 
+def _depth(table):
+	"""Levels of the tree of the table model; the tones follow it (`report_tones`)."""
+	return tones.depth(row.get("level") for row in table["rows"] if row.get("kind") in LEVEL_KINDS)
+
+
+def _tone(row, depth):
+	"""Fill `#rrggbb` of a row (None for white) by its kind and level."""
+	if row.get("kind") in SUMMARY_KINDS:
+		return tones.TOTAL_FILL
+	if row.get("kind") in LEVEL_KINDS:
+		return tones.fill(tones.step(row.get("level", 0), depth))
+	return None
+
+
+def _negative(value):
+	return tones.is_negative(value)
+
+
 def to_xlsx(table):
 	wb = Workbook()
 	ws = wb.active
@@ -70,17 +90,23 @@ def to_xlsx(table):
 		c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 	ws.freeze_panes = ws.cell(r + 1, 1)
 	r += 1
+	depth = _depth(table)
 	for row in table["rows"]:
 		fmt = row.get("format") or {}
+		summary = row.get("kind") in SUMMARY_KINDS
+		tone = _tone(row, depth)
 		for i, col in enumerate(table["columns"], start=1):
-			c = ws.cell(r, i, _value(row, col))
+			value = _value(row, col)
+			c = ws.cell(r, i, value)
 			style = fmt.get(col["key"]) or {}
-			c.border = BORDER
-			c.font = Font(bold=bool(row.get("bold") or style.get("bold")), color=_argb(style["color"]) if style.get("color") else None)
+			c.border = Border(left=THIN, right=THIN, top=TOP_THICK if summary else THIN, bottom=THIN)
+			color = style.get("color")
+			color = _argb(color) if color else (_argb(tones.NEGATIVE) if _negative(value) else None)
+			c.font = Font(bold=bool(row.get("bold") or style.get("bold") or summary), color=color)
 			if style.get("background"):
 				c.fill = PatternFill("solid", fgColor=_argb(style["background"]))
-			elif row.get("kind") in SUMMARY_KINDS:
-				c.fill = SUM_FILL
+			elif tone:
+				c.fill = PatternFill("solid", fgColor=_argb(tone))
 			kind = col.get("kind")
 			if kind == "money":
 				c.number_format = MONEY
@@ -104,7 +130,7 @@ def to_xlsx(table):
 	return out.getvalue()
 
 
-def _html_cell(row, col, style):
+def _html_cell(row, col, style, depth=1):
 	value = _value(row, col)
 	kind = col.get("kind")
 	if value is None:
@@ -114,14 +140,19 @@ def _html_cell(row, col, style):
 	else:
 		text = escape_html(str(value)).replace("\n", "<br>")
 	css = []
-	if row.get("bold") or style.get("bold"):
+	summary = row.get("kind") in SUMMARY_KINDS
+	if row.get("bold") or style.get("bold") or summary:
 		css.append("font-weight:bold")
 	if style.get("color"):
 		css.append(f"color:{style['color']}")
+	elif _negative(value):
+		css.append(f"color:{tones.NEGATIVE}")
 	if style.get("background"):
 		css.append(f"background:{style['background']}")
-	elif row.get("kind") in SUMMARY_KINDS:
-		css.append("background:#f3f3f3")
+	elif tone := _tone(row, depth):
+		css.append(f"background:{tone}")
+	if summary:
+		css.append("border-top:2px solid #000")
 	if kind in NUMBER_KINDS:
 		css.append("text-align:right")
 	elif kind == "label":
@@ -146,9 +177,10 @@ def _html_head(table):
 
 def to_html(table):
 	body = []
+	depth = _depth(table)
 	for row in table["rows"]:
 		fmt = row.get("format") or {}
-		body.append("<tr>" + "".join(_html_cell(row, col, fmt.get(col["key"]) or {}) for col in table["columns"]) + "</tr>")
+		body.append("<tr>" + "".join(_html_cell(row, col, fmt.get(col["key"]) or {}, depth) for col in table["columns"]) + "</tr>")
 	lines = "".join(f"<div>{escape_html(str(line))}</div>" for line in table.get("lines") or [])
 	message = f"<p>{escape_html(table['message'])}</p>" if table.get("message") else ""
 	return (

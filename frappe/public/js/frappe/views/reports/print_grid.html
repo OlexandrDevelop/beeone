@@ -9,6 +9,12 @@
 	<hr>
 {% endif %}
 
+<style>
+	.bo-rt-neg, .bo-rt-neg * { color: #a50e0e; }
+	td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+{% var bo_t = frappe.beeone_report_tones; var bo_depth = bo_t ? bo_t.depth(data) : 1; %}
+
 <table class="table table-bordered">
 	<!-- heading -->
 	<thead>
@@ -35,7 +41,9 @@
 		{% for row in data %}
 			<tr style="height: 30px">
 
-			<td {% if row.bold == 1 %} style="font-weight: bold" {% endif %}>
+			{% var bo_style = ""; %}
+			{% if (bo_t) { var bo_fill = row.is_total_row ? bo_t.fill(bo_t.STEPS) : bo_t.fill(bo_t.step(row.indent, bo_depth)); bo_style = (bo_fill ? "background:" + bo_fill + ";" : "") + (row.is_total_row ? "font-weight:bold;border-top:2px solid #6b6b6b;" : ""); } %}
+			<td style="{%= bo_style %}{% if (row.bold == 1) { %}font-weight: bold{% } %}">
 				<span> {{ row._index + 1 }} </span>
 			</td>
 
@@ -43,7 +51,7 @@
 				{% if col.name && col._id !== "_check" %}
 					{% var value = col.fieldname ? row[col.fieldname] : row[col.id] %}
 					{% var longest_word = cstr(value).split(' ').reduce((longest, word) => word.length > longest.length ? word : longest, ''); %}
-					<td {% if row.bold == 1 %} style="font-weight: bold" {% endif %} {% if longest_word.length > 45 %} class="overflow-wrap-anywhere" {% endif %}>
+					<td style="{%= bo_style %}{% if (row.bold == 1) { %}font-weight: bold{% } %}" {% if longest_word.length > 45 %} class="overflow-wrap-anywhere" {% endif %}>
 						<span {% if col._index == 0 %} style="padding-left: {%= cint(row.indent) * 2 %}em" {% endif %}>
 							{% format_data = row.is_total_row && ["Currency", "Float"].includes(col.fieldtype) ? data[0] : row %}
 							{% if (row.is_total_row && col._index == 0) { %}

@@ -1,0 +1,71 @@
+// Report tones: grey fills of the hierarchy levels and red negatives (T-880).
+// Values equal frappe/beeone/report_tones.py (test_beeone_report_tones). Step 8 = top level, deepest level = no fill.
+// WCAG 2.2 AA: red on every fill of its theme is >= 4.5.
+:root {
+	--bo-rt-1: #f8f8f8;
+	--bo-rt-2: #f1f1f1;
+	--bo-rt-3: #eaeaea;
+	--bo-rt-4: #e4e4e4;
+	--bo-rt-5: #dddddd;
+	--bo-rt-6: #d6d6d6;
+	--bo-rt-7: #cfcfcf;
+	--bo-rt-8: #c8c8c8;
+	--bo-rt-neg: #a50e0e;
+	--bo-rt-total-border: #6b6b6b;
+}
+
+html[data-theme="dark"] {
+	--bo-rt-1: #1d1d1d;
+	--bo-rt-2: #212121;
+	--bo-rt-3: #262626;
+	--bo-rt-4: #2b2b2b;
+	--bo-rt-5: #2f2f2f;
+	--bo-rt-6: #343434;
+	--bo-rt-7: #383838;
+	--bo-rt-8: #3d3d3d;
+	--bo-rt-neg: #ff8a80;
+	--bo-rt-total-border: #9a9a9a;
+}
+
+.dt-cell:has(.bo-rt-1) {
+	background: var(--bo-rt-1);
+}
+
+.dt-cell:has(.bo-rt-2) {
+	background: var(--bo-rt-2);
+}
+
+.dt-cell:has(.bo-rt-3) {
+	background: var(--bo-rt-3);
+}
+
+.dt-cell:has(.bo-rt-4) {
+	background: var(--bo-rt-4);
+}
+
+.dt-cell:has(.bo-rt-5) {
+	background: var(--bo-rt-5);
+}
+
+.dt-cell:has(.bo-rt-6) {
+	background: var(--bo-rt-6);
+}
+
+.dt-cell:has(.bo-rt-7) {
+	background: var(--bo-rt-7);
+}
+
+.dt-cell:has(.bo-rt-8) {
+	background: var(--bo-rt-8);
+}
+
+.dt-cell:has(.bo-rt-total) {
+	background: var(--bo-rt-8);
+	font-weight: 600;
+	border-top: 2px solid var(--bo-rt-total-border);
+}
+
+.bo-rt-neg,
+.bo-rt-neg * {
+	color: var(--bo-rt-neg);
+}

@@ -1155,6 +1155,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.data = this.prepare_data(data.result);
 		this.linked_doctypes = this.get_linked_doctypes();
 		this.tree_report = this.data.some((d) => "indent" in d);
+		// beeone: depth of the tree, the shades of the levels follow it
+		this.bo_tree_depth = this.tree_report ? frappe.beeone_report_tones.depth(this.data) : 1;
 	}
 
 	render_datatable() {
@@ -1473,6 +1475,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			column = frappe.report_utils.prepare_field_from_column(column);
 
 			const format_cell = (value, row, column, data) => {
+				// beeone: the footer total and the total row get their own style
+				const bo_total = !data || !!data.is_total_row;
 				if (column.isHeader && !data && this.data) {
 					// totalRow doesn't have a data object
 					// proxy it using the first data object
@@ -1493,11 +1497,20 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						data = this.data[0];
 					}
 				}
-				return frappe.format(
-					value,
-					column,
-					{ for_print: false, always_show_decimals: true },
-					data
+				// beeone: tone of the hierarchy level and red negatives (WCAG AA palette)
+				const tones = frappe.beeone_report_tones;
+				return tones.wrap(
+					frappe.format(
+						value,
+						column,
+						{ for_print: false, always_show_decimals: true },
+						data
+					),
+					{
+						step: bo_total ? 0 : tones.step(data && data.indent, this.bo_tree_depth || 1),
+						total: bo_total,
+						negative: tones.is_negative(value, column.fieldtype),
+					}
 				);
 			};
 

@@ -232,6 +232,9 @@ class XLSXStyleBuilder:
 
 		self.apply_default_fieldtype_formats(currency_formatting)
 
+		# beeone: grey tones of the hierarchy levels, red negatives
+		self.apply_report_tones()
+
 		return self
 
 	def style_header(self):
@@ -276,6 +279,65 @@ class XLSXStyleBuilder:
 
 			if indent := row.get(field):
 				style_cell(row_idx, col_idx, register_indent_style(cint(indent)))
+
+		return self
+
+	def apply_report_tones(self):
+		"""Fill rows by hierarchy level (darkest on top), style the total row, colour negatives red.
+
+		The formula and the palette are in `frappe.beeone.report_tones`; the cells get their own styles because
+		`make_xlsx` writes a cell without a format when it has no cell style.
+		"""
+		from frappe.beeone import report_tones as tones
+
+		row_map = self.metadata.row_map
+		if not row_map:
+			return self
+
+		is_dict = self.row_is_dict
+		last_row_index = self.last_row_index
+		has_total = self.metadata.has_total_row
+		depth = tones.depth(r.get("indent") for r in row_map.values()) if is_dict else 1
+
+		numeric_cols = [
+			(idx, col.get("fieldname"))
+			for idx, col in self.metadata.column_map.items()
+			if col.get("fieldtype") in tones.NUMERIC
+		]
+		col_indexes = list(self.metadata.column_map)
+		field_index_get = self.field_index_map.get
+
+		@functools.cache
+		def tone_style(fill: str | None, total: bool, negative: bool) -> int:
+			style = {}
+			if fill:
+				style.update({"bg_color": fill, "pattern": 1})
+			if total:
+				style.update({"bold": True, "top": 2})
+			if negative:
+				style["font_color"] = tones.NEGATIVE
+			return self.register_style(style)
+
+		for row_idx, row in row_map.items():
+			total = bool(has_total and row_idx == last_row_index) or bool(is_dict and row.get("is_total_row"))
+			fill = tones.TOTAL_FILL if total else tones.fill(tones.step(row.get("indent"), depth) if is_dict else 0)
+
+			negatives = set()
+			for idx, fieldname in numeric_cols:
+				if is_dict:
+					value = row.get(fieldname)
+				else:
+					pos = field_index_get(fieldname)
+					value = row[pos] if pos is not None and pos < len(row) else None
+				if tones.is_negative(value):
+					negatives.add(idx)
+
+			if not (fill or total or negatives):
+				continue
+
+			for idx in col_indexes:
+				if fill or total or idx in negatives:
+					self.style_cell(row_idx, idx, tone_style(fill, total, idx in negatives))
 
 		return self
 
