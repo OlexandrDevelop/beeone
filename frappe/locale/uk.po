@@ -36004,6 +36004,30 @@ msgstr ""
 msgid "{} not found in PATH! This is required to take a backup."
 msgstr ""
 
+#: frappe/public/js/frappe/form/controls/base_input.js
+msgid "Automatically filled from {0}'s {1} field"
+msgstr "Автоматично заповнено з поля «{1}» у «{0}»"
+
+#: frappe/public/js/frappe/form/grid.js
+msgid "Compact"
+msgstr "Компактно"
+
+#: frappe/public/js/frappe/form/grid.js
+msgid "Comfortable"
+msgstr "Комфортно"
+
+#: frappe/public/js/frappe/form/grid.js
+msgid "Use compact table rows"
+msgstr "Увімкнути компактні рядки таблиці"
+
+#: frappe/public/js/frappe/form/grid.js
+msgid "Use comfortable table rows"
+msgstr "Увімкнути комфортні рядки таблиці"
+
+#: frappe/public/js/frappe/list/base_list.js
+msgid "Toggle Table Density"
+msgstr "Змінити щільність таблиць"
+
 #: frappe/public/js/frappe/file_uploader/FileBrowser.vue:5
 #: frappe/public/js/frappe/file_uploader/WebLink.vue:4
 msgid "← Back to upload files"

@@ -12,6 +12,48 @@
 	overflow-y: hidden;
 }
 
+// One per-user density preference applies to every document table. Per-table
+// settings remain limited to columns, widths, order and sticky positioning.
+body[data-grid-density="compact"] .form-grid {
+	.grid-heading-row {
+		height: 27px;
+
+		.grid-static-col,
+		.row-check,
+		.row-index {
+			height: 27px;
+			padding-top: 2px !important;
+			padding-bottom: 2px !important;
+		}
+	}
+
+	.grid-body .data-row .grid-static-col,
+	.grid-body .data-row .row-check,
+	.grid-body .data-row .row-index {
+		padding-top: 3px !important;
+		padding-bottom: 3px !important;
+	}
+
+	.grid-body .data-row textarea {
+		min-height: 30px;
+	}
+}
+
+.grid-density-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.grid-footer-read-only {
+	.grid-buttons > :not(.grid-density-toggle),
+	.grid-pagination,
+	.grid-bulk-actions {
+		display: none !important;
+	}
+}
+
 .form-grid.error {
 	border-color: var(--error-border);
 	overflow: hidden;

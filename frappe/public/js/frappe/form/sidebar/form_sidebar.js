@@ -4,6 +4,7 @@ import "./share";
 import "./user_image";
 import "./form_sidebar_users";
 import { get_user_link, get_user_message } from "../footer/version_timeline_content_builder";
+import { get_user_preference, save_user_preference } from "../../ui/user_preferences";
 
 frappe.ui.form.Sidebar = class {
 	constructor(opts) {
@@ -31,6 +32,17 @@ frappe.ui.form.Sidebar = class {
 		this.make_assignments();
 		this.make_attachments();
 		this.make_shared();
+		this.sidebar_visible = this.saved_sidebar_visibility();
+		this.sidebar_user_changed = false;
+		get_user_preference("form_sidebar_open")
+			.then((preferences) => {
+				if (this.sidebar_user_changed || typeof preferences !== "boolean") {
+					return;
+				}
+				this.sidebar_visible = preferences;
+				if (cur_frm === this.frm && !this.frm.doc.__islocal) this.refresh();
+			})
+			.catch(() => {});
 
 		this.make_tags();
 
@@ -44,6 +56,50 @@ frappe.ui.form.Sidebar = class {
 		this.refresh();
 	}
 
+	sidebar_preference_key() {
+		return `beeone-form-sidebar-open:${frappe.session.user}`;
+	}
+
+	saved_sidebar_visibility() {
+		try {
+			const saved = localStorage.getItem(this.sidebar_preference_key());
+			return saved === null ? true : saved === "1";
+		} catch {
+			return true;
+		}
+	}
+
+	toggle_visibility() {
+		if (frappe.utils.is_xs() || frappe.utils.is_sm()) {
+			this.sidebar_user_changed = true;
+			this.sidebar_visible = true;
+			this.sidebar.parent().removeClass("hide-sidebar");
+			this.sidebar.show();
+			this.save_sidebar_visibility();
+			return;
+		}
+		this.sidebar_user_changed = true;
+		this.sidebar_visible = !this.sidebar.parent().hasClass("hide-sidebar");
+		this.sidebar_visible = !this.sidebar_visible;
+		this.sidebar.parent().toggleClass("hide-sidebar", !this.sidebar_visible);
+		this.sidebar.toggle(this.sidebar_visible);
+		this.update_toggle_button();
+		this.save_sidebar_visibility();
+	}
+
+	save_sidebar_visibility() {
+		try {
+			localStorage.setItem(this.sidebar_preference_key(), this.sidebar_visible ? "1" : "0");
+		} catch {
+			// The panel still works for this page when browser storage is unavailable.
+		}
+		save_user_preference("form_sidebar_open", this.sidebar_visible);
+	}
+
+	update_toggle_button() {
+		$(".form-sidebar-toggle").attr("aria-pressed", String(this.sidebar_visible));
+	}
+
 	setup_keyboard_shortcuts() {
 		// add assignment shortcut
 		let assignment_link = this.sidebar.find(".add-assignment");
@@ -55,8 +111,8 @@ frappe.ui.form.Sidebar = class {
 			this.sidebar.toggle(false);
 			this.page.sidebar.addClass("hide-sidebar");
 		} else {
-			this.page.sidebar.removeClass("hide-sidebar");
-			this.sidebar.toggle(true);
+			this.page.sidebar.toggleClass("hide-sidebar", !this.sidebar_visible);
+			this.sidebar.toggle(this.sidebar_visible);
 			this.frm.assign_to.refresh();
 			this.frm.attachments.refresh();
 			this.frm.shared.refresh();
@@ -67,6 +123,7 @@ frappe.ui.form.Sidebar = class {
 			this.refresh_creation_modified();
 			frappe.ui.form.set_user_image(this.frm);
 		}
+		this.update_toggle_button();
 		this.refresh_like();
 	}
 

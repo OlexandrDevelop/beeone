@@ -1,4 +1,5 @@
 import { safe_href } from "../ui/components/utils.js";
+import { load_table_density, toggle_table_density } from "../ui/table_density";
 
 frappe.provide("frappe.views");
 
@@ -251,6 +252,14 @@ frappe.views.BaseList = class BaseList {
 
 	set_menu_items() {
 		this.set_default_secondary_action();
+		if (this.view === "List") {
+			load_table_density();
+			this.page.add_menu_item(
+				__("Toggle Table Density"),
+				() => toggle_table_density(),
+				true
+			);
+		}
 
 		this.menu_items &&
 			this.menu_items.map((item) => {

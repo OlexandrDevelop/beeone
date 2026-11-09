@@ -1,5 +1,6 @@
 import "./sidebar_item";
 import "./dock";
+import { get_user_preference, save_user_preference } from "../user_preferences";
 
 // A module's icon. The dock row wins over the Sidebar's `header_icon`, so the header matches the tile.
 frappe.get_module_icon = function (module) {
@@ -59,6 +60,8 @@ frappe.ui.Sidebar = class Sidebar {
 			return;
 		}
 		this.make_dom();
+		this.sidebar_user_changed = false;
+		this.load_user_sidebar_preference();
 		this.all_sidebar_items = frappe.boot.module_sidebars;
 		this.$items = [];
 		this.fields_for_dialog = [];
@@ -585,13 +588,37 @@ frappe.ui.Sidebar = class Sidebar {
 
 	// A drawer starts shut; on a desktop the viewer's last choice is kept in this browser.
 	load_expanded_state() {
-		this.sidebar_expanded = !this.panel_can_close() && !this.saved_collapsed_state();
+		const expanded =
+			typeof this.saved_expanded_preference === "boolean"
+				? this.saved_expanded_preference
+				: !this.saved_collapsed_state();
+		this.sidebar_expanded = !this.panel_can_close() && expanded;
+	}
+
+	load_user_sidebar_preference() {
+		get_user_preference("desk_sidebar_expanded")
+			.then((expanded) => {
+				if (this.sidebar_user_changed || typeof expanded !== "boolean") return;
+				this.saved_expanded_preference = expanded;
+				if (this.sidebar_items.length) this.restore_expanded_state();
+			})
+			.catch(() => {});
 	}
 
 	// Storage can be missing or refuse, and then the panel opens whole.
 	saved_collapsed_state() {
 		try {
-			return localStorage.getItem("desk-sidebar-collapsed") === "1";
+			const key = `desk-sidebar-collapsed:${frappe.session.user}`;
+			let saved = localStorage.getItem(key);
+			if (saved === null) {
+				// Migrate the previous browser-wide preference to the current account.
+				saved = localStorage.getItem("desk-sidebar-collapsed");
+				if (saved !== null) {
+					localStorage.setItem(key, saved);
+					localStorage.removeItem("desk-sidebar-collapsed");
+				}
+			}
+			return saved === "1";
 		} catch {
 			return false;
 		}
@@ -599,11 +626,17 @@ frappe.ui.Sidebar = class Sidebar {
 
 	save_collapsed_state(collapsed) {
 		if (this.panel_can_close()) return;
+		this.sidebar_user_changed = true;
+		this.saved_expanded_preference = !collapsed;
 		try {
-			localStorage.setItem("desk-sidebar-collapsed", collapsed ? "1" : "0");
+			localStorage.setItem(
+				`desk-sidebar-collapsed:${frappe.session.user}`,
+				collapsed ? "1" : "0"
+			);
 		} catch {
 			// nothing to keep it in; it lasts until the next reload
 		}
+		save_user_preference("desk_sidebar_expanded", !collapsed);
 	}
 
 	empty() {

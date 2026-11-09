@@ -690,7 +690,7 @@ export default class GridRow {
 		}
 
 		let value = {};
-		value[this.grid.doctype] = this.selected_columns_for_grid;
+		value[this.grid.get_settings_key()] = this.selected_columns_for_grid;
 		frappe.model.user_settings.save(this.frm.doctype, "GridView", value).then((r) => {
 			frappe.model.user_settings[this.frm.doctype] = r.message || r;
 			this.grid.reset_grid();
@@ -698,7 +698,9 @@ export default class GridRow {
 	}
 
 	reset_user_settings_for_grid() {
-		frappe.model.user_settings.save(this.frm.doctype, "GridView", null).then((r) => {
+		let value = {};
+		value[this.grid.get_settings_key()] = null;
+		frappe.model.user_settings.save(this.frm.doctype, "GridView", value).then((r) => {
 			frappe.model.user_settings[this.frm.doctype] = r.message || r;
 			this.grid.reset_grid();
 		});
@@ -1046,10 +1048,15 @@ export default class GridRow {
 
 		$col.field_area = $('<div class="field-area"></div>').appendTo($col).toggle(false);
 		$col.static_area = $('<div class="static-area ellipsis"></div>').appendTo($col).html(txt);
+		// Native browser tooltip keeps the full formatted value available when a
+		// narrow column clips the visible text.
+		if (txt != null && txt !== "") {
+			$col.attr("title", String(txt).replace(/<[^>]*>/g, " ").trim());
+		}
 
 		// set title attribute to see full label for columns in the heading row
 		if (!this.doc) {
-			$col.attr("title", txt);
+			$col.attr("title", String(txt || "").replace(/<[^>]*>/g, " ").trim());
 		}
 		df.fieldname && $col.static_area.toggleClass("reqd", Boolean(df.reqd));
 

@@ -483,6 +483,12 @@ frappe.ui.form.Toolbar = class Toolbar {
 		if (this.page.hide_sidebar || !frappe.boot.desk_settings.form_sidebar) {
 			return;
 		}
+		this.sidebar_toggle_button = this.page.add_action_icon(
+			"panel-right",
+			() => this.setup_sidebar_toggle(this.frm.sidebar.sidebar.parent()),
+			"form-sidebar-toggle",
+			__("Toggle Sidebar")
+		).attr("aria-pressed", "true");
 		this.page.add_menu_item(
 			__("Toggle Sidebar"),
 			() => {
@@ -1001,7 +1007,11 @@ frappe.ui.form.Toolbar = class Toolbar {
 		if (frappe.utils.is_xs() || frappe.utils.is_sm()) {
 			this.setup_overlay_sidebar(sidebar_wrapper);
 		} else {
-			sidebar_wrapper.toggle();
+			if (this.frm.sidebar?.toggle_visibility) {
+				this.frm.sidebar.toggle_visibility();
+			} else {
+				sidebar_wrapper.toggle();
+			}
 		}
 		$(document.body).trigger("toggleSidebar");
 	}

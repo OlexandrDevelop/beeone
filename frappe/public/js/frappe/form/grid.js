@@ -3,6 +3,12 @@
 
 import GridRow from "./grid_row";
 import GridPagination from "./grid_pagination";
+import { get_grid_settings_key } from "./grid_settings_key";
+import {
+	apply_table_density,
+	load_table_density,
+	toggle_table_density,
+} from "../ui/table_density";
 
 const BULK_EDIT_CSV_HEADER_ROWS = 7; // title, labels, fieldnames, descriptions, 2 instructions, separator
 
@@ -113,6 +119,14 @@ export default class Grid {
 				<div class="small form-clickable-section grid-footer">
 					<div class="flex justify-between">
 						<div class="grid-buttons">
+							<button
+								type="button"
+								class="btn btn-xs btn-default grid-density-toggle"
+								aria-label="${__("Use compact table rows")}"
+							>
+								${frappe.utils.icon("table-rows-split", "xs")}
+								<span class="grid-density-label">${__("Comfortable")}</span>
+							</button>
 							${frappe.ui.button.html({
 								label: __("Delete"),
 								size: "sm",
@@ -205,10 +219,23 @@ export default class Grid {
 		this.remove_all_rows_button = this.grid_buttons.find(".grid-remove-all-rows");
 
 		this.setup_allow_bulk_edit();
+		this.setup_density_toggle();
 		this.setup_check();
 		if (this.df.on_setup) {
 			this.df.on_setup(this);
 		}
+	}
+
+	setup_density_toggle() {
+		load_table_density();
+		this.wrapper.find(".grid-density-toggle").on("click", () => {
+			toggle_table_density();
+		});
+		apply_table_density(document.body.dataset.gridDensity);
+	}
+
+	get_settings_key() {
+		return get_grid_settings_key(this.doctype, this.df.fieldname);
 	}
 	set_grid_description() {
 		let description_wrapper = $(this.parent).find(".grid-description");
@@ -626,7 +653,7 @@ export default class Grid {
 		}
 
 		let value = {};
-		value[this.doctype] = columns;
+		value[this.get_settings_key()] = columns;
 		frappe.model.user_settings.save(this.frm.doctype, "GridView", value).then((r) => {
 			frappe.model.user_settings[this.frm.doctype] = r.message || r;
 		});
@@ -806,7 +833,7 @@ export default class Grid {
 	setup_toolbar() {
 		const is_editable = this.is_editable();
 		if (is_editable) {
-			this.wrapper.find(".grid-footer").removeClass("hidden");
+			this.wrapper.find(".grid-footer").removeClass("hidden grid-footer-read-only");
 
 			const num_selected_rows = this.get_selected_children().length;
 			// show, hide buttons to add rows
@@ -831,7 +858,12 @@ export default class Grid {
 			this.grid_rows.length < this.grid_pagination.page_length &&
 			!this.df.allow_bulk_edit
 		) {
-			this.wrapper.find(".grid-footer").addClass("hidden");
+			this.wrapper
+				.find(".grid-footer")
+				.removeClass("hidden")
+				.addClass("grid-footer-read-only");
+		} else {
+			this.wrapper.find(".grid-footer").removeClass("hidden grid-footer-read-only");
 		}
 
 		// don't be tempted to use the `.hidden` class here
@@ -1545,20 +1577,33 @@ export default class Grid {
 		if (!this.frm) return;
 
 		let user_settings = frappe.get_user_settings(this.frm.doctype, "GridView");
-		if (user_settings && user_settings[this.doctype] && user_settings[this.doctype].length) {
-			this.user_defined_columns = user_settings[this.doctype]
+		const settings_key = this.get_settings_key();
+		let table_settings = user_settings[settings_key];
+		if (!Object.prototype.hasOwnProperty.call(user_settings, settings_key)) {
+			// Keep legacy preferences for the common one-grid case. If the form has
+			// multiple grids of this child type, let each grid start independently.
+			const same_type_grids = (this.frm.grids || []).filter(
+				(item) => item.grid?.doctype === this.doctype
+			);
+			if (same_type_grids.length <= 1) table_settings = user_settings[this.doctype];
+		}
+		if (table_settings && table_settings.length) {
+			this.user_defined_columns = table_settings
 				.map((row) => {
-					let column =
+					const source =
 						this.docfields?.find((d) => d.fieldname === row.fieldname) ||
 						frappe.meta.get_docfield(this.doctype, row.fieldname);
 
-					if (column) {
-						column.in_list_view = 1;
+					if (!source) return;
+					// Grid preferences must never mutate shared DocType metadata: two
+					// instances may use the same child type with different columns.
+					return {
+						...source,
+						in_list_view: 1,
 						// migrate legacy `columns` (1-12) to px
-						column.width = cint(row.width) || LEGACY_COLSIZE_TO_PX[row.columns];
-						column.sticky = row.sticky;
-						return column;
-					}
+						width: cint(row.width) || LEGACY_COLSIZE_TO_PX[row.columns],
+						sticky: row.sticky,
+					};
 				})
 				.filter(Boolean);
 		}

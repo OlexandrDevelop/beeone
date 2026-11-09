@@ -101,8 +101,12 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 			}
 
 			let is_fetch_from_read_only = me.read_only_because_of_fetch_from();
+			const can_edit = me.can_write() && !is_fetch_from_read_only;
+			me.$wrapper
+				.toggleClass("read-only-control", !can_edit)
+				.toggleClass("auto-value-control", Boolean(is_fetch_from_read_only));
 
-			if (me.can_write() && !is_fetch_from_read_only) {
+			if (can_edit) {
 				me.disp_area && $(me.disp_area).addClass("hide");
 				$(me.input_area).removeClass("hide");
 				me.$input && me.$input.prop("disabled", false);
@@ -134,6 +138,20 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 
 			me.set_description();
 			me.set_label();
+			const $label = $(me.label_area);
+			$label.find(".auto-value-indicator").remove();
+			if (is_fetch_from_read_only && $label.length) {
+				$('<span class="auto-value-indicator" aria-hidden="true"></span>')
+					.attr(
+						"title",
+						__(
+							"Automatically filled from {0}'s {1} field",
+							me.df.fetch_from.split(".").map((value) => __(frappe.unscrub(value)))
+						)
+					)
+					.text("↳")
+					.appendTo($label);
+			}
 			me.set_doc_url();
 			me.set_mandatory(me.value);
 			me.set_bold();

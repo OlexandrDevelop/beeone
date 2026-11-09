@@ -300,6 +300,20 @@
 	}
 }
 
+body[data-grid-density="compact"] {
+	--list-row-height: 26px;
+
+	.list-row .level-left {
+		padding-top: 2px;
+		padding-bottom: 2px;
+	}
+
+	.list-row .level-right {
+		padding-top: 2px;
+		padding-bottom: 2px;
+	}
+}
+
 .select-like {
 	padding: var(--list-checkbox-padding);
 	cursor: default;
