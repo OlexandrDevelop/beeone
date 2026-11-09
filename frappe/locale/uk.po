@@ -36044,3 +36044,11 @@ msgstr "Відкрити картку (Ctrl+Shift+F4)"
 #: frappe/public/js/frappe/form/controls/base_input.js
 msgid "(required)"
 msgstr "(обов'язкове)"
+
+#: frappe/public/js/frappe/form/grid_row.js
+msgid "Select row"
+msgstr "Вибрати рядок"
+
+#: frappe/public/js/frappe/form/grid_row.js
+msgid "Select all rows"
+msgstr "Вибрати всі рядки"

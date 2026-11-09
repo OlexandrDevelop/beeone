@@ -15,7 +15,7 @@ export default class GridRow {
 		this.set_docfields();
 		this.columns = {};
 		this.columns_list = [];
-		this.row_check_html = '<input type="checkbox" class="grid-row-check" tabIndex="-1">';
+		this.row_check_html = `<input type="checkbox" class="grid-row-check" tabIndex="-1" aria-label="${frappe.utils.escape_html(__(this.doc ? "Select row" : "Select all rows"))}">`;
 		this.default_rows_threshold_for_grid_search = 20;
 		this.make();
 	}
