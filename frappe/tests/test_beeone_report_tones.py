@@ -116,7 +116,7 @@ class TestBeeoneReportTones(IntegrationTestCase):
 		self.assertEqual(fill("D2"), "C8C8C8")
 		self.assertEqual(fill("A5"), "C8C8C8")
 		self.assertTrue(ws["A5"].font.b)
-		red = lambda cell: ws[cell].font.color is not None and ws[cell].font.color.rgb[-6:] == "A50E0E"
+		red = lambda cell: ws[cell].font.color is not None and str(ws[cell].font.color.rgb).endswith("A50E0E")
 		self.assertTrue(all(red(c) for c in ("B2", "C3", "D4", "B5")))
 		self.assertFalse(any(red(c) for c in ("B3", "C2", "B4", "A2")))
 
