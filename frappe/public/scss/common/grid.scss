@@ -51,6 +51,14 @@ body[data-grid-density="comfortable"] .form-grid {
 		line-height: 20px;
 	}
 
+	// the edit-pencil / settings column at the row end
+	.grid-body .data-row > .col:last-child,
+	.grid-heading-row .data-row > .col:last-child {
+		height: var(--grid-row-h);
+		padding-top: 0 !important;
+		padding-bottom: 0 !important;
+	}
+
 	.grid-body .data-row .editable-row .grid-static-col,
 	.grid-body .editable-row .grid-static-col {
 		padding-top: 0 !important;
