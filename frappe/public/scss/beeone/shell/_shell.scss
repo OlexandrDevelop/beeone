@@ -869,6 +869,30 @@ html[data-theme="dark"] .bo-sk-wrap::after {
 	background: transparent;
 }
 
+/* the page head stays put and only the page body scrolls: the scroll bar starts under the head
+   and never runs beside it (windows.js scroll_parent returns this page body) */
+.bo-win-body:has(> .page-container) {
+	overflow: hidden;
+}
+
+.bo-win-body > .page-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.bo-win-body > .page-container > .page-head {
+	flex: none;
+}
+
+.bo-win-body > .page-container > .page-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+
 .bo-win-body .page-head {
 	position: sticky;
 	top: 0;

@@ -362,12 +362,17 @@ export function host(page) {
 	enforce_limit();
 }
 
+// the element that scrolls in a window: the page body under the fixed page head, else the window body
+function scroller(body) {
+	return (body && body.querySelector(":scope > .page-container > .page-body")) || body;
+}
+
 export function scroll_parent(element) {
 	const node = element && element.nodeType ? element : null;
 	const own = node && node.closest && node.closest(".bo-win-body");
-	if (own) return own;
+	if (own) return scroller(own);
 	const win = wins.map.get(wins.active);
-	return win ? win.body : null;
+	return win ? scroller(win.body) : null;
 }
 
 // a new document got its real name: the page and the window keep living, only the key changes
