@@ -22,13 +22,36 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					${frappe.utils.icon("arrow-right", "xs")}
 				</a>
 			</span>
+			<button type="button" class="btn-link-select hide" aria-haspopup="dialog"
+				aria-label="${frappe.utils.escape_html(
+					__("Select from list: {0}", [
+						__(this.df.label || this.df.fieldname, null, this.df.parent),
+					])
+				)}"
+				title="${frappe.utils.escape_html(__("Select from list (F4)"))}">
+				${frappe.utils.icon("list", "xs")}
+			</button>
 		</div>`).prependTo(this.input_area);
 		this.$input_area = $(this.input_area);
 		this.$input = this.$input_area.find("input");
 		this.$link = this.$input_area.find(".link-btn");
 		this.$link_clear = this.$input_area.find(".btn-clear");
 		this.$link_open = this.$link.find(".btn-open");
+		this.$link_select = this.$input_area.find(".btn-link-select");
 		this.set_input_attributes();
+
+		this.$link_select
+			.on("mousedown", (e) => e.preventDefault())
+			.on("click", () => this.open_link_picker());
+		this.$input.attr("aria-keyshortcuts", "F4");
+		this.$input.on("keydown", (e) => {
+			const plain = !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey;
+			if ((e.key === "F4" || e.which === 115) && plain && this.can_pick_from_list()) {
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				this.open_link_picker();
+			}
+		});
 
 		this.$link_clear.on("click", function () {
 			me.$link.toggle(false);
@@ -108,6 +131,71 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 			this.$input_area.find(".link-btn").remove();
 		}
 	}
+	refresh_input() {
+		super.refresh_input();
+		if (this.$link_select) {
+			const show = this.can_pick_from_list();
+			this.$link_select.toggleClass("hide", !show);
+			this.$input_area.find(".link-field").toggleClass("has-link-select", show);
+		}
+	}
+	// the "Select from list" button / F4: desk only, editable Link and Dynamic Link only
+	can_pick_from_list() {
+		return Boolean(
+			["Link", "Dynamic Link"].includes(this.df.fieldtype) &&
+				frappe.ui.form.LinkPicker &&
+				this.$input &&
+				!(this.only_input && !this.with_link_btn) &&
+				this.can_write() &&
+				!this.read_only_because_of_fetch_from() &&
+				!this.$input.prop("disabled")
+		);
+	}
+	open_link_picker() {
+		let doctype;
+		try {
+			doctype = this.get_options();
+		} catch (e) {
+			doctype = null;
+		}
+		if (!doctype) {
+			const type_field = this.df.fieldtype === "Dynamic Link" ? this.df.options : null;
+			const type_df = type_field && frappe.meta.get_docfield(this.df.parent, type_field);
+			frappe.show_alert({
+				message: __("First select the type in {0}", [
+					__(type_df?.label || type_field || this.df.label, null, this.df.parent),
+				]),
+				indicator: "orange",
+			});
+			return false;
+		}
+		// keep the half-typed text from being validated while the picker is open
+		this.selected = true;
+		const typed = this.get_label_value();
+		const last = this.value;
+		this.awesomplete?.close();
+		new frappe.ui.form.LinkPicker({
+			target: this,
+			doctype,
+			txt: typed && typed !== this.get_translated(last) ? typed : "",
+		});
+		return false;
+	}
+	on_link_picker_cancel() {
+		this.selected = false;
+		this.set_formatted_input(this.value);
+		this.$input.trigger("focus");
+	}
+	select_from_picker(value, label) {
+		this.selected = false;
+		if (this.df.remember_last_selected_value) {
+			frappe.boot.user.last_selected_values[this.get_options()] = value;
+		}
+		return this.parse_validate_and_set_in_model(value, null, label).then(() => {
+			this.set_formatted_input(this.value);
+			this.$input.trigger("focus");
+		});
+	}
 	set_formatted_input(value) {
 		super.set_formatted_input(value);
 		if (!value) return;
@@ -172,10 +260,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		this.$input && this.$input.val(value);
 	}
 	open_advanced_search() {
-		var doctype = this.get_options();
-		if (!doctype) return;
+		if (!this.get_options()) return;
+		if (frappe.ui.form.LinkPicker) {
+			this.open_link_picker();
+			return false;
+		}
 		new frappe.ui.form.LinkSelector({
-			doctype: doctype,
+			doctype: this.get_options(),
 			target: this,
 			txt: this.get_input_value(),
 		});

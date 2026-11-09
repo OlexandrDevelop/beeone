@@ -253,6 +253,98 @@ select.form-control {
 			}
 		}
 	}
+
+	// "Select from list" (F4): always visible while the field is editable
+	.btn-link-select {
+		position: absolute;
+		top: 0;
+		inset-inline-end: 4px;
+		height: 100%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 24px;
+		padding: 0 3px;
+		border: 0;
+		border-radius: var(--radius);
+		background: transparent;
+		color: var(--text-muted);
+		z-index: 3;
+
+		&.hide {
+			display: none;
+		}
+
+		&:hover {
+			color: var(--text-color);
+			background-color: var(--control-bg);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--primary);
+			outline-offset: -2px;
+		}
+	}
+
+	.link-field.has-link-select {
+		input.form-control {
+			padding-inline-end: 30px;
+		}
+
+		.link-btn {
+			inset-inline-end: 28px;
+			right: auto;
+		}
+	}
+}
+
+.link-picker-dialog {
+	.link-picker-scroll {
+		max-height: 50vh;
+		overflow: auto;
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius);
+	}
+
+	.link-picker-table {
+		margin: 0;
+
+		th {
+			position: sticky;
+			top: 0;
+			background-color: var(--bg-color);
+			font-weight: 600;
+		}
+
+		tbody tr {
+			cursor: pointer;
+			user-select: none;
+
+			&.is-group td:first-child {
+				font-weight: 600;
+			}
+
+			&:hover {
+				background-color: var(--control-bg);
+			}
+
+			&.is-active {
+				background-color: var(--control-bg);
+				outline: 2px solid var(--primary);
+				outline-offset: -2px;
+			}
+		}
+	}
+
+	.link-picker-empty {
+		padding: var(--padding-md);
+	}
+
+	.link-picker-footer {
+		display: flex;
+		gap: var(--padding-sm);
+		margin-top: var(--padding-sm);
+	}
 }
 
 .frappe-control:not([data-fieldtype="MultiSelectPills"]):not([data-fieldtype="Table MultiSelect"]) {

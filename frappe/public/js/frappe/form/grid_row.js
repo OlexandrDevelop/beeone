@@ -1234,6 +1234,7 @@ export default class GridRow {
 		if (field.$link_open && field.$link_open.length) {
 			field.$link_open.attr("title", __("Open card (Ctrl+Shift+F4)"));
 		}
+		field.$link_select?.attr("tabindex", -1);
 		if (field.$input && ["Link", "Dynamic Link", "Autocomplete"].includes(df.fieldtype)) {
 			field.$input.attr("aria-keyshortcuts", "F4");
 		}

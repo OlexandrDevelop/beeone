@@ -36052,3 +36052,19 @@ msgstr "Вибрати рядок"
 #: frappe/public/js/frappe/form/grid_row.js
 msgid "Select all rows"
 msgstr "Вибрати всі рядки"
+
+#: frappe/public/js/frappe/form/controls/link.js
+msgid "Select from list: {0}"
+msgstr "Вибрати зі списку: {0}"
+
+#: frappe/public/js/frappe/form/controls/link.js
+msgid "Select from list (F4)"
+msgstr "Вибрати зі списку (F4)"
+
+#: frappe/public/js/frappe/form/controls/link.js
+msgid "First select the type in {0}"
+msgstr "Спочатку оберіть тип у полі {0}"
+
+#: frappe/public/js/frappe/form/link_picker.js
+msgid "Double click or Enter to select"
+msgstr "Подвійний клік або Enter — вибрати"
