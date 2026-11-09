@@ -7,12 +7,16 @@ const rows = (page) => page.locator(".result-container .list-row-container[data-
 const tree_row = (page, name) =>
 	page.locator('.group-tree-row[role="treeitem"]').filter({ hasText: new RegExp(`^\\s*${name}\\s*$`) });
 
+async function dismiss_welcome(page) {
+	const later = page.getByText(/^(Decide later|Вирішити пізніше)$/);
+	if (await later.isVisible().catch(() => false)) await later.click();
+}
+
 async function open_view(page, desk, url = URL) {
 	await page.goto(url);
 	await desk.ready();
 	// a fresh site offers its welcome dialog once
-	const later = page.getByText("Decide later");
-	if (await later.isVisible().catch(() => false)) await later.click();
+	await dismiss_welcome(page);
 	await expect(rows(page).first()).toBeVisible();
 }
 
@@ -25,6 +29,7 @@ test.describe("Hierarchy view", () => {
 		// every test starts at the top level, whatever the previous one saved
 		await page.goto("/desk");
 		await page.waitForFunction(() => window.frappe && frappe.csrf_token);
+		await dismiss_welcome(page);
 		await api.call("frappe.model.utils.user_settings.save", {
 			doctype: DT,
 			user_settings: JSON.stringify({ Hierarchy: { current_group: "" } }),
@@ -170,7 +175,12 @@ test.describe("Hierarchy view", () => {
 		await rows(page).first().locator(".list-row-checkbox").check();
 		await desk.click_action_button("Move to Group…");
 		const dialog = page.locator(".modal.show");
-		await page.evaluate(() => cur_dialog.set_value("group", "Group B"));
+		const input = dialog.locator('input[data-fieldname="group"]');
+		await input.fill("Group B");
+		await expect(dialog.locator('[role="option"]').filter({ hasText: "Group B" }).first()).toBeAttached();
+		await input.press("ArrowDown");
+		await input.press("Enter");
+		await expect(input).toHaveValue("Group B");
 		await dialog.getByRole("button", { name: "Move" }).click();
 		await expect
 			.poll(async () => (await page.evaluate(() => cur_list.data.map((d) => d.name))).join())
