@@ -300,7 +300,7 @@ class TestBeeonePostedEdit(IntegrationTestCase):
 	def test_not_enabled_has_no_state(self):
 		doc = self._edit(self._doc().name)
 		doc.run_method("onload")
-		self.assertIsNone(doc.get_onload("beeone_posted_edit"))
+		self.assertNotIn("beeone_posted_edit", doc.get("__onload") or {})
 
 	def test_cancel_permission_is_required(self):
 		self._enable()
