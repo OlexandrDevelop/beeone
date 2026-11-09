@@ -294,10 +294,10 @@ class XLSXStyleBuilder:
 		if not row_map:
 			return self
 
-		is_dict = self.row_is_dict
 		last_row_index = self.last_row_index
 		has_total = self.metadata.has_total_row
-		depth = tones.depth(r.get("indent") for r in row_map.values()) if is_dict else 1
+		# rows may be dicts or lists (even mixed in one report); only dict rows carry an indent
+		depth = tones.depth(r.get("indent") for r in row_map.values() if isinstance(r, dict))
 
 		numeric_cols = [
 			(idx, col.get("fieldname"))
@@ -319,6 +319,7 @@ class XLSXStyleBuilder:
 			return self.register_style(style)
 
 		for row_idx, row in row_map.items():
+			is_dict = isinstance(row, dict)
 			total = bool(has_total and row_idx == last_row_index) or bool(is_dict and row.get("is_total_row"))
 			fill = tones.TOTAL_FILL if total else tones.fill(tones.step(row.get("indent"), depth) if is_dict else 0)
 
