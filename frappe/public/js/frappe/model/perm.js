@@ -268,8 +268,14 @@ $.extend(frappe.perm, {
 			return status;
 		}
 
-		// submit
-		if (status === "Write" && cint(doc.docstatus) > 0) status = "Read";
+		// submit (beeone: a posted document that apps allow to edit stays writable)
+		if (
+			status === "Write" &&
+			cint(doc.docstatus) > 0 &&
+			!(cint(doc.docstatus) === 1 && frappe.model.beeone_posted_editable(doc))
+		) {
+			status = "Read";
+		}
 		if (explain) console.log("By Submit:" + status);
 
 		// allow on submit

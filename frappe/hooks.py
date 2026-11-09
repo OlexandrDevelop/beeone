@@ -23,6 +23,9 @@ page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 # Platform-owned navigation; applications add their own sections alongside it.
 beeone_sections = ["frappe.beeone.shell.core_sections"]
 beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional step of the setup wizard
+# beeone: posted documents edited in place (frappe.beeone.posted_edit). An app opts in with
+#   beeone_posted_editable = ["Doctype", ...]
+#   beeone_posted_edit_checks = ["app.module.fn"]   # fn(doc) -> reason why the document cannot be edited, or None
 
 # website
 app_include_js = [
@@ -210,6 +213,7 @@ doc_events = {
 			"frappe.beeone.change_log.on_update",  # beeone: document change log
 		],
 		"after_insert": ["frappe.beeone.change_log.after_insert"],  # beeone: document change log
+		"onload": ["frappe.beeone.posted_edit.onload"],  # beeone: state of editing a posted document
 		"on_submit": ["frappe.beeone.change_log.on_submit"],  # beeone: document change log
 		"after_rename": "frappe.desk.notifications.clear_doctype_notifications",
 		"on_cancel": [

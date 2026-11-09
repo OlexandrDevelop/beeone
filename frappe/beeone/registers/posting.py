@@ -76,6 +76,18 @@ def _hook_locks(doc, day) -> bool:
 	return False
 
 
+def period_locked(doc) -> bool:
+	"""True when the day of the document is closed for the current user (see `check_period_lock`)."""
+	if frappe.flags.get("beeone_period_closure"):
+		return False
+
+	day = _lock_day(doc)
+	if not day:
+		return False
+
+	return bool(_record_locks(doc, day) or _hook_locks(doc, day))
+
+
 def check_period_lock(doc) -> None:
 	"""Refuse to post or unpost a document in a locked period.
 
@@ -85,14 +97,7 @@ def check_period_lock(doc) -> None:
 	returns a date on or after it. The records apply with or without the hook.
 	The context flag beeone_period_closure bypasses the check.
 	"""
-	if frappe.flags.get("beeone_period_closure"):
-		return
-
-	day = _lock_day(doc)
-	if not day:
-		return
-
-	if _record_locks(doc, day) or _hook_locks(doc, day):
+	if period_locked(doc):
 		frappe.throw(_("Cannot edit locked period"))
 
 

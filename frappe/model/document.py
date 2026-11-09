@@ -592,6 +592,9 @@ class Document(BaseDocument):
 		self.set_parent_in_children()
 		self.set_name_in_children()
 
+		if self._action == "repost":
+			return self._repost_in_savepoint()  # beeone: edit a posted document in place
+
 		self.validate_higher_perm_levels()
 		self._validate_links()
 		self.run_before_save_methods()
@@ -618,6 +621,38 @@ class Document(BaseDocument):
 		self.run_post_save_methods()
 
 		# clear unsaved flag
+		if hasattr(self, "__unsaved"):
+			delattr(self, "__unsaved")
+
+		return self
+
+	def _repost_in_savepoint(self) -> "Self":  # beeone:
+		"""Save a posted document of an opted-in doctype (see frappe.beeone.posted_edit):
+		validate, write the document with its rows, replace the movements, move the sequences.
+		Everything runs under a savepoint: any error leaves the document and the registers as they were."""
+		from frappe.beeone import posted_edit
+
+		savepoint = "beeone_repost"
+		frappe.db.savepoint(savepoint)
+		try:
+			posted_edit.check(self)
+			self.validate_higher_perm_levels()
+			self._validate_links()
+			self.run_before_save_methods()
+			self._validate()
+			self.set_docstatus()
+			self.lock_sequences()
+			self.db_update()
+			self.update_children()
+			self.reset_computed_child_tables()
+			self.run_post_save_methods()
+		except Exception:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.clear_document_cache(self.doctype, self.name)
+			raise
+		else:
+			frappe.db.release_savepoint(savepoint)
+
 		if hasattr(self, "__unsaved"):
 			delattr(self, "__unsaved")
 
@@ -1148,8 +1183,16 @@ class Document(BaseDocument):
 
 		elif to_docstatus == DocStatus.SUBMITTED:
 			if self.docstatus.is_submitted():
-				self._action = "update_after_submit"
-				self.check_permission("submit")
+				from frappe.beeone import posted_edit  # beeone:
+
+				if not self.flags.ignore_repost and posted_edit.enabled(self.doctype):
+					# beeone: an opted-in doctype is edited in place and reposted
+					self._action = "repost"
+					self.check_permission("submit")
+					self.check_permission("cancel")
+				else:
+					self._action = "update_after_submit"
+					self.check_permission("submit")
 			elif self.docstatus.is_cancelled():
 				self._action = "cancel"
 				self.check_permission("cancel")
@@ -1409,7 +1452,7 @@ class Document(BaseDocument):
 		self.reset_seen()
 
 		# before_validate method should be executed before ignoring validations
-		if self._action in ("save", "submit"):
+		if self._action in ("save", "submit", "repost"):
 			self.run_method("before_validate")
 
 		if self.flags.ignore_validate:
@@ -1425,6 +1468,9 @@ class Document(BaseDocument):
 			self.run_method("before_cancel")
 		elif self._action == "update_after_submit":
 			self.run_method("before_update_after_submit")
+		elif self._action == "repost":
+			self.run_method("validate")  # beeone: a reposted document is validated like a posted one
+			self.run_method("before_repost")
 
 		self.set_title_field()
 
@@ -1499,6 +1545,13 @@ class Document(BaseDocument):
 			self.mark_sequences()  # beeone: move the boundary back and restore the sequences
 		elif self._action == "update_after_submit":
 			self.run_method("on_update_after_submit")
+		elif self._action == "repost":
+			# beeone: lock_sequences ran before the writes; on_submit / on_cancel do not run
+			self.unpost_movements()
+			self.post_movements()
+			self.run_method("on_update_after_submit")
+			self.run_method("on_repost")
+			self.mark_sequences()
 
 		if not (frappe.flags.in_import and self.is_new()):
 			self.clear_cache()

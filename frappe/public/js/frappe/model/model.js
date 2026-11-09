@@ -384,6 +384,17 @@ $.extend(frappe.model, {
 		return frappe.get_list("Workflow", { document_type: doctype, is_active: 1 }).length;
 	},
 
+	// beeone: a posted document of a doctype that apps opted in can be edited and reposted
+	beeone_posted_editable: function (doc) {
+		if (!doc || cint(doc.docstatus) !== 1) return false;
+		let parent = doc;
+		if (doc.parenttype && doc.parent) {
+			parent = (locals[doc.parenttype] || {})[doc.parent];
+		}
+		const state = parent && parent.__onload && parent.__onload.beeone_posted_edit;
+		return !!(state && state.editable);
+	},
+
 	is_submittable: function (doctype) {
 		if (!doctype) return false;
 		return locals.DocType[doctype] && locals.DocType[doctype].is_submittable;

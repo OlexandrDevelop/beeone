@@ -810,6 +810,7 @@ frappe.ui.form.Form = class FrappeForm {
 		this.page.set_breadcrumbs(frappe.ui.form.get_breadcrumbs(this));
 
 		this.show_submit_message();
+		this.show_posted_edit_reason();
 		this.clear_custom_buttons();
 		this.show_web_link();
 		this.show_report_bug_link();
@@ -893,7 +894,7 @@ frappe.ui.form.Form = class FrappeForm {
 			}
 		};
 
-		if (save_action != "Update") {
+		if (save_action != "Update" || frappe.model.beeone_posted_editable(this.doc)) {
 			// validate
 			frappe.validated = true;
 			frappe
@@ -1313,6 +1314,14 @@ frappe.ui.form.Form = class FrappeForm {
 			this.doc.docstatus === 0
 		) {
 			this.dashboard.add_comment(__("Submit this document to confirm"), "blue", true);
+		}
+	}
+
+	show_posted_edit_reason() {
+		// beeone: say why a posted document of an opted-in doctype cannot be edited
+		const state = this.doc.__onload && this.doc.__onload.beeone_posted_edit;
+		if (this.doc.docstatus === 1 && state && !state.editable && state.reason) {
+			this.set_intro(state.reason, "orange");
 		}
 	}
 

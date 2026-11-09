@@ -261,22 +261,28 @@ def lock_sequences(doc) -> None:
 	if not names:
 		return
 	cancel = doc._action == "cancel"
+	repost = doc._action == "repost"
 	if getattr(doc, "sequence_by_parts", False) and not cancel:
 		# the entries of such a document are its parts, written by `mark_part`
 		return
 	keys = {}
+	new_keys = set()
 	for name in names:
 		seq = get_sequence(name)
-		if cancel:
+		found = []
+		if cancel or repost:
 			found = [tuple(frappe.parse_json(row.key)) for row in _stored_entries(name, doc)]
-		else:
-			found = document_keys(seq, doc)
+		if not cancel:
+			current = document_keys(seq, doc)
+			new_keys.update(boundary_name(name, key) for key in current)
+			found = [*found, *current]
 		for key in found:
 			keys[boundary_name(name, key)] = (name, key)
 	for bname in sorted(keys):
 		_ensure_row(*keys[bname])
 		_lock_row(bname)
 	doc.flags.beeone_sequence_keys = [(name, key, bname) for bname, (name, key) in sorted(keys.items())]
+	doc.flags.beeone_sequence_new_keys = new_keys
 
 
 def mark_sequences(doc) -> None:
@@ -286,28 +292,39 @@ def mark_sequences(doc) -> None:
 		return
 	doc.flags.beeone_sequence_keys = None
 	cancel = doc._action == "cancel"
+	repost = doc._action == "repost"
+	new_keys = doc.flags.get("beeone_sequence_new_keys") or set()
 	for name, key, bname in todo:
 		seq = get_sequence(name)
 		khash = key_hash(key)
 		row = _lock_row(bname)
 		old = _row_position(row)
-		if cancel:
+		if cancel or repost:
 			stored = [e for e in _stored_entries(name, doc) if tuple(frappe.parse_json(e.key)) == key]
-			if not stored:
+			if cancel and not stored:
 				continue
 			# a document with parts: all parts go, the boundary moves before the first one
-			pos = min(_entry_position(e) for e in stored)
-			frappe.db.delete(
-				"Sequence Entry",
-				{"sequence": name, "key_hash": khash, "document_type": doc.doctype, "document_name": doc.name},
-			)
-		else:
-			pos = _position(document_moment(doc), doc.doctype)
-			_insert_entry(name, key, pos)
+			pos = min((_entry_position(e) for e in stored), default=None)
+			if stored:
+				frappe.db.delete(
+					"Sequence Entry",
+					{"sequence": name, "key_hash": khash, "document_type": doc.doctype, "document_name": doc.name},
+				)
+		if not cancel and (not repost or bname in new_keys):
+			new_pos = _position(document_moment(doc), doc.doctype)
+			_insert_entry(name, key, new_pos)
+			# reposting: the sequence is wrong from the earlier of the old and the new position
+			pos = min(pos, new_pos) if repost and pos else new_pos
 		before = _entries(name, khash, before=_params(pos), descending=True, limit=1)
 		pred = _entry_position(before[0]) if before else None
 		new = _lowest(old, pred)
-		if not cancel and not seq.restore_method and seq.mode == MODE_BACKGROUND and old == pred:
+		if (
+			not cancel
+			and not repost
+			and not seq.restore_method
+			and seq.mode == MODE_BACKGROUND
+			and old == pred
+		):
 			# the document is the last one and all before it are correct: nothing to restore
 			if not _entries(name, khash, after=_params(pos), limit=1):
 				_save(bname, pos)
