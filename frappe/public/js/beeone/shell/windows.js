@@ -247,6 +247,7 @@ export function create(route, opts = {}) {
 	wins.z.push(key);
 	if (win.parked) {
 		win.el.classList.add("is-parked");
+		win.el.classList.remove("is-chromeless");
 		show_placeholder(win);
 	}
 	if (win.state === "minimized") win.el.classList.add("is-min");
@@ -284,6 +285,8 @@ export function host(page) {
 		win.el.classList.remove("is-parked");
 		if (win.kind === "form" || win.kind === "list") page.dataset.boKey = key;
 	}
+	// a form window has no title bar of its own: the page head of the form is its drag handle
+	win.el.classList.toggle("is-chromeless", win.kind === "form");
 	$(page).show();
 	win.route = route;
 	win.el.dataset.key = key;
@@ -396,6 +399,7 @@ export function park(key) {
 	destroy_page(win);
 	win.parked = true;
 	win.el.classList.add("is-parked");
+	win.el.classList.remove("is-chromeless");
 	show_placeholder(win);
 	beeone.shell.taskbar.render();
 	return true;
@@ -668,6 +672,15 @@ function confirm_close(win) {
 
 // ------------------------------------------------------------------ pointer: focus, drag, resize
 
+const INTERACTIVE = "button, a, input, select, textarea, label, [role=button], [role=menuitem], [role=tab], .dropdown-menu, [contenteditable=true], [data-act]";
+
+// the window bar, or (chromeless form window) the free area of the form page head
+function is_drag_handle(target, el) {
+	if (target.closest("[data-act]")) return false;
+	if (target.closest(".bo-win-bar")) return true;
+	return el.classList.contains("is-chromeless") && !!target.closest(".bo-win-body .page-head") && !target.closest(INTERACTIVE);
+}
+
 export function init_pointer() {
 	const layer = desk_el();
 	layer.addEventListener(
@@ -682,7 +695,7 @@ export function init_pointer() {
 			if (btn) return;
 			const rz = e.target.closest(".bo-rz");
 			if (rz && !compact() && win.state === "normal") return start_drag(e, win, rz.dataset.d);
-			if (e.target.closest(".bo-win-bar") && !compact() && win.state === "normal") start_drag(e, win, "move");
+			if (is_drag_handle(e.target, el) && !compact() && win.state === "normal") start_drag(e, win, "move");
 		},
 		true
 	);
@@ -701,8 +714,8 @@ export function init_pointer() {
 		else if (act === "load") focus(win.key);
 	});
 	layer.addEventListener("dblclick", (e) => {
-		const bar = e.target.closest(".bo-win-bar");
-		if (bar && !e.target.closest("[data-act]")) toggle_max(bar.closest(".bo-win").dataset.key);
+		const el = e.target.closest(".bo-win");
+		if (el && is_drag_handle(e.target, el)) toggle_max(el.dataset.key);
 	});
 	// the dirty mark follows the form of the window
 	layer.addEventListener("input", mark_dirty, true);

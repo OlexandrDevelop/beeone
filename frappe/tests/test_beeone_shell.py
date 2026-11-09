@@ -341,3 +341,15 @@ class TestBeeoneShell(IntegrationTestCase):
 	def test_json_roundtrip_of_a_layout_is_stable(self):
 		layout = shell.clean_layout({"windows": [{"key": "k", "route": ["page"]}], "accent": "teal"})
 		self.assertEqual(shell.clean_layout(json.loads(json.dumps(layout))), layout)
+
+	def test_form_windows_are_chromeless_and_other_windows_keep_the_bar(self):
+		app = Path(frappe.get_app_path("frappe")) / "public"
+		js = (app / "js" / "beeone" / "shell" / "windows.js").read_text()
+		css = (app / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
+		self.assertRegex(js, r'toggle\("is-chromeless", win\.kind === "form"')
+		self.assertIn('classList.remove("is-chromeless")', js)
+		self.assertIn("is_drag_handle", js)
+		block = css[css.index(".bo-win.is-chromeless > .bo-win-bar .bo-win-t {") :][:300]
+		# the title stays in the DOM (window name, taskbar); it is hidden visually only
+		self.assertIn("clip: rect(0 0 0 0)", block)
+		self.assertNotIn("display: none", block)

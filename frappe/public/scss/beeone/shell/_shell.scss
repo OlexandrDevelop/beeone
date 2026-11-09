@@ -402,6 +402,57 @@ body.bo-shell .sticky-top.navbar {
 	background: var(--bo-surface);
 }
 
+/* form windows: no title bar of their own. The bar is overlaid at the top right and only the
+   window buttons show; the form's page head is the drag handle and its row holds the title,
+   the command bar and these buttons. The title stays in the DOM for the window name and the taskbar. */
+.bo-win.is-chromeless {
+	--bo-win-btns-w: 110px;
+}
+
+.bo-win.is-chromeless > .bo-win-bar {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: calc(var(--bo-z-sticky) + 1);
+	height: 44px;
+	padding: 0 8px 0 0;
+	background: transparent;
+	border: 0;
+	pointer-events: none;
+}
+
+.bo-win.is-chromeless > .bo-win-bar .bo-win-btns {
+	pointer-events: auto;
+}
+
+.bo-win.is-chromeless > .bo-win-bar .bo-win-ico,
+.bo-win.is-chromeless > .bo-win-bar .bo-win-sub,
+.bo-win.is-chromeless > .bo-win-bar .bo-win-dirty {
+	display: none;
+}
+
+.bo-win.is-chromeless > .bo-win-bar .bo-win-t {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.bo-win.is-chromeless > .bo-win-body {
+	border-radius: calc(var(--bo-r-win) - 1px);
+}
+
+.bo-win.is-chromeless > .bo-win-body .page-head {
+	min-height: 44px;
+	cursor: default;
+}
+
+.bo-win.is-chromeless > .bo-win-body .page-head .page-head-content {
+	padding-right: var(--bo-win-btns-w);
+}
+
 .bo-win-ico {
 	width: 28px;
 	height: 28px;
