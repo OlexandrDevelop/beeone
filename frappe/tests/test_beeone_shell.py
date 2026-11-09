@@ -336,7 +336,29 @@ class TestBeeoneShell(IntegrationTestCase):
 		for prop in re.findall(r"transition(?:-property)?:\s*([^;]+);", css):
 			names = {part.strip().split(" ")[0] for part in prop.split(",")}
 			self.assertTrue(names <= {"transform", "opacity", "none"}, prop)
-		self.assertNotIn("@keyframes", css)
+		# keyframes are allowed when their bodies move only transform and opacity (the loader bar, the skeleton)
+		for body in re.findall(r"@keyframes\s+[\w-]+\s*\{(.*?\})\s*\}", css, re.S):
+			for prop in re.findall(r"([\w-]+)\s*:", body):
+				self.assertIn(prop, {"transform", "opacity"}, body)
+
+	def test_window_pages_never_get_wider_than_the_window(self):
+		css = (Path(frappe.get_app_path("frappe")) / "public" / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
+		block = css[css.index(".bo-win-body .layout-main-section-wrapper,") :][:200]
+		self.assertIn("min-width: 0", block)
+		block = css[css.index(".bo-win-body .report-wrapper,") :][:200]
+		self.assertIn("overflow-x: auto", block)
+
+	def test_filters_wrap_by_window_width(self):
+		css = (Path(frappe.get_app_path("frappe")) / "public" / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
+		block = css[css.index(".bo-win-body .page-form > .frappe-control.col-md-2,") :][:250]
+		self.assertIn("flex: 1 1 160px", block)
+		self.assertIn("max-width: 260px", block)
+		self.assertIn('.bo-win[data-bw~="lt560"] .bo-win-body .page-form > .frappe-control.col-md-2', css)
+
+	def test_new_window_opens_inside_the_desk(self):
+		js = (Path(frappe.get_app_path("frappe")) / "public" / "js" / "beeone" / "shell" / "windows.js").read_text()
+		self.assertIn("function fit(", js)
+		self.assertRegex(js, r"opts\.x == null && opts\.y == null\) fit\(win\)")
 
 	def test_json_roundtrip_of_a_layout_is_stable(self):
 		layout = shell.clean_layout({"windows": [{"key": "k", "route": ["page"]}], "accent": "teal"})

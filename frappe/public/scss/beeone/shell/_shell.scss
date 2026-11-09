@@ -471,6 +471,7 @@ body.bo-shell .sticky-top.navbar {
 }
 
 .bo-win-t {
+	flex: 1 1 auto;
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
@@ -1004,6 +1005,46 @@ html[data-theme="dark"] .bo-sk-wrap::after {
 .bo-win-body .page-form {
 	padding: var(--bo-s-2) var(--bo-page-pad-x);
 	margin: 0;
+}
+
+/* a wide report or list never stretches its window: the Frappe flex chain has min-width:auto and a flex-basis of 80%,
+   so a fixed-layout datatable would give the page the sum of its columns; the table scrolls in its own area instead */
+.bo-win-body .layout-main,
+.bo-win-body .layout-main-section-wrapper,
+.bo-win-body .layout-main-section {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.bo-win-body .layout-main-section-wrapper {
+	flex: 1 1 0;
+	width: auto;
+}
+
+.bo-win-body .report-wrapper,
+.bo-win-body .frappe-list .result,
+.bo-win-body .report-view {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+/* filters wrap by the width of the window, not of the screen */
+.bo-win-body .page-form > .frappe-control.col-md-2,
+.bo-win-body .page-form .check-filter-area > .frappe-control {
+	flex: 1 1 160px;
+	max-width: 260px;
+	min-width: 0;
+}
+
+.bo-win[data-bw~="lt560"] .bo-win-body .page-form > .frappe-control.col-md-2 {
+	flex-basis: 100%;
+	max-width: none;
+}
+
+.bo-win-body .page-head .page-head-content,
+.bo-win-body .page-head .page-actions {
+	min-width: 0;
+	max-width: 100%;
 }
 
 .bo-win-body .list-row-head {

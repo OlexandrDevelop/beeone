@@ -151,6 +151,13 @@ function clamp(win) {
 	win.y = Math.max(0, Math.min(win.y, Math.max(0, h - 44)));
 }
 
+// a newly opened window lies wholly inside the desk, so its buttons are never cut off (clamp lets a dragged one hang out)
+function fit(win) {
+	const { w, h } = desk_size();
+	win.x = Math.max(0, Math.min(win.x, w - win.w));
+	win.y = Math.max(0, Math.min(win.y, h - win.h));
+}
+
 // ------------------------------------------------------------------ create
 
 // the title of a command as the app named it (a catalog "Items"), else the translated DocType name
@@ -242,6 +249,7 @@ export function create(route, opts = {}) {
 	};
 	make_el(win);
 	clamp(win);
+	if (opts.x == null && opts.y == null) fit(win);
 	place(win);
 	wins.map.set(key, win);
 	wins.order.push(key);
