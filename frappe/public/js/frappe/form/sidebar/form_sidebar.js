@@ -63,9 +63,10 @@ frappe.ui.form.Sidebar = class {
 	saved_sidebar_visibility() {
 		try {
 			const saved = localStorage.getItem(this.sidebar_preference_key());
-			return saved === null ? true : saved === "1";
+			// The side panel is closed until the user opens it; the choice is remembered.
+			return saved === "1";
 		} catch {
-			return true;
+			return false;
 		}
 	}
 
@@ -97,7 +98,9 @@ frappe.ui.form.Sidebar = class {
 	}
 
 	update_toggle_button() {
-		$(".form-sidebar-toggle").attr("aria-pressed", String(this.sidebar_visible));
+		// scoped to this form's window: several shell windows can be open at once
+		const $scope = this.page && this.page.wrapper ? $(this.page.wrapper) : $(document);
+		$scope.find(".form-sidebar-toggle").attr("aria-pressed", String(!!this.sidebar_visible));
 	}
 
 	setup_keyboard_shortcuts() {
@@ -113,6 +116,7 @@ frappe.ui.form.Sidebar = class {
 		} else {
 			this.page.sidebar.toggleClass("hide-sidebar", !this.sidebar_visible);
 			this.sidebar.toggle(this.sidebar_visible);
+			this.update_toggle_button();
 			this.frm.assign_to.refresh();
 			this.frm.attachments.refresh();
 			this.frm.shared.refresh();

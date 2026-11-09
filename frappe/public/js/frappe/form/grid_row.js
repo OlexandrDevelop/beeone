@@ -1,4 +1,5 @@
 import GridRowForm from "./grid_row_form";
+import { can_open_link, open_link_target } from "./grid_link_open";
 
 const DEPENDENCY_PROPERTIES = [
 	{ expr: "depends_on", prop: "hidden_due_to_dependency", negate: true },
@@ -35,6 +36,13 @@ export default class GridRow {
 				}
 				if (me.grid.allow_on_grid_editing() && me.grid.is_editable()) {
 					// pass
+				} else if (me.is_readonly_inline()) {
+					// editable_grid tables stay inline when they are read-only (posted
+					// document, no permission): the cell takes focus, no modal row form.
+					// The row number / edit icon still open the form for viewing.
+					const $cell = $(e.target).closest(".grid-static-col[tabindex]");
+					if ($cell.length) $cell.trigger("focus");
+					return;
 				} else {
 					me.toggle_view();
 					return false;
@@ -307,6 +315,7 @@ export default class GridRow {
 		}
 
 		this.setup_columns();
+		this.setup_cell_nav();
 		this.add_open_form_button();
 		this.add_column_configure_button();
 		this.refresh_check();
@@ -1021,6 +1030,12 @@ export default class GridRow {
 					}
 				}
 			})
+			.on("keydown", function (event) {
+				if (event.target === this) me.on_static_cell_keydown(event, $col);
+			})
+			.on("focus", function () {
+				if (me.is_readonly_inline()) me.set_roving_cell($col);
+			})
 			.on("click", function (event) {
 				if (frappe.ui.form.editable_row !== me) {
 					var out = me.toggle_editable_row();
@@ -1209,14 +1224,229 @@ export default class GridRow {
 			}
 		}
 
+		if (field.$link_open && field.$link_open.length) {
+			field.$link_open.attr("title", __("Open card (Ctrl+Shift+F4)"));
+		}
+		if (field.$input && ["Link", "Dynamic Link", "Autocomplete"].includes(df.fieldtype)) {
+			field.$input.attr("aria-keyshortcuts", "F4");
+		}
 		this.set_arrow_keys(field);
 		column.field = field;
 		this.on_grid_fields_dict[df.fieldname] = field;
 		this.on_grid_fields.push(field);
 	}
+	// Read-only editable_grid table: rows stay inline, cells are navigated with the keyboard.
+	is_readonly_inline() {
+		return (
+			!!this.doc &&
+			!this.header_row &&
+			!!this.grid.meta &&
+			!!this.grid.meta.editable_grid &&
+			!this.grid.static_rows &&
+			!this.grid.is_editable()
+		);
+	}
+
+	setup_cell_nav() {
+		if (!this.doc || this.header_row) return;
+		const inline_ro = this.is_readonly_inline();
+		this.columns_list.forEach((column, i) => {
+			if (!column.df.fieldname) return;
+			this.sync_open_button(column);
+			if (inline_ro) {
+				const first = this.doc.idx === 1 && i === 0;
+				column.attr("tabindex", first ? 0 : -1);
+			} else if (["0", "-1"].includes(column.attr("tabindex"))) {
+				column.removeAttr("tabindex");
+			}
+		});
+	}
+
+	set_roving_cell($cell) {
+		this.grid.wrapper.find(".grid-body .grid-static-col[tabindex='0']").attr("tabindex", -1);
+		$cell.attr("tabindex", 0);
+	}
+
+	// "Open card" button of a Link / Dynamic Link cell that shows a value.
+	sync_open_button(column) {
+		const df = column.df;
+		if (!df || !this.doc || !["Link", "Dynamic Link"].includes(df.fieldtype)) return;
+		column.find(".grid-link-open").remove();
+		if (!can_open_link(df, this.doc)) return;
+		const label = frappe.utils.escape_html(__(df.label || df.fieldname, null, df.parent));
+		$(
+			`<button type="button" class="grid-link-open" tabindex="-1"
+				aria-label="${frappe.utils.escape_html(__("Open {0}", [label]))}"
+				title="${frappe.utils.escape_html(__("Open card (Ctrl+Shift+F4)"))}">
+				${frappe.utils.icon("link-url", "xs")}
+			</button>`
+		)
+			.appendTo(column)
+			.on("click", (e) => {
+				e.stopPropagation();
+				open_link_target(df, this.doc);
+			})
+			.on("mousedown", (e) => e.stopPropagation());
+	}
+
+	on_static_cell_keydown(e, $cell) {
+		const { ENTER, LEFT, RIGHT, UP, DOWN } = frappe.ui.keyCode;
+		const df = $cell.df;
+		const is_f4 = e.key === "F4" || e.which === 115;
+		if (is_f4 && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+			if (df && ["Link", "Dynamic Link"].includes(df.fieldtype)) {
+				open_link_target(df, this.doc, { notify: true });
+			}
+			e.preventDefault();
+			return;
+		}
+
+		if (!this.doc || this.header_row) return;
+
+		if (!this.is_readonly_inline()) {
+			// idle row of an editable grid: Enter / F2 starts editing this cell
+			if ((e.which === ENTER || e.key === "F2") && !e.ctrlKey && !e.altKey && !e.metaKey) {
+				e.preventDefault();
+				this.toggle_editable_row(true);
+				const field = this.columns[df.fieldname] && this.columns[df.fieldname].field;
+				field && field.$input && field.$input.trigger("focus");
+			}
+			return;
+		}
+
+		const cells = (row) => row.row.find(".grid-static-col[tabindex]:visible").toArray();
+		const idx = cells(this).indexOf($cell[0]);
+		const focus_cell = (row, i) => {
+			if (!row) return;
+			const list = cells(row);
+			const target = list[Math.max(0, Math.min(list.length - 1, i))];
+			if (target) $(target).trigger("focus");
+		};
+		const rows = this.grid.grid_rows;
+
+		let handled = true;
+		if (e.which === RIGHT) focus_cell(this, idx + 1);
+		else if (e.which === LEFT) focus_cell(this, idx - 1);
+		else if (e.which === DOWN) focus_cell(rows[this.doc.idx], idx);
+		else if (e.which === UP) focus_cell(rows[this.doc.idx - 2], idx);
+		else if (e.key === "Home") focus_cell(e.ctrlKey ? rows[0] : this, 0);
+		else if (e.key === "End") focus_cell(e.ctrlKey ? rows[rows.length - 1] : this, 9999);
+		else handled = false;
+		if (handled) e.preventDefault();
+	}
+
+	// Enter / Shift+Enter / Esc / F4 / Ctrl+Shift+F4 in an editable grid cell.
+	set_cell_keys(field) {
+		if (!field.$input) return;
+		const multiline = ["Text", "Small Text", "Code", "Text Editor", "HTML Editor", "Markdown Editor"];
+		const { ENTER, ESCAPE } = frappe.ui.keyCode;
+		const fieldname = field.df.fieldname;
+		const is_link = ["Link", "Dynamic Link"].includes(field.df.fieldtype);
+		const input_selector = "input:enabled:not([type='checkbox']), select:enabled, textarea:enabled";
+
+		field.$input.on("focus", () => {
+			field._bo_orig = this.doc[fieldname];
+		});
+		// Remember whether the quick-pick list was open before awesomplete consumes the key.
+		field.$input.get(0).addEventListener(
+			"keydown",
+			() => {
+				field._bo_list_was_open = !!field.autocomplete_open;
+			},
+			true
+		);
+
+		const inputs_of = (row) =>
+			row.row.find(".field-area:visible").find(input_selector).toArray();
+
+		const focus_input = (row, last) => {
+			if (!row) return;
+			row.toggle_editable_row(true);
+			const list = inputs_of(row);
+			const target = last ? list[list.length - 1] : list[0];
+			if (target) $(target).trigger("focus");
+		};
+
+		field.$input.on("keydown", (e) => {
+			const ctrl = e.ctrlKey || e.metaKey;
+			const is_f4 = e.key === "F4" || e.which === 115;
+
+			if (is_f4) {
+				if (ctrl && e.shiftKey && is_link) {
+					open_link_target(field.df, this.doc, { notify: true });
+				} else if (
+					!ctrl &&
+					!e.shiftKey &&
+					(is_link || field.df.fieldtype === "Autocomplete")
+				) {
+					field.$input.trigger("input");
+					field.awesomplete && field.awesomplete.evaluate && field.awesomplete.evaluate();
+				} else {
+					return;
+				}
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				return;
+			}
+
+			if (e.which === ESCAPE && !ctrl && !e.shiftKey && !e.altKey) {
+				if (field._bo_list_was_open) return; // only closes the list
+				const orig = field._bo_orig;
+				const typed = field.parse
+					? field.parse(field.get_input_value())
+					: field.get_input_value();
+				const changed = cstr(typed) !== cstr(orig) || cstr(this.doc[fieldname]) !== cstr(orig);
+				if (this.doc.__unedited) {
+					this.grid.grid_rows[this.doc.idx - 1].remove();
+				} else if (changed && orig !== undefined) {
+					// stage 1: put the cell value back
+					if (cstr(this.doc[fieldname]) !== cstr(orig)) {
+						frappe.model.set_value(this.doc.doctype, this.doc.name, fieldname, orig);
+					}
+					field.set_input(orig);
+				} else {
+					// stage 2: leave row editing, keep the focus on the cell
+					this.toggle_editable_row(false);
+					const $cell = this.columns[fieldname];
+					if ($cell) {
+						if ($cell.attr("tabindex") === undefined) $cell.attr("tabindex", -1);
+						$cell.trigger("focus");
+					}
+				}
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				return;
+			}
+
+			if (e.which === ENTER && !ctrl && !e.altKey && !multiline.includes(field.df.fieldtype)) {
+				if (field._bo_list_was_open || field.autocomplete_open) return;
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				const back = e.shiftKey;
+				field.parse_validate_and_set_in_model(field.get_input_value()).then(() => {
+					const list = inputs_of(this);
+					const i = list.indexOf(field.$input.get(0));
+					const next = list[i + (back ? -1 : 1)];
+					if (next) return $(next).trigger("focus");
+					const rows = this.grid.grid_rows;
+					const here = this.doc.idx - 1;
+					if (back) {
+						focus_input(rows[here - 1], true);
+					} else if (rows[here + 1]) {
+						focus_input(rows[here + 1], false);
+					} else if (this.grid.is_editable() && !this.grid.df.cannot_add_rows) {
+						this.grid.add_new_row(null, null, true);
+						this.grid.set_focus_on_row();
+					}
+				});
+			}
+		});
+	}
+
 	set_arrow_keys(field) {
 		const ignore_fieldtypes = ["Text", "Small Text", "Code", "Text Editor", "HTML Editor"];
 		if (!field.$input) return;
+		this.set_cell_keys(field);
 
 		field.$input.on("keydown", (e) => {
 			const { ESCAPE, TAB, UP: UP_ARROW, DOWN: DOWN_ARROW } = frappe.ui.keyCode;
@@ -1529,6 +1759,7 @@ export default class GridRow {
 		let column = this.columns[fieldname];
 		if (column) {
 			column.static_area.html(txt || "");
+			this.sync_open_button(column);
 			if (df && df.reqd) {
 				column.toggleClass("error", !!(txt === null || txt === ""));
 			}

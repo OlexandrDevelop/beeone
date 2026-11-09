@@ -106,6 +106,21 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 				.toggleClass("read-only-control", !can_edit)
 				.toggleClass("auto-value-control", Boolean(is_fetch_from_read_only));
 
+			// Field state for CSS / assistive tech (see scss/desk/field_states.scss):
+			// text = a label-like value, locked = normally editable but closed right now,
+			// edit = writable.
+			const is_text_only =
+				Boolean(is_fetch_from_read_only) ||
+				Boolean(me.df.read_only && !me.df.read_only_depends_on);
+			if (!me.only_input) {
+				me.$wrapper
+					.attr("data-bo-state", can_edit ? "edit" : is_text_only ? "text" : "locked")
+					.attr("data-bo-reqd", me.df.reqd ? "1" : null);
+			}
+			if (me.disp_area) {
+				$(me.disp_area).attr("aria-readonly", can_edit ? null : "true");
+			}
+
 			if (can_edit) {
 				me.disp_area && $(me.disp_area).addClass("hide");
 				$(me.input_area).removeClass("hide");
@@ -273,6 +288,7 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 		this.toggle_description(false);
 	}
 	set_mandatory(value) {
+		this.$wrapper.attr("data-bo-empty", this.df.reqd && is_null(value) ? "1" : null);
 		// do not set has-error class on form load
 		if (this.frm && this.frm.cscript && this.frm.cscript.is_onload) return;
 
@@ -306,6 +322,16 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 	}
 	set_required() {
 		this.label_area && $(this.label_area).toggleClass("reqd", Boolean(this.df.reqd));
+		if (this.label_area) {
+			// the asterisk is drawn by CSS; screen readers get the word
+			const $label = $(this.label_area);
+			$label.find(".bo-reqd-text").remove();
+			if (this.df.reqd) {
+				$('<span class="bo-sr-only bo-reqd-text"></span>')
+					.text(" " + __("(required)"))
+					.appendTo($label);
+			}
+		}
 	}
 	set_bold() {
 		if (this.$input) {

@@ -488,7 +488,7 @@ frappe.ui.form.Toolbar = class Toolbar {
 			() => this.setup_sidebar_toggle(this.frm.sidebar.sidebar.parent()),
 			"form-sidebar-toggle",
 			__("Toggle Sidebar")
-		).attr("aria-pressed", "true");
+		).attr("aria-pressed", String(!!this.frm.sidebar?.sidebar_visible));
 		this.page.add_menu_item(
 			__("Toggle Sidebar"),
 			() => {

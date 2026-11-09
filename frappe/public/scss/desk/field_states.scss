@@ -1,0 +1,103 @@
+// Field states (WCAG 1.4.1 / 1.4.11): a read-only text, an editable input, a locked
+// input and a required input must differ by more than colour. base_input.js sets
+// data-bo-state = text | locked | edit, data-bo-reqd and data-bo-empty on the control.
+//   text    value only, no box
+//   edit    solid border with >= 3:1 contrast against the page
+//   locked  dashed border, tinted background and a lock icon
+//   reqd    asterisk on the label (plus "(required)" for screen readers)
+//   reqd + empty: thick bar on the start edge
+//   error   2px border and an alert icon on the label
+
+:root {
+	--control-border-strong: #7b8597;
+	--bo-state-warn: #8a5300;
+	--bo-state-error: #b42318;
+}
+
+[data-theme="dark"] {
+	--control-border-strong: #6b7586;
+	--bo-state-warn: #f5b748;
+	--bo-state-error: #ff8a8d;
+}
+
+$bo-icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='7' width='10' height='7' rx='1.5'/%3E%3Cpath d='M5 7V5a3 3 0 0 1 6 0v2'/%3E%3C/svg%3E");
+$bo-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2 1.5 13.5h13z'/%3E%3Cpath d='M8 6.5v3.2M8 11.8v.1'/%3E%3C/svg%3E");
+
+.bo-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.form-layout .frappe-control[data-bo-state] {
+	.control-input-wrapper {
+		position: relative;
+	}
+
+	&[data-bo-state="edit"] .form-control:not(:disabled):not([readonly]),
+	&[data-bo-state="edit"] .control-input .input-with-feedback {
+		border: 1px solid var(--control-border-strong);
+	}
+
+	&[data-bo-state="text"] .control-value {
+		padding-inline: 0;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--text-color);
+		font-weight: var(--weight-medium, 500);
+	}
+
+	&[data-bo-state="locked"] .control-value {
+		position: relative;
+		padding-inline-end: 28px;
+		border: 1px dashed var(--control-border-strong);
+		background: var(--disabled-control-bg);
+		color: var(--text-color);
+		cursor: not-allowed;
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline-end: 8px;
+			top: 50%;
+			width: 12px;
+			height: 12px;
+			margin-top: -6px;
+			background: currentColor;
+			opacity: 0.8;
+			-webkit-mask: $bo-icon-lock center / contain no-repeat;
+			mask: $bo-icon-lock center / contain no-repeat;
+		}
+	}
+
+	&[data-bo-reqd="1"][data-bo-empty="1"][data-bo-state="edit"] .form-control {
+		box-shadow: inset 3px 0 0 var(--bo-state-warn);
+	}
+
+	&.has-error .form-control {
+		border: 2px solid var(--bo-state-error);
+	}
+
+	&.has-error .control-label::before {
+		content: "";
+		display: inline-block;
+		width: 12px;
+		height: 12px;
+		margin-inline-end: 4px;
+		vertical-align: -1px;
+		background: var(--bo-state-error);
+		-webkit-mask: $bo-icon-alert center / contain no-repeat;
+		mask: $bo-icon-alert center / contain no-repeat;
+	}
+}
+
+.form-layout .control-label.reqd::after {
+	content: " *";
+	color: var(--bo-state-error);
+}

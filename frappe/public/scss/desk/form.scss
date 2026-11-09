@@ -177,7 +177,8 @@ body.full-width {
 }
 
 .read-only-control .control-value {
-	color: var(--text-muted);
+	// read-only values stay dark: they carry the document's data (WCAG 1.4.3)
+	color: var(--text-color);
 }
 
 .auto-value-control .control-value {

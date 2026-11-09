@@ -14,28 +14,70 @@
 
 // One per-user density preference applies to every document table. Per-table
 // settings remain limited to columns, widths, order and sticky positioning.
-body[data-grid-density="compact"] .form-grid {
+// Compact (28px rows) is the default; "comfortable" is 34px.
+.form-grid {
+	--grid-row-h: 28px;
+	--grid-cell-py: 4px;
+}
+
+body[data-grid-density="comfortable"] .form-grid {
+	--grid-row-h: 34px;
+	--grid-cell-py: 7px;
+}
+
+.form-grid {
 	.grid-heading-row {
-		height: 27px;
+		height: var(--grid-row-h);
 
 		.grid-static-col,
 		.row-check,
 		.row-index {
-			height: 27px;
+			height: var(--grid-row-h);
 			padding-top: 2px !important;
 			padding-bottom: 2px !important;
 		}
 	}
 
+	.grid-body .data-row {
+		min-height: var(--grid-row-h);
+	}
+
 	.grid-body .data-row .grid-static-col,
 	.grid-body .data-row .row-check,
 	.grid-body .data-row .row-index {
-		padding-top: 3px !important;
-		padding-bottom: 3px !important;
+		height: var(--grid-row-h);
+		padding-top: var(--grid-cell-py) !important;
+		padding-bottom: var(--grid-cell-py) !important;
+		line-height: 20px;
+	}
+
+	.grid-body .data-row .editable-row .grid-static-col,
+	.grid-body .editable-row .grid-static-col {
+		padding-top: 0 !important;
+		padding-bottom: 0 !important;
+	}
+
+	.grid-body .editable-row .form-control,
+	.grid-body .editable-row .ql-editor {
+		height: var(--grid-row-h);
+		min-height: var(--grid-row-h);
+		padding: 0 6px;
+		line-height: 20px;
+	}
+
+	.grid-body .editable-row .link-btn {
+		height: calc(var(--grid-row-h) - 4px);
+		display: inline-flex;
+		align-items: center;
 	}
 
 	.grid-body .data-row textarea {
-		min-height: 30px;
+		min-height: var(--grid-row-h);
+		height: var(--grid-row-h) !important;
+	}
+
+	.grid-empty {
+		height: var(--grid-row-h);
 	}
 }
 
@@ -224,19 +266,81 @@ body[data-grid-density="compact"] .form-grid {
 }
 
 .grid-empty {
-	height: 43px;
+	height: 34px;
 	background-color: var(--subtle-accent);
 	display: flex;
 	vertical-align: middle;
 }
 
 .grid-static-col:focus-visible {
-	@include grid-focus();
+	// 2.4.7 / 2.4.11: the focused cell gets a solid 2px ring, not a grey hairline
+	outline: 2px solid var(--primary, #2563eb) !important;
+	outline-offset: -2px;
+	border: 0 !important;
+}
+
+// "Open card" button of a Link / Dynamic Link cell (target size >= 24x24, WCAG 2.5.8)
+.grid-static-col[data-fieldtype="Link"]:not(.sticky-grid-col),
+.grid-static-col[data-fieldtype="Dynamic Link"]:not(.sticky-grid-col) {
+	position: relative;
+}
+
+.grid-link-open {
+	display: none;
+	position: absolute;
+	right: 2px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--control-border-strong, var(--gray-600));
+	border-radius: var(--radius-sm, 4px);
+	background: var(--fg-color);
+	color: var(--text-color);
+	cursor: pointer;
+	line-height: 1;
+
+	&:hover,
+	&:focus-visible {
+		background: var(--subtle-fg);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--primary, #2563eb);
+		outline-offset: 1px;
+	}
+}
+
+.grid-static-col:hover .grid-link-open,
+.grid-static-col:focus .grid-link-open,
+.grid-static-col:focus-within .grid-link-open {
+	display: inline-flex;
+}
+
+@media (hover: none) {
+	.grid-body .grid-static-col .grid-link-open {
+		display: inline-flex;
+	}
+}
+
+.editable-row .grid-link-open {
+	display: none !important;
+}
+
+// the link control's own open / clear buttons inside an editable cell
+.grid-body .editable-row .link-btn a {
+	min-width: 24px;
+	min-height: 24px;
+	align-items: center;
+	justify-content: center;
 }
 
 .grid-static-col,
 .row-index {
-	height: 43px;
+	height: 34px;
 	max-height: 200px;
 
 	&.search {

@@ -20219,7 +20219,7 @@ msgstr ""
 #: frappe/public/js/frappe/ui/toolbar/search_utils.js:347
 #: frappe/public/js/frappe/ui/toolbar/search_utils.js:348
 msgid "Open {0}"
-msgstr ""
+msgstr "Відкрити {0}"
 
 #. Label of the openid_configuration (Data) field in DocType 'Connected App'
 #: frappe/integrations/doctype/connected_app/connected_app.json
@@ -36033,3 +36033,14 @@ msgstr "Змінити щільність таблиць"
 msgid "← Back to upload files"
 msgstr ""
 
+#: frappe/public/js/frappe/form/grid_link_open.js
+msgid "Nothing to open"
+msgstr "Немає що відкривати"
+
+#: frappe/public/js/frappe/form/grid_row.js
+msgid "Open card (Ctrl+Shift+F4)"
+msgstr "Відкрити картку (Ctrl+Shift+F4)"
+
+#: frappe/public/js/frappe/form/controls/base_input.js
+msgid "(required)"
+msgstr "(обов'язкове)"
