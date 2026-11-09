@@ -167,6 +167,8 @@ Object.assign(beeone.shell, {
 		// a desktop route (no window) clears the active window
 		frappe.router.on("change", () => {
 			if (!W.is_window_route(frappe.get_route())) W.blur();
+			// a window route opens its window with the loader at once; the page comes when Frappe has it
+			else W.pending(frappe.get_route());
 		});
 		// restore the saved windows: only the active one loads, the others wait parked
 		const active = W.restore(layout, sh.readable);

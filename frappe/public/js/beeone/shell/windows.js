@@ -1,6 +1,7 @@
 // Window manager of the desktop shell (docs/platform/SHELL.md §3, §4).
 // Frappe builds its pages as usual; the core moves the page element into a window body.
 // Animations: element.animate with transform and opacity only. No timers, no animation frames.
+// The loader skeleton moves its light with a CSS animation (transform only).
 
 const MIN_W = 380;
 const MIN_H = 260;
@@ -262,6 +263,66 @@ function show_placeholder(win) {
 		`<button type="button" class="bo-btn bo-btn--primary" data-act="load">${esc(__("Open"))}</button></div>`;
 }
 
+// ------------------------------------------------------------------ loading
+
+// What a window shows from the click until Frappe hands it the page: a skeleton of the kind of window
+// (form: head, fields, table; list and others: rows) under a moving light, and a thin running bar on top.
+function loader_html(kind) {
+	const line = (w, cls = "") => `<i class="bo-sk ${cls}" style="--w:${w}"></i>`;
+	let body;
+	if (kind === "form") {
+		const field = (w) => `<div class="bo-sk-field">${line("38%", "is-label")}${line(w, "is-input")}</div>`;
+		body =
+			`<div class="bo-sk-head">${line("34%", "is-title")}<span class="bo-sk-btns">${line("120px", "is-btn")}${line("28px", "is-btn")}${line("28px", "is-btn")}</span></div>` +
+			`<div class="bo-sk-card"><div class="bo-sk-tabs">${line("64px")}${line("80px")}${line("72px")}</div>` +
+			`<div class="bo-sk-grid">${["100%", "100%", "100%", "100%", "100%", "100%"].map(field).join("")}</div></div>` +
+			`<div class="bo-sk-card">${line("90px", "is-tab")}${[0, 1, 2, 3].map(() => `<div class="bo-sk-row">${line("6%")}${line("40%")}${line("12%")}${line("14%")}${line("16%")}</div>`).join("")}</div>`;
+	} else {
+		body =
+			`<div class="bo-sk-head">${line("28%", "is-title")}<span class="bo-sk-btns">${line("96px", "is-btn")}</span></div>` +
+			`<div class="bo-sk-card">${[0, 1, 2, 3, 4, 5, 6].map(() => `<div class="bo-sk-row">${line("4%")}${line("36%")}${line("18%")}${line("14%")}${line("16%")}</div>`).join("")}</div>`;
+	}
+	return (
+		`<div class="bo-win-loader" role="status" aria-live="polite"><span class="bo-sr">${esc(__("Loading..."))}</span>` +
+		`<span class="bo-load-bar" aria-hidden="true"></span><div class="bo-sk-wrap" aria-hidden="true">${body}</div></div>`
+	);
+}
+
+function show_loader(win) {
+	win.loading = true;
+	win.el.classList.add("is-loading");
+	win.el.classList.remove("is-chromeless");
+	win.body.innerHTML = loader_html(win.kind);
+}
+
+// the page has arrived: the skeleton fades out over it and removes itself
+function end_loader(win) {
+	if (!win.loading) return;
+	win.loading = false;
+	win.el.classList.remove("is-loading");
+	const el = win.body.querySelector(":scope > .bo-win-loader");
+	if (!el) return;
+	if (RM.matches) return el.remove();
+	const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: "ease-out", fill: "forwards" });
+	a.onfinish = () => el.remove();
+}
+
+// called on every route change: a window route whose page is not built yet gets its window at once,
+// with the loader, so the click answers immediately; host() puts the page into this same window
+export function pending(route) {
+	if (!is_window_route(route)) return;
+	const key = route_key(route);
+	let win = wins.map.get(key);
+	if (win && win.page) return;
+	const fresh = !win;
+	if (!win) win = create(route, { state: "normal" });
+	show_loader(win);
+	wins.syncing = true;
+	focus(key, { route: false });
+	wins.syncing = false;
+	if (fresh && !RM.matches) open_anim(win);
+}
+
 // called by frappe.container.change_to for every page; the current route says which window it is
 export function host(page) {
 	const route = frappe.get_route();
@@ -276,7 +337,10 @@ export function host(page) {
 	if (!win) win = create(route, { state: "normal" });
 	if (win.page !== page) {
 		if (win.page) destroy_page(win, true);
+		// the loader stays on top of the arriving page and fades out once the page is in
+		const loader = win.loading ? win.body.querySelector(":scope > .bo-win-loader") : null;
 		win.body.textContent = "";
+		if (loader) win.body.appendChild(loader);
 		// beeone: ensure page is visible before appending to window, as Frappe may need visibility for initialization
 		$(page).show();
 		win.body.appendChild(page);
@@ -294,6 +358,7 @@ export function host(page) {
 	wins.syncing = true;
 	focus(key, { route: false, animate: fresh });
 	wins.syncing = false;
+	end_loader(win);
 	enforce_limit();
 }
 
