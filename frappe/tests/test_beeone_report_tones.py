@@ -104,7 +104,6 @@ class TestBeeoneReportTones(IntegrationTestCase):
 			filters={},
 			applied_filters=[],
 			add_total_row=0,
-			report_name="Tones",
 		)
 		rows, widths, styles = build_xlsx_data(data, include_indentation=True, build_styles=True)
 		ws = load_workbook(BytesIO(make_xlsx(rows, "Tones", column_widths=widths, styles=styles).getvalue())).active
