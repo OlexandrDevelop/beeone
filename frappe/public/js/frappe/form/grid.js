@@ -98,6 +98,11 @@ export default class Grid {
 		return !this.meta || !!this.meta.editable_grid;
 	}
 
+	// Tables of an editable_grid doctype are edited in the row only: the modal row form never opens.
+	inline_only() {
+		return !!(this.meta && this.meta.editable_grid);
+	}
+
 	make() {
 		let template = `
 			<div class="grid-field">
@@ -1490,17 +1495,40 @@ export default class Grid {
 	}
 
 	set_focus_on_row(idx) {
+		this.focus_cell(idx);
+	}
+
+	// Put the focus into a cell of a grid row (the first editable cell, or `fieldname`).
+	focus_cell(idx, fieldname) {
 		if (!idx && idx !== 0) {
 			idx = this.grid_rows.length - 1;
 		}
 
+		const run = () => {
+			const row = this.grid_rows[idx];
+			if (!row || !row.doc) return false;
+			row.change_page_if_reqd(idx);
+			if (row.is_readonly_inline()) {
+				const $cell = row.wrapper.find(".grid-static-col[tabindex]").first();
+				if ($cell.length) $cell.trigger("focus");
+				return !!$cell.length;
+			}
+			row.toggle_editable_row(true);
+			let $inputs = row.row.find('input[type="Text"],textarea,select').filter(":visible");
+			let $target = fieldname ? $inputs.filter(`[data-fieldname="${fieldname}"]`) : $();
+			if (!$target.length) $target = $inputs.first();
+			$target.trigger("focus");
+			return !!$target.length;
+		};
+
 		setTimeout(() => {
-			this.grid_rows[idx].toggle_editable_row(true);
-			this.grid_rows[idx].row
-				.find('input[type="Text"],textarea,select')
-				.filter(":visible:first")
-				.focus();
-		}, 100);
+			run();
+			// a pending default action (Tab) can move the focus away once more
+			setTimeout(() => {
+				const row = this.grid_rows[idx];
+				if (row && row.wrapper && !row.wrapper.find(":focus").length) run();
+			}, 60);
+		}, 50);
 	}
 
 	setup_visible_columns() {

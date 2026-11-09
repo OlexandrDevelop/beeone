@@ -37,6 +37,21 @@ test.describe("Grid inline keyboard", () => {
 		await expect(table(page).locator('.grid-body .grid-row[data-idx="1"] .editable-row')).toHaveCount(0);
 	});
 
+	test("no path opens the modal row form of an editable grid except the edit icon (T-869)", async ({ page }) => {
+		const open_forms = page.locator(".grid-row-open");
+		// Tab / Enter from the header, Ctrl+Down, tour: all go through toggle_view(true)
+		await page.evaluate(() => cur_frm.fields_dict.email_ids.grid.grid_rows[0].toggle_view(true));
+		await expect(open_forms).toHaveCount(0);
+		await expect(
+			table(page).locator('.grid-body .grid-row[data-idx="1"] input[data-fieldname="email_id"]')
+		).toBeFocused();
+		await page.evaluate(() => cur_frm.layout.set_focus(cur_frm.fields_dict.email_ids));
+		await expect(open_forms).toHaveCount(0);
+		// the edit icon is the only opener
+		await table(page).locator('.grid-body .grid-row[data-idx="1"] .btn-open-row').click();
+		await expect(open_forms).toHaveCount(1);
+	});
+
 	test("the form sidebar is closed until it is opened", async ({ page }) => {
 		await expect(page.locator(".layout-side-section")).toBeHidden();
 	});

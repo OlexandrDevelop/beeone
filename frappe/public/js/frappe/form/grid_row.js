@@ -337,6 +337,13 @@ export default class GridRow {
 
 	add_open_form_button() {
 		if (this.doc && !this.grid.df.in_place_edit) {
+			// editable_grid tables have no row form at all: no edit icon, the end column stays empty
+			if (this.grid.inline_only()) {
+				if (!this.open_form_button) {
+					this.open_form_button = $('<div class="col"></div>').appendTo(this.row);
+				}
+				return;
+			}
 			if (!this.open_form_button) {
 				this.open_form_button = $('<div class="col"></div>').appendTo(this.row);
 				this.open_form_button.on("click", () => {
@@ -1574,7 +1581,7 @@ export default class GridRow {
 		return frappe.ui.form.get_open_grid_form();
 	}
 
-	toggle_view(show, callback) {
+	toggle_view(show, callback, opts = {}) {
 		if (!this.doc) {
 			return this;
 		}
@@ -1588,6 +1595,15 @@ export default class GridRow {
 		var open_row = this.get_open_form();
 
 		if (show === undefined) show = !open_row;
+
+		if (show && this.grid.inline_only()) {
+			// editable_grid tables are edited in the row, the row form never opens:
+			// every caller (Tab, Insert, Ctrl+Down, row number, tour...) lands in the cell.
+			if (open_row) open_row.toggle_view(false);
+			this.grid.focus_cell(this.doc.idx - 1, opts.fieldname);
+			callback && callback();
+			return this;
+		}
 
 		// call blur
 		document.activeElement && document.activeElement.blur();

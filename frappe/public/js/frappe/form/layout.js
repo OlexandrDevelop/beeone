@@ -673,7 +673,7 @@ frappe.ui.form.Layout = class Layout {
 						field.grid.add_new_row();
 					}
 					// show grid row (if exists)
-					field.grid.grid_rows[0].show_form();
+					field.grid.grid_rows[0].toggle_view(true);
 					return true;
 				} else if (
 					field.df.fieldtype === "Table MultiSelect" ||
@@ -699,7 +699,12 @@ frappe.ui.form.Layout = class Layout {
 		// next is table, show the table
 		if (field.df.fieldtype == "Table") {
 			if (!field.grid.grid_rows.length) {
-				field.grid.add_new_row(1);
+				if (field.grid.inline_only()) {
+					field.grid.add_new_row();
+					field.grid.focus_cell(0);
+				} else {
+					field.grid.add_new_row(1);
+				}
 			} else {
 				field.grid.grid_rows[0].toggle_view(true);
 			}

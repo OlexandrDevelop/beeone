@@ -130,6 +130,7 @@ frappe.ui.form.check_mandatory = function (frm) {
 	const ROW_LIMIT = 10;
 	const parent_errors = [];
 	const table_errors = {};
+	const missing_cells = [];
 
 	$.each(frappe.model.get_all_docs(frm.doc), function (i, doc) {
 		var error_fields = [];
@@ -156,6 +157,9 @@ frappe.ui.form.check_mandatory = function (frm) {
 				) {
 					has_errors = true;
 					error_fields[error_fields.length] = __(df.label, null, df.parent);
+					if (doc.parentfield) {
+						missing_cells.push([doc.parentfield, doc.idx, df.fieldname]);
+					}
 					// scroll to field
 					if (!frm.scroll_set) {
 						scroll_to(doc.parentfield || df.fieldname);
@@ -265,6 +269,7 @@ frappe.ui.form.check_mandatory = function (frm) {
 			title: __("Missing Fields"),
 		});
 		frm.refresh();
+		mark_missing_cells();
 	}
 
 	return !has_errors;
@@ -298,6 +303,27 @@ frappe.ui.form.check_mandatory = function (frm) {
 		}
 
 		return !!df.reqd;
+	}
+
+	// A mandatory cell of an inline grid is marked in the table; the first one takes the focus.
+	function mark_missing_cells() {
+		let focused = false;
+		missing_cells.forEach(([parentfield, idx, fieldname]) => {
+			const grid = frm.fields_dict[parentfield] && frm.fields_dict[parentfield].grid;
+			if (!grid || !grid.inline_only()) return;
+			setTimeout(() => {
+				const row = grid.grid_rows[idx - 1];
+				const column = row && row.columns && row.columns[fieldname];
+				if (!column) return;
+				column.addClass("is-invalid").attr("aria-invalid", "true");
+				const clear = () => column.removeClass("is-invalid").removeAttr("aria-invalid");
+				column.one("input change", clear);
+				if (!focused) {
+					focused = true;
+					grid.focus_cell(idx - 1, fieldname);
+				}
+			}, 0);
+		});
 	}
 
 	function scroll_to(fieldname) {
