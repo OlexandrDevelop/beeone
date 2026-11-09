@@ -1368,13 +1368,20 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	get_list_row_html(doc, { virtual = false } = {}) {
 		return this.get_list_row_html_skeleton(this.get_left_html(doc), this.get_right_html(doc), {
 			virtual,
+			attrs: this.get_list_row_attrs(doc),
 		});
 	}
 
-	get_list_row_html_skeleton(left = "", right = "", { virtual = false } = {}) {
+	// Extra HTML attributes for the row container (a string, already escaped); views override it.
+	get_list_row_attrs(doc) {
+		return "";
+	}
+
+	get_list_row_html_skeleton(left = "", right = "", { virtual = false, attrs = "" } = {}) {
 		const virtual_attr = virtual ? ' data-virtual-row="1"' : "";
+		const extra_attrs = attrs ? " " + attrs : "";
 		return `
-			<div class="list-row-container" tabindex="1"${virtual_attr}>
+			<div class="list-row-container" tabindex="1"${virtual_attr}${extra_attrs}>
 				<div class="level list-row">
 					<div class="level-left ellipsis">
 						${left}
@@ -2002,7 +2009,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			action: () => {
 				let $list_row = get_list_row_if_focused();
 				if ($list_row) {
-					$list_row.find("a[data-name]")[0].click();
+					this.open_list_row($list_row);
 					return true;
 				}
 				return false;
@@ -2059,6 +2066,10 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			this.sort_selector.set_value(sort_by, sort_order);
 			this.on_sort_change(sort_by, sort_order);
 		});
+	}
+
+	open_list_row($row) {
+		$row.find("a[data-name]")[0]?.click();
 	}
 
 	setup_list_click() {

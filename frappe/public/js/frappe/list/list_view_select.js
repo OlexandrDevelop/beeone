@@ -159,6 +159,10 @@ frappe.views.ListViewSelect = class ListViewSelect {
 				condition: this.list_view.meta.image_field,
 				action: () => this.set_route("image"),
 			},
+			Hierarchy: {
+				condition: !!frappe.views.HierarchyView?.is_available(this.doctype),
+				action: () => this.set_route("hierarchy"),
+			},
 			Tree: {
 				condition:
 					frappe.treeview_settings[this.doctype] ||

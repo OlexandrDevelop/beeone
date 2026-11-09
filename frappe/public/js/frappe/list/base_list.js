@@ -1448,6 +1448,7 @@ frappe.views.view_icon_map = {
 	Dashboard: "layout-dashboard",
 	Map: "map",
 	Tree: "list-tree",
+	Hierarchy: "folder-tree",
 };
 
 frappe.views.get_view_label_map = () => ({
@@ -1460,6 +1461,7 @@ frappe.views.get_view_label_map = () => ({
 	Image: __("Image View"),
 	Inbox: __("Inbox View"),
 	Tree: __("Tree View"),
+	Hierarchy: __("Hierarchy View"),
 	Map: __("Map View"),
 });
 
@@ -1474,6 +1476,7 @@ frappe.views.view_modes = [
 	"Image",
 	"Inbox",
 	"Tree",
+	"Hierarchy",
 	"Map",
 ];
 frappe.views.is_valid = (view_mode) => frappe.views.view_modes.includes(view_mode);

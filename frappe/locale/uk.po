@@ -36068,3 +36068,62 @@ msgstr "Спочатку оберіть тип у полі {0}"
 #: frappe/public/js/frappe/form/link_picker.js
 msgid "Double click or Enter to select"
 msgstr "Подвійний клік або Enter — вибрати"
+
+#: frappe/public/js/frappe/list/base_list.js
+msgid "Hierarchy View"
+msgstr "Ієрархічний список"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Groups"
+msgstr "Групи"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Group path"
+msgstr "Шлях до групи"
+
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Move to Group…"
+msgstr "Перемістити в групу…"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Move to Group"
+msgstr "Перемістити в групу"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Up one level"
+msgstr "На рівень вище"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Edit group"
+msgstr "Змінити групу"
+
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Top level"
+msgstr "Верхній рівень"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Moved {0}"
+msgstr "Переміщено: {0}"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Select items to move first"
+msgstr "Спочатку виберіть що переміщувати"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Showing matches in {0} and its subgroups"
+msgstr "Збіги в групі {0} та її підгрупах"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Showing matches in the whole catalog"
+msgstr "Збіги в усьому довіднику"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Clear filters"
+msgstr "Скинути фільтри"
+
+#: frappe/public/js/frappe/list/hierarchy_view.js
+msgid "Open the form of a group or item"
+msgstr "Відкрити форму групи або елемента"
+

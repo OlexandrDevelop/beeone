@@ -13,6 +13,8 @@ import "../html/print_template.html";
 
 import "./frappe/list/base_list.js";
 import "./frappe/list/list_view.js";
+import "./frappe/ui/group_tree.js";
+import "./frappe/list/hierarchy_view.js";
 import "./frappe/list/list_factory.js";
 
 import "./frappe/list/list_view_select.js";

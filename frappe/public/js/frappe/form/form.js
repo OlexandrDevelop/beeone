@@ -45,7 +45,10 @@ frappe.ui.form.get_breadcrumbs = function (frm) {
 	if (!hide_list) {
 		// a tree doctype's list opens in whichever view the reader last used
 		const route = frm.meta.is_tree
-			? `${slug}/view/${frappe.model.user_settings[frm.doctype]?.last_view || "Tree"}`
+			? `${slug}/view/${
+					frappe.model.user_settings[frm.doctype]?.last_view ||
+					(frappe.views.HierarchyView?.is_available(frm.doctype) ? "Hierarchy" : "Tree")
+				}`
 			: slug;
 		items.push({
 			label: __(frm.doctype),

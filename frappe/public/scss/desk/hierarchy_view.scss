@@ -1,0 +1,186 @@
+// Hierarchy view: groups tree on the left, contents of the selected group on the right
+.hierarchy-layout {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--margin-lg, 16px);
+
+	.hierarchy-groups-toggle {
+		display: none;
+	}
+
+	.hierarchy-groups {
+		flex: 0 0 280px;
+		width: 280px;
+		max-height: calc(100vh - 160px);
+		overflow: auto;
+		position: sticky;
+		top: var(--navbar-height, 48px);
+		padding: var(--padding-xs) 0;
+		border: 1px solid var(--border-color);
+		border-radius: var(--border-radius-md, var(--radius));
+		background-color: var(--card-bg);
+	}
+
+	&.groups-collapsed .hierarchy-groups {
+		display: none;
+	}
+
+	.hierarchy-content {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.hierarchy-path {
+		display: flex;
+		align-items: center;
+		gap: var(--margin-sm);
+		margin-bottom: var(--margin-sm);
+
+		.hierarchy-crumbs {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			list-style: none;
+			margin: 0;
+			padding: 0;
+
+			li + li::before {
+				content: "›";
+				color: var(--text-muted);
+				margin-inline: 2px;
+			}
+		}
+
+		.hierarchy-crumb[aria-current="location"] {
+			font-weight: var(--weight-semibold, 600);
+			color: var(--text-color);
+		}
+	}
+
+	.hierarchy-scope {
+		display: flex;
+		align-items: center;
+		gap: var(--margin-sm);
+		margin-bottom: var(--margin-sm);
+		padding: var(--padding-xs) var(--padding-sm);
+		border-radius: var(--radius);
+		background-color: var(--control-bg);
+		color: var(--text-muted);
+		font-size: var(--text-sm);
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.hierarchy-group-icon {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-inline-end: var(--margin-xs, 4px);
+		color: var(--text-muted);
+	}
+
+	a.is-group {
+		font-weight: var(--weight-semibold, 600);
+	}
+
+	.hierarchy-edit-group {
+		padding: 0 var(--padding-xs);
+		opacity: 0;
+	}
+
+	.list-row-container:hover .hierarchy-edit-group,
+	.list-row-container:focus-within .hierarchy-edit-group,
+	.list-row-container:focus .hierarchy-edit-group {
+		opacity: 1;
+	}
+
+	@media (max-width: 991px) {
+		flex-direction: column;
+		align-items: stretch;
+
+		.hierarchy-groups-toggle {
+			display: inline-flex;
+			align-self: flex-start;
+			gap: var(--margin-xs, 4px);
+		}
+
+		.hierarchy-groups {
+			flex-basis: auto;
+			width: auto;
+			position: static;
+			max-height: 40vh;
+		}
+	}
+}
+
+.group-tree {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+
+	.group-tree-children {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.group-tree-row {
+		display: flex;
+		align-items: center;
+		gap: var(--margin-xs, 4px);
+		min-height: 28px;
+		padding-block: 2px;
+		padding-inline-end: var(--padding-sm);
+		cursor: pointer;
+		color: var(--text-color);
+		border-radius: var(--radius);
+
+		&:hover {
+			background-color: var(--highlight-color);
+		}
+
+		&.is-selected {
+			background-color: var(--highlight-color);
+			font-weight: var(--weight-semibold, 600);
+		}
+
+		&.is-disabled {
+			opacity: 0.6;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--primary);
+			outline-offset: -2px;
+		}
+
+		.group-tree-toggle {
+			display: inline-flex;
+			transition: transform 0.1s;
+		}
+
+		&[aria-expanded="true"] .group-tree-toggle {
+			transform: rotate(90deg);
+		}
+
+		.group-tree-icon {
+			display: inline-flex;
+			color: var(--text-muted);
+		}
+
+		.group-tree-label {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+
+	.group-tree-loading,
+	.group-tree-error {
+		padding: 2px var(--padding-md);
+	}
+}

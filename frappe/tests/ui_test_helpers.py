@@ -867,3 +867,66 @@ def create_list_layout_test_layout(
 		}
 	).insert(ignore_permissions=True)
 	return doc.name
+
+
+HIERARCHY_DOCTYPE = "Custom Catalog"
+
+
+@whitelist_for_tests()
+def setup_hierarchy_doctype():
+	"""A hierarchical catalog for the Hierarchy view UI tests.
+
+	Top level: groups "Group A" (with sub-group "Group A1") and "Group B", plus 3 items.
+	"Group A" holds 250 items, "Group A1" holds 2.
+	"""
+	if frappe.db.exists("DocType", HIERARCHY_DOCTYPE):
+		frappe.delete_doc("DocType", HIERARCHY_DOCTYPE, force=True, ignore_permissions=True)
+		frappe.db.commit()
+	frappe.db.sql_ddl(f"drop table if exists `tab{HIERARCHY_DOCTYPE}`")
+
+	frappe.get_doc(
+		{
+			"doctype": "DocType",
+			"name": HIERARCHY_DOCTYPE,
+			"module": "Custom",
+			"custom": 1,
+			"is_tree": 1,
+			"autoname": "field:title",
+			"title_field": "title",
+			"fields": [
+				{
+					"fieldname": "title",
+					"label": "Title",
+					"fieldtype": "Data",
+					"reqd": 1,
+					"unique": 1,
+					"in_list_view": 1,
+					"in_standard_filter": 1,
+				},
+				{"fieldname": "code", "label": "Code", "fieldtype": "Data", "in_list_view": 1},
+			],
+			"permissions": [{"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}],
+		}
+	).insert(ignore_permissions=True)
+
+	def add(title, parent=None, is_group=0):
+		frappe.get_doc(
+			{
+				"doctype": HIERARCHY_DOCTYPE,
+				"title": title,
+				"code": title.upper(),
+				"is_group": is_group,
+				"parent_custom_catalog": parent,
+			}
+		).insert(ignore_permissions=True)
+
+	add("Group A", None, 1)
+	add("Group A1", "Group A", 1)
+	add("Group B", None, 1)
+	for i in range(1, 4):
+		add(f"Top item {i}")
+	for i in range(1, 251):
+		add(f"A item {i:03d}", "Group A")
+	for i in range(1, 3):
+		add(f"A1 item {i}", "Group A1")
+	frappe.db.commit()

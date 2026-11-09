@@ -90,6 +90,7 @@ frappe.router = {
 		"report",
 		"calendar",
 		"tree",
+		"hierarchy",
 		"gantt",
 		"dashboard",
 		"image",
@@ -102,6 +103,7 @@ frappe.router = {
 		report: "Report",
 		calendar: "Calendar",
 		tree: "Tree",
+		hierarchy: "Hierarchy",
 		gantt: "Gantt",
 		dashboard: "Dashboard",
 		image: "Image",
@@ -390,6 +392,8 @@ frappe.router = {
 						this.list_views_route[default_view.toLowerCase()],
 					];
 				}
+			} else if (frappe.views.HierarchyView?.is_available(doctype_route.doctype)) {
+				route = ["List", doctype_route.doctype, "Hierarchy"];
 			} else {
 				route = ["List", doctype_route.doctype, "List"];
 			}
