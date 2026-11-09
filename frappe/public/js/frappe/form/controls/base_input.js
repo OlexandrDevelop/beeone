@@ -117,9 +117,6 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 					.attr("data-bo-state", can_edit ? "edit" : is_text_only ? "text" : "locked")
 					.attr("data-bo-reqd", me.df.reqd ? "1" : null);
 			}
-			if (me.disp_area) {
-				$(me.disp_area).attr("aria-readonly", can_edit ? null : "true");
-			}
 
 			if (can_edit) {
 				me.disp_area && $(me.disp_area).addClass("hide");
