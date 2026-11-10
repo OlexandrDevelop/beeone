@@ -9,9 +9,22 @@ import frappe
 from frappe.beeone import boot
 from frappe.beeone.api import registers as api
 from frappe.beeone.registers import query
+from frappe.desk import link_title
 from frappe.model.document import Document
 from frappe.tests import IntegrationTestCase
-from frappe.tests.beeone_register_fixtures import DOCUMENT, EMPTY_LEDGER, LEDGER, create, remove
+from frappe.tests.beeone_register_fixtures import (
+	DOCUMENT,
+	EMPTY_LEDGER,
+	LEDGER,
+	PLACE,
+	PLAIN,
+	TITLE_DOCUMENT,
+	TITLE_LEDGER,
+	create,
+	create_titled,
+	remove,
+	remove_titled,
+)
 
 
 class TestBeeoneRegisterViewer(IntegrationTestCase):
@@ -174,3 +187,69 @@ class TestBeeoneRegisterViewer(IntegrationTestCase):
 	def test_supports(self):
 		reg = frappe.get_cached_doc("Register", LEDGER)
 		self.assertTrue(query.supports_balance(reg) and query.supports_turnover(reg))
+
+
+class TestBeeoneRegisterLinkTitles(IntegrationTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		remove_titled()
+		cls.document, cls.places, cls.plain = create_titled()
+		cls.first, cls.second = cls.places.values()
+
+	@classmethod
+	def tearDownClass(cls):
+		remove_titled()
+		super().tearDownClass()
+
+	def setUp(self):
+		frappe.local.response.pop("_link_titles", None)
+
+	def sent(self):
+		return frappe.local.response.get("_link_titles", {})
+
+	def test_movements_send_titles_of_links(self):
+		sets = api.document_movements(TITLE_DOCUMENT, self.document)
+		titles = self.sent()
+		for title, name in self.places.items():
+			self.assertEqual(titles[f"{PLACE}::{name}"], title)
+		# the rows keep the names
+		self.assertEqual({r["place"] for r in sets[0]["rows"]}, {self.first, self.second})
+
+	def test_dynamic_link_gets_its_title(self):
+		api.document_movements(TITLE_DOCUMENT, self.document)
+		self.assertIn(f"{PLACE}::{self.second}", self.sent())
+
+	def test_catalog_without_show_title_gets_no_title(self):
+		api.document_movements(TITLE_DOCUMENT, self.document)
+		self.assertFalse([k for k in self.sent() if k.startswith(f"{PLAIN}::")])
+
+	def test_one_query_per_doctype(self):
+		with patch("frappe.desk.link_title.get_link_titles", wraps=link_title.get_link_titles) as mock:
+			api.document_movements(TITLE_DOCUMENT, self.document)
+		# place is used by the `place` and `ref` columns, but is fetched once
+		self.assertEqual([c.args[0] for c in mock.call_args_list], [PLACE])
+		self.assertEqual(mock.call_args_list[0].args[2], {self.first, self.second})
+
+	def test_balance_and_turnover_send_titles(self):
+		api.balance(TITLE_LEDGER, "2026-03-31", group_by=["place"])
+		self.assertEqual(len(self.sent()), 2)
+		frappe.local.response.pop("_link_titles")
+		api.turnover(TITLE_LEDGER, "2026-03-01", "2026-03-31", group_by=["place"])
+		self.assertEqual(len(self.sent()), 2)
+		frappe.local.response.pop("_link_titles")
+		api.balance_and_turnover(TITLE_LEDGER, "2026-03-01", "2026-03-31", group_by=["place"])
+		self.assertEqual(len(self.sent()), 2)
+
+	def test_balance_without_grouping_sends_no_titles(self):
+		rows = api.balance(TITLE_LEDGER, "2026-03-31", group_by=[])
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(self.sent(), {})
+
+	def test_user_without_read_permission_gets_no_titles(self):
+		cols = query.columns(frappe.get_cached_doc("Register", TITLE_LEDGER))
+		rows = [{"place": self.first}]
+		frappe.set_user("Guest")
+		self.addCleanup(frappe.set_user, "Administrator")
+		self.assertEqual(query.link_titles([(cols, rows)]), {})
+

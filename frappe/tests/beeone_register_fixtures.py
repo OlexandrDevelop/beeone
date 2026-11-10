@@ -149,3 +149,109 @@ def remove():
 			frappe.delete_doc("DocType", name, force=True)
 	frappe.db.commit()
 	clear_cache()
+
+
+# ---------------------------------------------------------------- titled catalogs
+# A register whose dimensions link to a catalog with a title, to a catalog without one and
+# to a Dynamic Link target. Separate from `create()`, whose outputs other tests assert.
+
+PLACE = "Beeone Move Place"
+PLAIN = "Beeone Move Plain"
+TITLE_LEDGER = "Beeone Title Ledger"
+TITLE_DOCUMENT = "Beeone Title Document"
+
+TITLE_LEDGER_FIELDS = [
+	{"fieldname": "voucher_type", "fieldtype": "Data"},
+	{"fieldname": "voucher_no", "fieldtype": "Data"},
+	{"fieldname": "line", "fieldtype": "Int"},
+	{"fieldname": "posting_date", "fieldtype": "Date"},
+	{"fieldname": "posting_time", "fieldtype": "Time"},
+	{"fieldname": "place", "fieldtype": "Link", "options": PLACE, "label": "Place"},
+	{"fieldname": "plain", "fieldtype": "Link", "options": PLAIN, "label": "Plain"},
+	{"fieldname": "ref_type", "fieldtype": "Link", "options": "DocType", "label": "Ref Type"},
+	{"fieldname": "ref", "fieldtype": "Dynamic Link", "options": "ref_type", "label": "Ref"},
+	{"fieldname": "qty", "fieldtype": "Float", "label": "Quantity"},
+]
+
+
+def create_titled():
+	"""Make the titled catalogs, `TITLE_LEDGER` and a submitted `TITLE_DOCUMENT` with 3 rows.
+
+	Returns `(document name, {place title: place name}, plain name)`.
+	"""
+	_doctype(
+		PLACE,
+		[{"fieldname": "place_name", "fieldtype": "Data", "reqd": 1}],
+		autoname="hash",
+		title_field="place_name",
+		show_title_field_in_link=1,
+	)
+	_doctype(PLAIN, [{"fieldname": "plain_name", "fieldtype": "Data"}], autoname="hash", title_field="plain_name")
+	_doctype(TITLE_LEDGER, TITLE_LEDGER_FIELDS)
+	_register(
+		TITLE_LEDGER,
+		[
+			{"doctype": "Register Field", "fieldname": f, "role": "Dimension"}
+			for f in ("place", "plain", "ref_type", "ref")
+		]
+		+ [{"doctype": "Register Field", "fieldname": "qty", "role": "Resource"}],
+	)
+	_doctype(
+		TITLE_DOCUMENT,
+		[
+			{"fieldname": "title", "fieldtype": "Data"},
+			{"fieldname": "posting_date", "fieldtype": "Date"},
+			{"fieldname": "posting_time", "fieldtype": "Time"},
+		],
+		submittable=True,
+	)
+	places = {
+		title: frappe.get_doc({"doctype": PLACE, "place_name": title}).insert().name
+		for title in ("Central <b>warehouse</b>", "Spare store")
+	}
+	plain = frappe.get_doc({"doctype": PLAIN, "plain_name": "Plain one"}).insert().name
+	doc = frappe.get_doc(
+		{
+			"doctype": TITLE_DOCUMENT,
+			"title": "Titled",
+			"posting_date": "2026-03-15",
+			"posting_time": "10:30:00",
+		}
+	).insert()
+	doc.submit()
+	if not frappe.db.exists("Document Movements", TITLE_DOCUMENT):
+		frappe.get_doc(
+			{
+				"doctype": "Document Movements",
+				"document_type": TITLE_DOCUMENT,
+				"registers": [{"doctype": "Document Movements Register", "register": TITLE_LEDGER}],
+			}
+		).insert()
+	from frappe.beeone.registers import document_moment
+
+	first, second = places.values()
+	rows = [
+		{"place": first, "plain": plain, "ref_type": PLACE, "ref": second, "qty": 10},
+		{"place": first, "plain": plain, "ref_type": PLACE, "ref": first, "qty": 5},
+		{"place": second, "plain": plain, "ref_type": PLACE, "ref": second, "qty": 2},
+	]
+	with register_write():
+		RecordSet(TITLE_LEDGER, TITLE_DOCUMENT, doc.name, document_moment(doc)).replace(rows)
+	frappe.db.commit()
+	clear_cache()
+	return doc.name, places, plain
+
+
+def remove_titled():
+	if frappe.db.exists("Document Movements", TITLE_DOCUMENT):
+		frappe.delete_doc("Document Movements", TITLE_DOCUMENT, force=True)
+	for name in (TITLE_LEDGER, TITLE_DOCUMENT, PLACE, PLAIN):
+		if frappe.db.exists("DocType", name):
+			frappe.db.delete(name)
+	if frappe.db.exists("Register", TITLE_LEDGER):
+		frappe.delete_doc("Register", TITLE_LEDGER, force=True)
+	for name in (TITLE_LEDGER, TITLE_DOCUMENT, PLACE, PLAIN):
+		if frappe.db.exists("DocType", name):
+			frappe.delete_doc("DocType", name, force=True)
+	frappe.db.commit()
+	clear_cache()

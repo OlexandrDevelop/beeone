@@ -6,7 +6,15 @@
 import frappe
 from frappe.beeone.registers import query, totals
 from frappe.beeone.registers.meta import get_register, register_doctypes
+from frappe.desk.link_title import send_link_titles
 from frappe.utils import sbool
+
+
+def _send_titles(register: str, rows):
+	"""Titles of the Link values of the grouped dimensions, for the client cache."""
+	cols = query.columns(get_register(register), with_system=False)
+	send_link_titles(query.link_titles([(cols, rows)]))
+	return rows
 
 
 @frappe.whitelist()
@@ -33,7 +41,9 @@ def catalog():
 @frappe.whitelist()
 def document_movements(doctype: str, name: str):
 	"""Movements of a document, one entry per register that has rows."""
-	return query.document_movements(doctype, name)
+	sets = query.document_movements(doctype, name)
+	send_link_titles(query.link_titles((s["columns"], s["rows"]) for s in sets))
+	return sets
 
 
 @frappe.whitelist()
@@ -55,18 +65,19 @@ def register_info(doctype: str):
 
 @frappe.whitelist()
 def balance(register: str, at=None, filters=None, group_by=None, resources=None):
-	return query.balance(
+	rows = query.balance(
 		register,
 		at,
 		frappe.parse_json(filters) if filters else None,
 		frappe.parse_json(group_by) if group_by is not None else None,
 		frappe.parse_json(resources) if resources else None,
 	)
+	return _send_titles(register, rows)
 
 
 @frappe.whitelist()
 def turnover(register: str, start, end, filters=None, group_by=None, resources=None):
-	return query.turnover(
+	rows = query.turnover(
 		register,
 		start,
 		end,
@@ -74,11 +85,12 @@ def turnover(register: str, start, end, filters=None, group_by=None, resources=N
 		frappe.parse_json(group_by) if group_by is not None else None,
 		frappe.parse_json(resources) if resources else None,
 	)
+	return _send_titles(register, rows)
 
 
 @frappe.whitelist()
 def balance_and_turnover(register: str, start, end, filters=None, group_by=None, resources=None):
-	return query.balance_and_turnover(
+	rows = query.balance_and_turnover(
 		register,
 		start,
 		end,
@@ -86,6 +98,7 @@ def balance_and_turnover(register: str, start, end, filters=None, group_by=None,
 		frappe.parse_json(group_by) if group_by is not None else None,
 		frappe.parse_json(resources) if resources else None,
 	)
+	return _send_titles(register, rows)
 
 
 @frappe.whitelist()

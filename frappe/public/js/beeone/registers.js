@@ -11,8 +11,23 @@ const NUMERIC = ["Currency", "Float", "Int", "Long Int", "Percent"];
 // Every other value is text of a register row and is escaped, so it can never become HTML.
 const FORMATTED = [...NUMERIC, "Date", "Datetime", "Time", "Duration", "Check"];
 
+// Link cells show the title of the record (frappe._link_titles is filled by the register API)
+// and stay an anchor that opens it. The anchor is built here with escaping: frappe.format would
+// return unescaped text for some Link paths.
+beeone.registers.link = function (value, column, row) {
+	const doctype = column.fieldtype === "Link" ? column.options : row && row[column.options];
+	if (!doctype) return esc(value);
+	const title = frappe.utils.get_link_title(doctype, value) || value;
+	if (!frappe.model.can_read(doctype)) return esc(title);
+	return (
+		`<a href="${esc(frappe.utils.get_form_link(doctype, value))}" ` +
+		`data-doctype="${esc(doctype)}" data-name="${esc(value)}">${esc(title)}</a>`
+	);
+};
+
 beeone.registers.format = function (value, column, row) {
 	if (value === null || value === undefined || value === "") return "";
+	if (["Link", "Dynamic Link"].includes(column.fieldtype)) return beeone.registers.link(value, column, row);
 	if (!FORMATTED.includes(column.fieldtype)) return esc(value);
 	const df = { fieldtype: column.fieldtype, options: column.options, fieldname: column.fieldname };
 	return frappe.format(value, df, { inline: true }, row);

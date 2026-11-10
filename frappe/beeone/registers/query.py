@@ -67,6 +67,45 @@ def columns(reg, with_system: bool = True) -> list[dict]:
 	return result
 
 
+def link_titles(tables) -> dict[str, str]:
+	"""Titles of the Link and Dynamic Link values in `tables`, an iterable of `(columns, rows)`.
+
+	Keyed `Doctype::name` like the client cache. Names are collected over all tables first,
+	so there is one `get_list` per linked doctype (in batches). Only doctypes that follow the
+	standard rule (`title_field` + `show_title_field_in_link`, readable by the user) get titles.
+	"""
+	from frappe.desk import link_title
+
+	names_by_doctype = {}
+	for cols, rows in tables:
+		for column in cols:
+			fieldname, options = column.get("fieldname"), column.get("options")
+			if not fieldname or not options:
+				continue
+			fieldtype = column.get("fieldtype")
+			if fieldtype not in ("Link", "Dynamic Link"):
+				continue
+			for row in rows:
+				value = row.get(fieldname)
+				if not value:
+					continue
+				doctype = options if fieldtype == "Link" else row.get(options)
+				if doctype:
+					names_by_doctype.setdefault(doctype, set()).add(value)
+
+	titles = {}
+	for doctype, names in names_by_doctype.items():
+		if not frappe.db.exists("DocType", doctype):
+			continue
+		title_field = link_title.get_link_title_field(doctype)
+		if not title_field:
+			continue
+		for name, title in link_title.get_link_titles(doctype, title_field, names).items():
+			if title and title != name:
+				titles[f"{doctype}::{name}"] = title
+	return titles
+
+
 def document_movements(doctype: str, name: str) -> list[dict]:
 	"""Rows that the document wrote, one entry for every register that has rows.
 
