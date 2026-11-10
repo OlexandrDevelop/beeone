@@ -161,3 +161,25 @@ def test_text_values_of_rows_are_escaped(page):
 	assert page.locator("#beeone-xss img").count() == 0
 	assert page.evaluate("window.beeone_xss") is None
 	assert evil in page.locator("#beeone-xss td").first.inner_text()
+
+
+def test_link_cells_show_titles_and_open_the_record(page):
+	open_desk(page, LEDGER)
+	page.wait_for_selector(".list-row")
+	title = "<b>Central</b> store"
+	html = page.evaluate(
+		"""(title) => {
+			frappe._link_titles["User::Administrator"] = title;
+			const columns = [{fieldname: "link", label: "Link", fieldtype: "Link", options: "User"}];
+			$("<div id='beeone-link'></div>").appendTo("body").html(
+				beeone.registers.table(columns, [{link: "Administrator"}])
+			);
+			return document.querySelector("#beeone-link td").innerHTML;
+		}""",
+		title,
+	)
+	cell = page.locator("#beeone-link td a")
+	assert cell.get_attribute("href") == "/desk/user/Administrator"
+	assert cell.inner_text() == title  # shown as text, the markup is escaped
+	assert page.locator("#beeone-link td b").count() == 0
+	assert "&lt;b&gt;" in html
