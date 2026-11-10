@@ -169,6 +169,7 @@ def test_link_cells_show_titles_and_open_the_record(page):
 	title = "<b>Central</b> store"
 	html = page.evaluate(
 		"""(title) => {
+			frappe._link_titles = frappe._link_titles || {};
 			frappe._link_titles["User::Administrator"] = title;
 			const columns = [{fieldname: "link", label: "Link", fieldtype: "Link", options: "User"}];
 			$("<div id='beeone-link'></div>").appendTo("body").html(
