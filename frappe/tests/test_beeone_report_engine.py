@@ -3,8 +3,13 @@
 
 """Report composition engine: groupings, subtotals, grand total, drill-down."""
 
+import random
+from unittest.mock import patch
+
+import frappe
 from frappe.beeone import report_engine as engine
 from frappe.tests import IntegrationTestCase
+from frappe.utils import flt
 
 ROWS = [
 	{"region": "N", "item": "A", "dt": "Invoice", "doc": "INV-1", "qty": 2, "amount": 10.5},
@@ -79,3 +84,164 @@ class TestReportEngine(IntegrationTestCase):
 	def test_unknown_aggregate_is_rejected(self):
 		with self.assertRaises(ValueError):
 			engine.compose(ROWS, measures=[{"field": "qty", "agg": "median"}])
+
+
+def _old_compose(rows, groupings=(), measures=(), detail=True, drill=None, label_field=None, total_label=""):
+	"""Frozen copy of the algorithm before T-892 (flt and rounding at every addition)."""
+	groupings = [engine._norm_grouping(g) for g in groupings]
+	measures = [engine._norm_measure(m) for m in measures]
+	rows = list(rows)
+
+	class Acc:
+		def __init__(self):
+			self.state = [
+				set() if m["agg"] == "count_distinct" else (0 if m["agg"] in ("sum", "count") else None)
+				for m in measures
+			]
+
+		def add(self, row):
+			for i, m in enumerate(measures):
+				agg, value = m["agg"], row.get(m["field"])
+				if agg == "sum":
+					self.state[i] += flt(value)
+				elif agg == "count":
+					self.state[i] += 1
+				elif agg == "count_distinct":
+					if value is not None:
+						self.state[i].add(value)
+				elif value is not None:
+					cur = self.state[i]
+					if cur is None or (value < cur if agg == "min" else value > cur):
+						self.state[i] = value
+
+		def values(self):
+			out = {}
+			for m, v in zip(measures, self.state):
+				if m["agg"] == "count_distinct":
+					v = len(v)
+				elif m["agg"] == "sum" and m["precision"] is not None:
+					v = flt(v, m["precision"])
+				out[m["key"]] = v
+			return out
+
+	out = []
+	grand = Acc()
+	for row in rows:
+		grand.add(row)
+
+	def emit(rows_, depth, parent, filters):
+		if depth == len(groupings):
+			if not detail:
+				return
+			for i, row in enumerate(rows_):
+				acc = Acc()
+				acc.add(row)
+				target = None
+				if drill and row.get(drill["name"]):
+					target = {"doctype": row.get(drill["doctype"]), "name": row[drill["name"]]}
+				row_id = f"{parent}/{i}" if parent else str(i)
+				out.append(
+					{
+						"id": row_id,
+						"parent": parent,
+						"level": depth,
+						"kind": "item",
+						"label": row.get(label_field) if label_field else None,
+						"values": acc.values(),
+						"drill": target,
+					}
+				)
+			return
+		g = groupings[depth]
+		buckets = {}
+		for row in rows_:
+			buckets.setdefault(row.get(g["field"]), []).append(row)
+		for key in engine._sorted_keys(list(buckets), g):
+			part = buckets[key]
+			acc = Acc()
+			for row in part:
+				acc.add(row)
+			label = g["label"](key) if g["label"] else ("" if key is None else str(key))
+			node_filters = {**filters, g["field"]: key}
+			node_id = f"{parent}/{key}" if parent else str(key)
+			out.append(
+				{
+					"id": node_id,
+					"parent": parent,
+					"level": depth,
+					"kind": "group",
+					"label": label,
+					"values": acc.values(),
+					"drill": {"filters": node_filters},
+				}
+			)
+			emit(part, depth + 1, node_id, node_filters)
+
+	emit(rows, 0, None, {})
+	out.append(
+		{
+			"id": "total",
+			"parent": None,
+			"level": 0,
+			"kind": "total",
+			"label": total_label,
+			"values": grand.values(),
+			"drill": None,
+		}
+	)
+	return out
+
+
+class TestReportEngineEquivalence(IntegrationTestCase):
+	def _data(self, n=600):
+		rnd = random.Random(892)
+		return [
+			{
+				"a": rnd.choice(["x", "y", "z", None]),
+				"b": rnd.choice([1, 2, 3, None]),
+				"c": rnd.choice(["p", "q"]),
+				"dt": "Doc",
+				"doc": f"D-{rnd.randint(1, 40)}",
+				# thirds and halves: ties and floating drift matter
+				"amount": rnd.choice([None, "", "1,5", rnd.randint(-5000, 5000) / 8, rnd.random() * 100]),
+				"qty": rnd.choice([0, 1, 2.5, -1, None]),
+				"day": rnd.choice(["2026-11-01", "2026-11-02", None]),
+			}
+			for _ in range(n)
+		]
+
+	def test_same_output_as_before_under_every_rounding_method(self):
+		measures = [
+			{"field": "qty"},
+			{"field": "amount", "precision": 2},
+			{"field": "amount", "precision": 0, "key": "amount0"},
+			{"field": "amount", "key": "raw"},
+			{"field": "doc", "agg": "count_distinct", "key": "docs"},
+			{"field": "doc", "agg": "count", "key": "n"},
+			{"field": "day", "agg": "min", "key": "first"},
+			{"field": "day", "agg": "max", "key": "last"},
+		]
+		cases = [
+			dict(groupings=[], detail=True),
+			dict(groupings=["a"], detail=False),
+			dict(groupings=["a", {"field": "b", "order": "desc"}, {"field": "c", "order": "none"}], detail=True),
+			dict(groupings=[{"field": "a", "label": lambda v: f"<{v}>"}, "b"], detail=True,
+				drill={"doctype": "dt", "name": "doc"}, label_field="doc", total_label="All"),
+		]
+		rows = self._data()
+		saved = frappe.db.get_single_value("System Settings", "rounding_method")
+		self.addCleanup(frappe.db.set_single_value, "System Settings", "rounding_method", saved)
+		self.addCleanup(frappe.clear_cache)
+		for method in ("Banker's Rounding (legacy)", "Banker's Rounding", "Commercial Rounding"):
+			frappe.db.set_single_value("System Settings", "rounding_method", method)
+			frappe.clear_cache()
+			for kw in cases:
+				self.assertEqual(engine.compose(rows, measures=measures, **kw), _old_compose(rows, measures=measures, **kw), (method, kw))
+		self.assertEqual(engine.compose([], ["a"], measures), _old_compose([], ["a"], measures))
+
+	def test_system_settings_read_once_per_compose(self):
+		rows = self._data(200)
+		measures = [{"field": "amount", "precision": 2}, {"field": "qty", "precision": 2}]
+		with patch("frappe.get_system_settings", wraps=frappe.get_system_settings) as spy:
+			engine.compose(rows, ["a", "b"], measures)
+		self.assertLessEqual(spy.call_count, 1)

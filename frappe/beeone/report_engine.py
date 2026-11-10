@@ -22,6 +22,7 @@ groupings only detail rows (when `detail`) and the grand total are given. Totals
 rows and rounded once at the end, so a total never differs from the sum of the unrounded rows.
 """
 
+import frappe
 from frappe.utils import flt
 
 AGGREGATES = ("sum", "count", "count_distinct", "min", "max")
@@ -45,41 +46,51 @@ def _norm_measure(measure):
 	return m
 
 
-class _Acc:
-	"""Running totals of one node."""
+def _start(m):
+	return set() if m["agg"] == "count_distinct" else (0 if m["agg"] in ("sum", "count") else None)
 
-	def __init__(self, measures):
-		self.measures = measures
-		self.state = [self._start(m) for m in measures]
 
-	@staticmethod
-	def _start(m):
-		return set() if m["agg"] == "count_distinct" else (0 if m["agg"] in ("sum", "count") else None)
+def _prepare(row, measures):
+	"""The values a row adds to every node it belongs to, converted once per row."""
+	return [flt(row.get(m["field"])) if m["agg"] == "sum" else row.get(m["field"]) for m in measures]
 
-	def add(self, row):
-		for i, m in enumerate(self.measures):
-			agg, value = m["agg"], row.get(m["field"])
-			if agg == "sum":
-				self.state[i] += flt(value)
-			elif agg == "count":
-				self.state[i] += 1
-			elif agg == "count_distinct":
-				if value is not None:
-					self.state[i].add(value)
-			elif value is not None:
-				cur = self.state[i]
-				if cur is None or (value < cur if agg == "min" else value > cur):
-					self.state[i] = value
 
-	def values(self):
-		out = {}
-		for m, v in zip(self.measures, self.state):
-			if m["agg"] == "count_distinct":
-				v = len(v)
-			elif m["agg"] == "sum" and m["precision"] is not None:
-				v = flt(v, m["precision"])
-			out[m["key"]] = v
-		return out
+def _add(state, measures, vals):
+	for i, m in enumerate(measures):
+		agg, value = m["agg"], vals[i]
+		if agg == "sum":
+			state[i] += value
+		elif agg == "count":
+			state[i] += 1
+		elif agg == "count_distinct":
+			if value is not None:
+				state[i].add(value)
+		elif value is not None:
+			cur = state[i]
+			if cur is None or (value < cur if agg == "min" else value > cur):
+				state[i] = value
+
+
+class _Rounding:
+	"""The rounding method, read from the system settings once and only when a total is rounded."""
+
+	method = None
+
+	def get(self):
+		if self.method is None:
+			self.method = frappe.get_system_settings("rounding_method") or "Banker's Rounding (legacy)"
+		return self.method
+
+
+def _values(measures, state, rounding):
+	out = {}
+	for m, v in zip(measures, state):
+		if m["agg"] == "count_distinct":
+			v = len(v)
+		elif m["agg"] == "sum" and m["precision"] is not None:
+			v = flt(v, m["precision"], rounding.get())
+		out[m["key"]] = v
+	return out
 
 
 def _sorted_keys(keys, g):
@@ -94,19 +105,35 @@ def compose(rows, groupings=(), measures=(), detail=True, drill=None, label_fiel
 	"""Build the grouped rows with subtotals and the grand total. See the module docstring."""
 	groupings = [_norm_grouping(g) for g in groupings]
 	measures = [_norm_measure(m) for m in measures]
-	rows = list(rows)
-	out = []
-	grand = _Acc(measures)
-	for row in rows:
-		grand.add(row)
+	rounding = _Rounding()
+	depth_max = len(groupings)
+	new_state = lambda: [_start(m) for m in measures]  # noqa: E731
 
-	def emit(rows_, depth, parent, filters):
-		if depth == len(groupings):
-			if not detail:
-				return
-			for i, row in enumerate(rows_):
-				acc = _Acc(measures)
-				acc.add(row)
+	# one pass: a row is converted once and added to the grand total and to every ancestor group;
+	# a node is [state, children by key (insertion order), rows of the deepest level]
+	grand = new_state()
+	root = [None, {}, []]
+	for row in rows:
+		vals = _prepare(row, measures)
+		_add(grand, measures, vals)
+		node = root
+		for g in groupings:
+			key = row.get(g["field"])
+			child = node[1].get(key)
+			if child is None:
+				child = node[1][key] = [new_state(), {}, []]
+			_add(child[0], measures, vals)
+			node = child
+		if detail:
+			node[2].append((row, vals))
+
+	out = []
+
+	def emit(node, depth, parent, filters):
+		if depth == depth_max:
+			for i, (row, vals) in enumerate(node[2]):
+				state = new_state()
+				_add(state, measures, vals)
 				target = None
 				if drill and row.get(drill["name"]):
 					target = {"doctype": row.get(drill["doctype"]), "name": row[drill["name"]]}
@@ -118,20 +145,14 @@ def compose(rows, groupings=(), measures=(), detail=True, drill=None, label_fiel
 						"level": depth,
 						"kind": "item",
 						"label": row.get(label_field) if label_field else None,
-						"values": acc.values(),
+						"values": _values(measures, state, rounding),
 						"drill": target,
 					}
 				)
 			return
 		g = groupings[depth]
-		buckets = {}
-		for row in rows_:
-			buckets.setdefault(row.get(g["field"]), []).append(row)
-		for key in _sorted_keys(list(buckets), g):
-			part = buckets[key]
-			acc = _Acc(measures)
-			for row in part:
-				acc.add(row)
+		for key in _sorted_keys(list(node[1]), g):
+			child = node[1][key]
 			label = g["label"](key) if g["label"] else ("" if key is None else str(key))
 			node_filters = {**filters, g["field"]: key}
 			node_id = f"{parent}/{key}" if parent else str(key)
@@ -142,13 +163,13 @@ def compose(rows, groupings=(), measures=(), detail=True, drill=None, label_fiel
 					"level": depth,
 					"kind": "group",
 					"label": label,
-					"values": acc.values(),
+					"values": _values(measures, child[0], rounding),
 					"drill": {"filters": node_filters},
 				}
 			)
-			emit(part, depth + 1, node_id, node_filters)
+			emit(child, depth + 1, node_id, node_filters)
 
-	emit(rows, 0, None, {})
+	emit(root, 0, None, {})
 	out.append(
 		{
 			"id": "total",
@@ -156,7 +177,7 @@ def compose(rows, groupings=(), measures=(), detail=True, drill=None, label_fiel
 			"level": 0,
 			"kind": "total",
 			"label": total_label,
-			"values": grand.values(),
+			"values": _values(measures, grand, rounding),
 			"drill": None,
 		}
 	)
