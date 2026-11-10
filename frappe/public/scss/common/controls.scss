@@ -342,8 +342,48 @@ select.form-control {
 
 	.link-picker-footer {
 		display: flex;
+		align-items: center;
 		gap: var(--padding-sm);
 		margin-top: var(--padding-sm);
+	}
+
+	&.link-picker-hierarchy {
+		.link-picker-layout {
+			display: flex;
+			gap: var(--padding-md);
+			align-items: stretch;
+		}
+
+		.link-picker-groups {
+			flex: 0 0 240px;
+			max-height: 55vh;
+			overflow: auto;
+			border: 1px solid var(--border-color);
+			border-radius: var(--radius);
+			padding: var(--padding-xs, 4px);
+		}
+
+		.link-picker-content {
+			flex: 1 1 auto;
+			min-width: 0;
+		}
+
+		.link-picker-path {
+			margin-bottom: var(--padding-sm);
+			color: var(--text-muted);
+		}
+
+		.link-picker-scroll {
+			max-height: 55vh;
+		}
+
+		.link-picker-sentinel {
+			height: 1px;
+		}
+
+		tbody tr[aria-disabled="true"] td:first-child {
+			opacity: 0.8;
+		}
 	}
 }
 

@@ -43,11 +43,12 @@ frappe.ui.form.get_breadcrumbs = function (frm) {
 		frm.meta.issingle || (frm.doctype === "User" && !frappe.user.has_role("System Manager"));
 
 	if (!hide_list) {
-		// a tree doctype's list opens in whichever view the reader last used
+		// a hierarchy catalog opens as a hierarchy; another tree doctype in the view last used
 		const route = frm.meta.is_tree
 			? `${slug}/view/${
-					frappe.model.user_settings[frm.doctype]?.last_view ||
-					(frappe.views.HierarchyView?.is_available(frm.doctype) ? "Hierarchy" : "Tree")
+					frappe.views.HierarchyView?.is_available(frm.doctype)
+						? "Hierarchy"
+						: frappe.model.user_settings[frm.doctype]?.last_view || "Tree"
 				}`
 			: slug;
 		items.push({

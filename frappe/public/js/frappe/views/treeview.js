@@ -65,6 +65,7 @@ frappe.views.TreeViewSelect = class TreeViewSelect extends frappe.views.ListView
 		// visited last, possibly another doctype's
 		const route = [this.slug(), "view", view];
 		if (calendar_name) route.push(calendar_name);
+		frappe.route_flags.explicit_view = true;
 		frappe.set_route(route);
 	}
 };
@@ -867,6 +868,7 @@ frappe.views.TreeView = class TreeView {
 			this.menu_items.unshift({
 				label: __("View List"),
 				action: function () {
+					frappe.route_flags.explicit_view = true;
 					frappe.set_route(["List", me.doctype, "List"]);
 				},
 			});

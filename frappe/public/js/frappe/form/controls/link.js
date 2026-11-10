@@ -174,7 +174,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 		const typed = this.get_label_value();
 		const last = this.value;
 		this.awesomplete?.close();
-		new frappe.ui.form.LinkPicker({
+		frappe.ui.form.LinkPicker.open({
 			target: this,
 			doctype,
 			txt: typed && typed !== this.get_translated(last) ? typed : "",

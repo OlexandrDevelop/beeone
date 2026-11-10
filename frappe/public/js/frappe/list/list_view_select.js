@@ -251,7 +251,10 @@ frappe.views.ListViewSelect = class ListViewSelect {
 			// user_settings.save only updates the local cache in its server
 			// callback, so routing immediately would let the arriving list
 			// view restore from the stale value.
-			const go = () => frappe.set_route([this.slug(), "view", "list"]);
+			const go = () => {
+				frappe.route_flags.explicit_view = true;
+				frappe.set_route([this.slug(), "view", "list"]);
+			};
 			frappe.model.user_settings
 				.save(this.doctype, "List", {
 					active_layout_name: name === "default_layout" ? "" : name,
@@ -387,6 +390,8 @@ frappe.views.ListViewSelect = class ListViewSelect {
 		if (search_params) {
 			frappe.route_options = Object.fromEntries(search_params);
 		}
+		// the user chose this view: a hierarchy catalog must not turn List back into Hierarchy
+		frappe.route_flags.explicit_view = true;
 		frappe.set_route(route);
 	}
 

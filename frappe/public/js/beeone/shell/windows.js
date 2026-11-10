@@ -326,6 +326,7 @@ function end_loader(win) {
 export function pending(route) {
 	if (!is_window_route(route)) return;
 	const key = route_key(route);
+	adopt_redirected(key, route);
 	let win = wins.map.get(key);
 	if (win && win.page) return;
 	const fresh = !win;
@@ -346,6 +347,7 @@ export function host(page) {
 		return;
 	}
 	const key = route_key(route);
+	adopt_redirected(key, route);
 	let win = wins.map.get(key);
 	const fresh = !win;
 	if (!win) win = create(route, { state: "normal" });
@@ -407,6 +409,15 @@ export function adopt_renamed(key, route) {
 		page.label = key;
 	}
 	rekey(old_key, key, route);
+}
+
+// A restored window saved as the plain list of a hierarchy catalog arrives as its hierarchy (the
+// router redirects it): the same window changes its key, no orphan stays behind in the taskbar.
+function adopt_redirected(key, route) {
+	if (wins.map.has(key) || route[0] !== "List" || String(route[2]).toLowerCase() !== "hierarchy") return;
+	const old_key = ["List", route[1], "List"].join("/");
+	const win = wins.map.get(old_key);
+	if (win && !win.page) rekey(old_key, key, route);
 }
 
 function rekey(old_key, key, route) {

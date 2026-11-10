@@ -175,8 +175,10 @@ frappe.breadcrumbs = {
 		const doctype_route = frappe.router.slug(frappe.router.doctype_layout || doctype);
 		let route = doctype_route;
 		if (doctype_meta?.is_tree) {
-			const view = frappe.model.user_settings[doctype]?.last_view ||
-				(frappe.views.HierarchyView?.is_available(doctype) ? "Hierarchy" : "Tree");
+			// a hierarchy catalog opens as a hierarchy, whatever view was used last
+			const view = frappe.views.HierarchyView?.is_available(doctype)
+				? "Hierarchy"
+				: frappe.model.user_settings[doctype]?.last_view || "Tree";
 			route = `${doctype_route}/view/${view}`;
 		}
 		return [{ label: __(doctype), href: `/desk/${route}` }];

@@ -12875,7 +12875,7 @@ msgstr ""
 #: frappe/core/doctype/doctype_link/doctype_link.json
 #: frappe/website/doctype/website_sidebar_item/website_sidebar_item.json
 msgid "Group"
-msgstr ""
+msgstr "Група"
 
 #. Option for the 'Chart Type' (Select) field in DocType 'Dashboard Chart'
 #: frappe/desk/doctype/dashboard_chart/dashboard_chart.json
@@ -18206,7 +18206,7 @@ msgstr ""
 #: frappe/public/js/frappe/views/file/file_view.js:91
 #: frappe/website/doctype/website_slideshow/website_slideshow.js:25
 msgid "Name"
-msgstr ""
+msgstr "Назва"
 
 #: frappe/integrations/doctype/webhook/webhook.js:29
 msgid "Name (Doc Name)"
@@ -25703,7 +25703,7 @@ msgstr ""
 #: frappe/website/doctype/web_form_field/web_form_field.json
 #: frappe/website/doctype/web_template_field/web_template_field.json
 msgid "Select"
-msgstr ""
+msgstr "Вибрати"
 
 #: frappe/public/js/frappe/data_import/data_exporter.js:154
 #: frappe/public/js/frappe/form/controls/multicheck.js:184
@@ -36127,3 +36127,19 @@ msgstr "Скинути фільтри"
 msgid "Open the form of a group or item"
 msgstr "Відкрити форму групи або елемента"
 
+
+#: frappe/public/js/frappe/form/hierarchy_link_picker.js
+msgid "Search in all of {0}"
+msgstr "Пошук по всьому довіднику «{0}»"
+
+#: frappe/public/js/frappe/form/hierarchy_link_picker.js
+msgid "Showing the first {0}; narrow the search"
+msgstr "Показано перші {0}; уточніть пошук"
+
+#: frappe/public/js/frappe/form/hierarchy_link_picker.js
+msgid "A group cannot be selected here; open it"
+msgstr "Групу тут вибрати не можна — відкрийте її"
+
+#: frappe/public/js/frappe/form/hierarchy_link_picker.js
+msgid "Double click or Enter to open the group"
+msgstr "Подвійний клік або Enter — відкрити групу"

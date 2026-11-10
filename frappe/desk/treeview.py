@@ -1,9 +1,12 @@
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+import json
+
 import frappe
 from frappe import _
 from frappe.query_builder import functions
+from frappe.utils import cint
 
 
 @frappe.whitelist()
@@ -78,10 +81,20 @@ def _tree_meta(doctype):
 	return meta, parent_field, meta.get("title_field") or "name"
 
 
+def _check_browse(doctype):
+	"""A user who may read the catalog, or only select from it (a Link field), may browse its groups."""
+	if not (frappe.has_permission(doctype, "read") or frappe.has_permission(doctype, "select")):
+		frappe.throw(_("No permission for {0}").format(_(doctype)), frappe.PermissionError)
+
+
 @frappe.whitelist()
 def get_group_children(doctype: str, parent: str = "") -> list[dict]:
 	"""Groups (is_group=1) directly under `parent`, one level, with `expandable` = has subgroups."""
-	frappe.has_permission(doctype, "read", throw=True)
+	_check_browse(doctype)
+	return _group_children(doctype, parent)
+
+
+def _group_children(doctype, parent=""):
 	meta, parent_field, title = _tree_meta(doctype)
 	table = frappe.qb.DocType(doctype)
 
@@ -117,7 +130,7 @@ def get_group_children(doctype: str, parent: str = "") -> list[dict]:
 @frappe.whitelist()
 def get_group_path(doctype: str, name: str) -> list[dict]:
 	"""Path from the top level down to the group `name` (inclusive), following the parent field."""
-	frappe.has_permission(doctype, "read", throw=True)
+	_check_browse(doctype)
 	meta, parent_field, title = _tree_meta(doctype)
 
 	path = []
@@ -138,6 +151,146 @@ def get_group_path(doctype: str, name: str) -> list[dict]:
 		current = row.get(parent_field)
 	path.reverse()
 	return path
+
+
+PICKER_LIMIT = 5000
+PICKER_HIDDEN_COLUMNS = {"name", "value", "label", "description", "_relevance", "is_group"}
+
+
+@frappe.whitelist(methods=["POST"])
+def get_picker_contents(
+	doctype: str,
+	group: str = "",
+	txt: str = "",
+	current: str = "",
+	query: str | None = None,
+	searchfield: str | None = None,
+	filters: str | dict | list | None = None,
+	reference_doctype: str | None = None,
+	link_fieldname: str | None = None,
+	ignore_user_permissions: bool = False,
+) -> dict:
+	"""Content of one group (or a search over the whole catalog) for the hierarchical link picker.
+
+	The records come from `search_widget`, so get_query, the field's filters, link filters and
+	permissions work as in the field's dropdown. The whole group is returned (no paging, up to
+	PICKER_LIMIT). Groups the filters do not let through are returned for navigation with
+	`selectable` = 0."""
+	from frappe.desk.search import search_widget
+
+	_check_browse(doctype)
+	meta, parent_field, title = _tree_meta(doctype)
+	txt = (txt or "").strip()
+	filters = frappe.parse_json(filters) if isinstance(filters, str) else filters
+
+	if current and not group and not txt:
+		group = frappe.db.get_value(doctype, current, parent_field) or ""
+	group = group or ""
+
+	if not txt:
+		if isinstance(filters, list):
+			filters = [*filters, [doctype, parent_field, *(["=", group] if group else ["is", "not set"])]]
+		else:
+			filters = {**(filters or {}), parent_field: group or ["is", "not set"]}
+
+	raw = search_widget(
+		doctype,
+		txt,
+		query,
+		searchfield,
+		0,
+		PICKER_LIMIT,
+		filters,
+		filter_fields=json.dumps([parent_field, "is_group"]),
+		as_dict=True,
+		reference_doctype=reference_doctype,
+		ignore_user_permissions=ignore_user_permissions,
+		link_fieldname=link_fieldname,
+	)
+	raw = raw or []
+
+	def name_of(r):
+		if isinstance(r, dict):
+			return r.get("name") or r.get("value")
+		return r[0] if r else None
+
+	names = [n for n in dict.fromkeys(name_of(r) for r in raw) if n]
+	info = {}
+	if names:
+		title_column = f"{title} as title" if title != "name" else "name as title"
+		for d in frappe.get_all(
+			doctype,
+			filters={"name": ["in", names]},
+			fields=["name", parent_field, "is_group", title_column],
+			ignore_permissions=True,
+		):
+			info[d.name] = d
+
+	columns = []
+	first = next((r for r in raw if isinstance(r, dict)), None)
+	if first:
+		hidden = PICKER_HIDDEN_COLUMNS | {parent_field, title}
+		columns = [k for k in first if k not in hidden]
+
+	rows = []
+	for r in raw:
+		name = name_of(r)
+		d = info.get(name)
+		if not d:
+			continue
+		parent = d.get(parent_field) or ""
+		if not txt and parent != group:
+			continue  # a custom query that ignores the group scope
+		row = {k: v for k, v in r.items() if k in columns} if isinstance(r, dict) else {}
+		row.update(
+			value=name,
+			title=d.title or name,
+			is_group=cint(d.is_group),
+			selectable=1,
+			parent=parent,
+		)
+		rows.append(row)
+
+	if txt:
+		parents = {r["parent"] for r in rows if r["parent"]}
+		parent_titles = {}
+		if parents:
+			title_column = f"{title} as title" if title != "name" else "name as title"
+			parent_titles = {
+				d.name: d.title
+				for d in frappe.get_all(
+					doctype,
+					filters={"name": ["in", list(parents)]},
+					fields=["name", title_column],
+					ignore_permissions=True,
+				)
+			}
+		for r in rows:
+			if r["parent"]:
+				r["parent_title"] = parent_titles.get(r["parent"]) or r["parent"]
+	else:
+		by_value = {r["value"]: r for r in rows}
+		for g in _group_children(doctype, group):
+			if g.value not in by_value:
+				rows.append(
+					{
+						"value": g.value,
+						"title": g.title or g.value,
+						"is_group": 1,
+						"expandable": g.expandable,
+						"selectable": 0,
+						"parent": group,
+					}
+				)
+		rows.sort(key=lambda r: (not r["is_group"], (r["title"] or "").lower()))
+
+	return {
+		"group": group,
+		"path": get_group_path(doctype, group) if group else [],
+		"rows": rows,
+		"columns": columns,
+		"truncated": len(raw) >= PICKER_LIMIT,
+	}
 
 
 @frappe.whitelist(methods=["POST"])

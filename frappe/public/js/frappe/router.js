@@ -190,6 +190,9 @@ frappe.router = {
 		// Read before the parse, which may wait on a doctype, by which time `set_route` has
 		// already cleared the flags.
 		this.is_jump = !!frappe.route_flags.jump;
+		// A plain list of a hierarchy catalog is shown only when the user switched to it
+		// themself: the flag of this navigation, or the one its history entry remembers.
+		this.explicit_view = !!(frappe.route_flags.explicit_view || history.state?.explicit_view);
 
 		this.current_sub_path = sub_path;
 		this.current_route = await this.parse();
@@ -369,11 +372,18 @@ frappe.router = {
 				default_view = null;
 			}
 			if (route[1] && route[1] === "view" && route[2]) {
-				route = this.get_standard_route_for_list(
-					route,
-					doctype_route,
-					meta.force_re_route_to_default_view && default_view ? default_view : null
-				);
+				let forced =
+					meta.force_re_route_to_default_view && default_view ? default_view : null;
+				if (
+					!forced &&
+					!default_view &&
+					route[2].toLowerCase() === "list" &&
+					!this.explicit_view &&
+					frappe.views.HierarchyView?.is_available(doctype_route.doctype)
+				) {
+					forced = "Hierarchy";
+				}
+				route = this.get_standard_route_for_list(route, doctype_route, forced);
 			} else if (route[1] && route[1] !== "view") {
 				let docname = route[1];
 				if (route.length > 2) {
@@ -717,7 +727,11 @@ frappe.router = {
 		if (this.path_on_screen() !== path || window.location.search !== query_params) {
 			// push/replace state so the browser looks fine
 			const method = frappe.route_flags.replace_route ? "replaceState" : "pushState";
-			history[method](null, null, path + query_params);
+			history[method](
+				frappe.route_flags.explicit_view ? { explicit_view: true } : null,
+				null,
+				path + query_params
+			);
 
 			// now process the route
 			this.route();

@@ -10,7 +10,13 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		if (route.length === 2) {
 			const user_settings = frappe.get_user_settings(doctype);
-			const last_view = user_settings.last_view;
+			let last_view = user_settings.last_view;
+			if (
+				!frappe.get_meta(doctype)?.default_view &&
+				frappe.views.HierarchyView?.is_available(doctype)
+			) {
+				last_view = "Hierarchy";
+			}
 			frappe.set_route(
 				"list",
 				frappe.router.doctype_layout || doctype,

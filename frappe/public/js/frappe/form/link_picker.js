@@ -7,6 +7,18 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 	static page_length = 20;
 	static uid = 0;
 
+	// A hierarchical catalog gets the picker with the tree of groups, any other the flat one.
+	static open(opts) {
+		frappe.model.with_doctype(opts.doctype, () => {
+			const Hierarchical = frappe.ui.form.HierarchyLinkPicker;
+			const picker =
+				Hierarchical && frappe.views.HierarchyView?.is_available(opts.doctype)
+					? Hierarchical
+					: frappe.ui.form.LinkPicker;
+			new picker(opts);
+		});
+	}
+
 	/**
 	 * @param {object} opts
 	 * @param {frappe.ui.form.ControlLink} opts.target  the Link / Dynamic Link control
