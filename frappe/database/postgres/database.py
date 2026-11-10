@@ -1,6 +1,8 @@
+import hashlib
 import re
 from contextlib import contextmanager
 
+import click
 import psycopg2
 import psycopg2.extensions
 from psycopg2 import sql
@@ -435,11 +437,120 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 				.as_string(self._conn)
 			)
 
+	def get_column_index(self, table_name: str, fieldname: str, unique: bool = False) -> frappe._dict | None:
+		"""Return a valid single column index on `fieldname`, found by its column and not by its name.
+
+		Same contract as MariaDB: the result has `Key_name`, `Column_name` and `Non_unique`.
+		Primary keys, partial indexes and indexes of several columns are ignored.
+		"""
+		rows = self.sql(
+			"""
+			SELECT i.relname
+			FROM pg_index x
+			JOIN pg_class t ON t.oid = x.indrelid
+			JOIN pg_class i ON i.oid = x.indexrelid
+			JOIN pg_namespace n ON n.oid = t.relnamespace
+			JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = x.indkey[0]
+			WHERE n.nspname = %s AND t.relname = %s AND a.attname = %s
+				AND x.indisvalid AND NOT x.indisprimary AND x.indpred IS NULL
+				AND x.indisunique = %s AND x.indnatts = 1
+			ORDER BY i.relname
+			LIMIT 1
+			""",
+			(self.db_schema, table_name, fieldname, bool(unique)),
+		)
+		if rows:
+			return frappe._dict(Key_name=rows[0][0], Column_name=fieldname, Non_unique=int(not unique))
+
+	def has_leading_index(self, table_name: str, column: str) -> bool:
+		"""Check if any valid index of the table (unique or not, of one or more columns) starts with `column`."""
+		return bool(
+			self.sql(
+				"""
+				SELECT 1
+				FROM pg_index x
+				JOIN pg_class t ON t.oid = x.indrelid
+				JOIN pg_namespace n ON n.oid = t.relnamespace
+				JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = x.indkey[0]
+				WHERE n.nspname = %s AND t.relname = %s AND a.attname = %s
+					AND x.indisvalid AND x.indpred IS NULL
+				LIMIT 1
+				""",
+				(self.db_schema, table_name, column),
+			)
+		)
+
+	def make_index_name(self, table_name: str, suffix: str) -> str:
+		"""Return an index name for the table.
+
+		Index names are unique per schema in PostgreSQL and not per table, so the name starts with the
+		table: `<table[:50]>_<suffix>`. If it is too long or taken by another relation, a deterministic
+		hash name is used.
+		"""
+		name = f"{table_name[:50]}_{suffix}"
+		if len(name.encode()) <= 63 and not self.sql(
+			"""
+			SELECT 1
+			FROM pg_class c
+			JOIN pg_namespace n ON n.oid = c.relnamespace
+			LEFT JOIN pg_index x ON x.indexrelid = c.oid
+			LEFT JOIN pg_class t ON t.oid = x.indrelid
+			WHERE n.nspname = %s AND c.relname = %s AND t.relname IS DISTINCT FROM %s
+			LIMIT 1
+			""",
+			(self.db_schema, name, table_name),
+		):
+			return name
+		return "idx_" + hashlib.md5(f"{table_name}|{suffix}".encode()).hexdigest()[:24]
+
+	def create_index_concurrently(self, table_name: str, columns: list[str], index_name: str):
+		"""Create an index without locking writes of the table (used by patches on big live tables).
+
+		CREATE INDEX CONCURRENTLY cannot run in a transaction, so the connection is committed and
+		switched to autocommit for the statement. If it fails, the INVALID leftover is dropped and
+		a plain CREATE INDEX is used instead.
+		"""
+
+		def quote(identifier):
+			return '"' + identifier.replace('"', '""') + '"'
+
+		def drop_invalid():
+			if self.sql(
+				"""
+				SELECT 1
+				FROM pg_index x
+				JOIN pg_class i ON i.oid = x.indexrelid
+				JOIN pg_namespace n ON n.oid = i.relnamespace
+				WHERE n.nspname = %s AND i.relname = %s AND NOT x.indisvalid
+				""",
+				(self.db_schema, index_name),
+			):
+				self.sql(f"DROP INDEX CONCURRENTLY IF EXISTS {quote(self.db_schema)}.{quote(index_name)}")
+
+		target = f"{quote(self.db_schema)}.{quote(table_name)} ({', '.join(quote(c) for c in columns)})"
+		self.commit()
+		self._conn.autocommit = True
+		try:
+			drop_invalid()
+			self.sql(f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {quote(index_name)} ON {target}")
+			return
+		except Exception as e:
+			click.echo(f"CREATE INDEX CONCURRENTLY {index_name} failed ({e}), using CREATE INDEX")
+			try:
+				drop_invalid()
+			except Exception:
+				pass
+		finally:
+			self._conn.autocommit = False
+
+		self.sql_ddl(f"CREATE INDEX IF NOT EXISTS {quote(index_name)} ON {target}")
+		self.commit()
+
 	def get_table_columns_description(self, table_name):
 		"""Return list of columns with description."""
 		# pylint: disable=W1401
 		return self.sql(
-			f"""
+			"""
 			SELECT a.column_name AS name,
 			CASE LOWER(a.data_type)
 				WHEN 'character varying' THEN CONCAT('varchar(', a.character_maximum_length ,')')
@@ -448,22 +559,26 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 				WHEN 'numeric' THEN CONCAT('decimal(', a.numeric_precision, ',', a.numeric_scale, ')')
 				ELSE a.data_type
 			END AS type,
-			BOOL_OR(b.index) AS index,
+			COALESCE(b.has_index, false) AS index,
 			SPLIT_PART(COALESCE(a.column_default, NULL), '::', 1) AS default,
-			BOOL_OR(b.unique) AS unique,
+			COALESCE(b.has_unique, false) AS unique,
 			COALESCE(a.is_nullable = 'NO', false) AS not_nullable
 			FROM information_schema.columns a
 			LEFT JOIN
-				(SELECT indexdef, tablename,
-					indexdef LIKE '%UNIQUE INDEX%' AS unique,
-					indexdef NOT LIKE '%UNIQUE INDEX%' AS index
-					FROM pg_indexes
-					WHERE tablename='{table_name}' AND schemaname='{self.db_schema}') b
-				ON SUBSTRING(b.indexdef, '(.*)') LIKE CONCAT('%', a.column_name, '%')
-			WHERE a.table_name = '{table_name}'
-				AND a.table_schema = '{self.db_schema}'
-			GROUP BY a.column_name, a.data_type, a.column_default, a.character_maximum_length, a.is_nullable, a.numeric_precision, a.numeric_scale;
+				(SELECT att.attname AS column_name,
+					BOOL_OR(NOT x.indisunique) AS has_index,
+					BOOL_OR(x.indisunique AND x.indnatts = 1) AS has_unique
+					FROM pg_index x
+					JOIN pg_class t ON t.oid = x.indrelid
+					JOIN pg_namespace n ON n.oid = t.relnamespace
+					JOIN pg_attribute att ON att.attrelid = t.oid AND att.attnum = x.indkey[0]
+					WHERE t.relname = %s AND n.nspname = %s AND x.indisvalid AND x.indpred IS NULL
+					GROUP BY att.attname) b
+				ON b.column_name = a.column_name
+			WHERE a.table_name = %s
+				AND a.table_schema = %s
 		""",
+			(table_name, self.db_schema, table_name, self.db_schema),
 			as_dict=1,
 		)
 
