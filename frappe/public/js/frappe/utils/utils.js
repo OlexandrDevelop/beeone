@@ -1972,6 +1972,63 @@ Object.assign(frappe.utils, {
 			.catch(() => name);
 	},
 
+	// beeone: collect titles that formatters could not resolve from the cache and fetch them
+	// in one request per tick; filled anchors are updated in place.
+	queue_link_title(doctype, name) {
+		if (!doctype || !name || typeof name !== "string") {
+			return Promise.resolve();
+		}
+		const key = doctype + "::" + name;
+		if (frappe.utils.get_link_title(doctype, name) !== undefined) {
+			return Promise.resolve(frappe._link_titles[key]);
+		}
+		const queue = (frappe.utils._link_title_queue = frappe.utils._link_title_queue || {
+			pending: {},
+			requested: new Set(),
+			timer: null,
+			promise: null,
+		});
+		if (queue.requested.has(key)) {
+			return queue.promise || Promise.resolve();
+		}
+		queue.requested.add(key);
+		(queue.pending[doctype] = queue.pending[doctype] || []).push(name);
+		if (!queue.timer) {
+			queue.promise = new Promise((resolve) => {
+				queue.timer = setTimeout(() => {
+					const names = queue.pending;
+					queue.pending = {};
+					queue.timer = null;
+					frappe
+						.xcall("frappe.desk.link_title.get_titles", { names: names })
+						.then((titles) => {
+							frappe.utils._update_link_anchors(names, titles || {});
+						})
+						.catch(() => {})
+						.then(resolve);
+				}, 30);
+			});
+		}
+		return queue.promise;
+	},
+
+	_update_link_anchors(names, titles) {
+		Object.keys(names).forEach((doctype) => {
+			names[doctype].forEach((name) => {
+				const title = titles[doctype + "::" + name];
+				if (!title || title === name) return;
+				const selector = `a[data-doctype="${CSS.escape(doctype)}"][data-name="${CSS.escape(
+					name
+				)}"]`;
+				document.querySelectorAll(selector).forEach((a) => {
+					if (a.textContent === name) {
+						a.innerText = title;
+					}
+				});
+			});
+		});
+	},
+
 	only_allow_num_decimal(input) {
 		input.on("input", (e) => {
 			let self = $(e.target);

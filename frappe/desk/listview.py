@@ -95,8 +95,16 @@ def get_group_by_count(doctype: str, current_filters: str, field: str) -> list[d
 	if (field_meta := meta.get_field(field)) and field_meta.fieldtype == "Link":
 		link_meta = frappe.get_meta(field_meta.options)
 		if link_meta.show_title_field_in_link:
-			title_field = link_meta.get_title_field()
+			from frappe.desk.link_title import get_link_title_field, get_link_titles
+
+			title_field = get_link_title_field(field_meta.options)
+			# beeone: one query for all items instead of one per item
+			titles = (
+				get_link_titles(field_meta.options, title_field, {item.name for item in data})
+				if title_field
+				else {}
+			)
 			for item in data:
-				item.title = frappe.get_value(field_meta.options, item.name, title_field)
+				item.title = titles.get(item.name)
 
 	return data

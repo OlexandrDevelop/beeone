@@ -186,7 +186,7 @@ def create_titled():
 		title_field="place_name",
 		show_title_field_in_link=1,
 	)
-	_doctype(PLAIN, [{"fieldname": "plain_name", "fieldtype": "Data"}], autoname="hash", title_field="plain_name")
+	_doctype(PLAIN, [{"fieldname": "plain_name", "fieldtype": "Data"}], autoname="field:plain_name", title_field="plain_name")
 	_doctype(TITLE_LEDGER, TITLE_LEDGER_FIELDS)
 	_register(
 		TITLE_LEDGER,

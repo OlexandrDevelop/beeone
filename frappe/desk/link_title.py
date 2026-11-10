@@ -47,16 +47,49 @@ def send_link_titles(link_titles: dict[str, str]):
 	frappe.local.response["_link_titles"].update(link_titles)
 
 
-def get_report_link_titles(columns, rows) -> dict[str, str]:
-	"""Titles for the Link values in `rows`, keyed `doctype::name` for the client cache."""
+def get_titles_by_doctype(names_by_doctype: dict[str, set]) -> dict[str, str]:
+	"""Titles keyed `doctype::name`: one `get_list` per doctype, readable doctypes only."""
 	titles = {}
-	names_by_doctype = get_link_names_by_doctype(columns or [], rows or [])
 	for doctype, names in names_by_doctype.items():
+		if not names or not frappe.db.exists("DocType", doctype):
+			continue
 		title_field = get_link_title_field(doctype)
 		if not title_field:
 			continue
-		for name, title in get_link_titles(doctype, title_field, names).items():
-			titles[f"{doctype}::{name}"] = title
+		for name, title in get_link_titles(doctype, title_field, set(names)).items():
+			titles[f"{doctype}::{name}"] = title or name
+	return titles
+
+
+def get_report_link_titles(columns, rows) -> dict[str, str]:
+	"""Titles for the Link values in `rows`, keyed `doctype::name` for the client cache."""
+	return get_titles_by_doctype(get_link_names_by_doctype(columns or [], rows or []))
+
+
+MAX_TITLE_REQUEST = 2000
+
+
+@frappe.whitelist()
+def get_titles(names: str | dict):
+	"""# beeone: titles for `{doctype: [names]}`; also put in the response for the client cache."""
+	names = frappe.parse_json(names) if isinstance(names, str) else names
+	if not isinstance(names, dict):
+		frappe.throw(frappe._("Invalid request"), frappe.ValidationError)
+
+	names_by_doctype = {}
+	total = 0
+	for doctype, values in names.items():
+		if not isinstance(doctype, str) or not isinstance(values, list | tuple):
+			continue
+		for value in values:
+			if isinstance(value, str | int) and value != "":
+				if total >= MAX_TITLE_REQUEST:
+					break
+				names_by_doctype.setdefault(doctype, set()).add(str(value))
+				total += 1
+
+	titles = get_titles_by_doctype(names_by_doctype)
+	send_link_titles(titles)
 	return titles
 
 
@@ -71,8 +104,22 @@ def get_link_names_by_doctype(columns, rows) -> dict[str, set]:
 		and column.get("options")
 	]
 
+	dynamic_columns = [
+		(index, column["fieldname"], column["options"])
+		for index, column in enumerate(columns)
+		if isinstance(column, dict)
+		and column.get("fieldtype") == "Dynamic Link"
+		and column.get("fieldname")
+		and column.get("options")
+	]
+
 	names_by_doctype = {}
 	for row in rows:
+		for index, fieldname, options in dynamic_columns:
+			if not isinstance(row, dict):
+				continue
+			if (doctype := row.get(options)) and (name := row.get(fieldname)):
+				names_by_doctype.setdefault(doctype, set()).add(name)
 		for index, fieldname, doctype in link_columns:
 			# report rows are dicts, except in the prepared report path where they stay lists
 			if isinstance(row, dict):

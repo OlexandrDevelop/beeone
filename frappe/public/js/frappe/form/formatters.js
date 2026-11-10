@@ -175,6 +175,17 @@ frappe.form.formatters = {
 			link_title = null;
 		}
 
+		if (
+			link_title === undefined &&
+			value &&
+			typeof value === "string" &&
+			(frappe.boot.link_title_doctypes || []).includes(doctype) &&
+			!(options && options.for_print)
+		) {
+			// beeone: title not in the cache yet; the anchor is filled after one batched request
+			frappe.utils.queue_link_title(doctype, value);
+		}
+
 		if (value && value.match && value.match(/^['"].*['"]$/)) {
 			value.replace(/^.(.*).$/, "$1");
 		}

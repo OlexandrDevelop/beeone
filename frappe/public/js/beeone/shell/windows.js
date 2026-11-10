@@ -437,7 +437,7 @@ export function refresh_title(win) {
 			const meta = frappe.get_meta(frm.doctype);
 			if (meta && meta.issingle) title = label_of(["Form", frm.doctype]) || __(frm.doctype);
 			else if (frm.is_new()) title = __("New {0}", [__(frm.doctype)]);
-			else if (meta && meta.title_field && meta.title_field !== "name" && frm.doc[meta.title_field] && !meta.is_submittable)
+			else if (meta && meta.title_field && meta.title_field !== "name" && frm.doc[meta.title_field] && (!meta.is_submittable || meta.opaque_name))
 				title = frm.doc[meta.title_field];
 			set_title(win, title, meta && meta.issingle ? "" : label_of(["List", frm.doctype]) || __(frm.doctype));
 		}

@@ -149,7 +149,7 @@ def _clear_doctype_cache_from_redis(doctype: str | None = None):
 	from frappe.email.doctype.notification.notification import clear_notification_cache
 	from frappe.model.meta import clear_meta_cache
 
-	to_del = ["is_table", "doctype_modules"]
+	to_del = ["is_table", "doctype_modules", "link_title_doctypes"]
 
 	if doctype:
 

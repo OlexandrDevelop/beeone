@@ -493,6 +493,28 @@ frappe.ui.Filter = class {
 
 	set_filter_button_text() {
 		this.$filter_tag.find(".toggle-filter").html(this.get_filter_button_text());
+		this.fetch_missing_link_titles();
+	}
+
+	// beeone: a chip made from a route / saved filter shows the title, not the code
+	fetch_missing_link_titles() {
+		const df = this.field && this.field.df;
+		if (!df || df.fieldtype !== "Link" || !df.options) return;
+		if (!(frappe.boot.link_title_doctypes || []).includes(df.options)) return;
+
+		let value = this.get_selected_value();
+		let values = Array.isArray(value) ? value : String(value || "").split(",");
+		values = values.map((v) => (typeof v === "string" ? v.trim() : v)).filter(Boolean);
+		const missing = values.filter(
+			(v) => frappe.utils.get_link_title(df.options, v) === undefined
+		);
+		if (!missing.length) return;
+
+		Promise.all(missing.map((v) => frappe.utils.queue_link_title(df.options, v))).then(() => {
+			if (this.$filter_tag && values.some((v) => frappe.utils.get_link_title(df.options, v))) {
+				this.$filter_tag.find(".toggle-filter").html(this.get_filter_button_text());
+			}
+		});
 	}
 
 	get_filter_button_text() {

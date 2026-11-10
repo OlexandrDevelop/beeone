@@ -545,7 +545,44 @@ def get_link_title_doctypes():
 		{"property": "show_title_field_in_link", "value": "1"},
 		["doc_type as name"],
 	)
-	return [d.name for d in dts + custom_dts if d]
+	explicit = [d.name for d in dts + custom_dts if d]
+	return list(dict.fromkeys(explicit + get_implicit_link_title_doctypes()))
+
+
+def get_implicit_link_title_doctypes():
+	"""# beeone: doctypes with opaque names (hash, autoincrement, UUID) always show their title in links."""
+	cached = frappe.cache.get_value("link_title_doctypes")
+	if cached is not None:
+		return cached
+
+	from frappe.model.meta import OPAQUE_AUTONAMES, OPAQUE_NAMING_RULES
+
+	rows = frappe.get_all(
+		"DocType",
+		filters={"istable": 0, "issingle": 0, "is_virtual": 0},
+		or_filters={
+			"autoname": ["in", ["hash", "Hash", "autoincrement", "UUID", "uuid"]],
+			"naming_rule": ["in", list(OPAQUE_NAMING_RULES)],
+		},
+		pluck="name",
+	)
+	# Property Setters and Custom Fields can also change autoname / naming_rule / title_field
+	rows += frappe.get_all(
+		"Property Setter",
+		filters={"property": ["in", ["autoname", "naming_rule", "title_field"]]},
+		pluck="doc_type",
+	)
+	doctypes = []
+	for doctype in dict.fromkeys(rows):
+		try:
+			meta = frappe.get_meta(doctype)
+		except Exception:
+			continue
+		if meta.opaque_name and meta.show_title_field_in_link and meta.title_field:
+			doctypes.append(doctype)
+
+	frappe.cache.set_value("link_title_doctypes", doctypes)
+	return doctypes
 
 
 def set_time_zone(bootinfo):

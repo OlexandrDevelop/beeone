@@ -155,6 +155,11 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 		const hidden = ["_relevance", "is_group", "label", "description"];
 		const cols = Object.keys(first).filter((k) => !hidden.includes(k));
 		if (!cols.includes("name") && "value" in first) cols.unshift("value");
+		// beeone: records with opaque names (hash) have no ID column, the title is the first one
+		const title_field = this.meta.title_field;
+		if (this.meta.opaque_name && title_field && title_field in first) {
+			return [title_field, ...cols.filter((c) => !["name", "value", title_field].includes(c))];
+		}
 		return cols;
 	}
 
@@ -189,7 +194,7 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 			this.rows.push({ value, label });
 			const cells = is_array
 				? r.map((c) => this.cell_html(c, translate))
-				: this.cols.map((c) => this.cell_html(r[c], translate && c === "name"));
+				: this.cols.map((c) => this.cell_html(r[c], translate && c === "name", c));
 			const group = r.is_group ? frappe.utils.icon("folder-normal", "sm") + " " : "";
 			if (cells.length) cells[0] = group + cells[0];
 			$(`<tr role="option" id="${this.id}-${n}" aria-selected="false" tabindex="-1"
@@ -206,9 +211,14 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 		if (!append) this.set_active(empty ? -1 : 0);
 	}
 
-	cell_html(value, translate) {
+	cell_html(value, translate, fieldname) {
 		if (value == null) return "";
 		value = cstr(value);
+		const df = fieldname && this.meta.get_field(fieldname);
+		if (df && df.fieldtype === "Link" && df.options) {
+			// beeone: a Link column shows the title of the record when it is known
+			value = frappe.utils.get_link_title(df.options, value) || value;
+		}
 		return frappe.utils.escape_html(translate ? __(value) : value);
 	}
 

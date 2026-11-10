@@ -59,7 +59,10 @@ def search_link(
 		ignore_user_permissions=ignore_user_permissions,
 		link_fieldname=link_fieldname,
 	)
-	return build_for_autosuggest(results, doctype=doctype)
+	meta = frappe.get_meta(doctype)
+	custom_query = bool(query) or doctype in (frappe.get_hooks().standard_queries or {})
+	columns = get_search_columns(meta, searchfield or "name")
+	return build_for_autosuggest(results, doctype=doctype, columns=columns, custom_query=custom_query)
 
 
 def make_dict_from_filter_list(filters: list) -> dict:
@@ -230,14 +233,7 @@ def search_widget(
 			filters.append([doctype, "disabled", "!=", 1])
 
 	# format a list of fields combining search fields and filter fields
-	fields = get_std_fields_list(meta, searchfield or "name")
-	if filter_fields:
-		fields = list(set(fields + json.loads(filter_fields)))
-	formatted_fields = [f.strip() for f in fields]
-
-	# Insert title field query after name
-	if meta.show_title_field_in_link and meta.title_field:
-		formatted_fields.insert(1, f"{meta.title_field} as label")
+	formatted_fields = get_search_columns(meta, searchfield or "name", filter_fields)
 
 	order_by_based_on_meta = get_order_by(doctype, meta)
 	# `idx` is number of times a document is referred, check link_count.py
@@ -273,6 +269,10 @@ def search_widget(
 		as_list=not as_dict,
 		strict=False,
 	)
+
+	if as_dict and not for_link_validation:
+		# beeone: the picker shows titles of Link columns, not codes
+		send_search_link_titles(meta, values)
 
 	if not for_link_validation:
 		if meta.translated_doctype:
@@ -387,6 +387,45 @@ def validate_ignore_user_permissions(form_doctype, link_fieldname, link_doctype)
 		)
 
 
+def get_search_columns(meta, key, filter_fields=None) -> list[str]:
+	"""Ordered columns `search_widget` selects: name, [title as label], title, key, search fields."""
+	fields = get_std_fields_list(meta, key)
+	if filter_fields:
+		fields = list(set(fields + json.loads(filter_fields)))
+	columns = [f.strip() for f in fields]
+
+	# Insert title field query after name
+	if meta.show_title_field_in_link and meta.title_field:
+		columns.insert(1, f"{meta.title_field} as label")
+	return columns
+
+
+def get_column_link_doctypes(meta, columns) -> dict[str, str]:
+	"""fieldname -> linked doctype for Link columns."""
+	result = {}
+	for column in columns:
+		fieldname = column.split(" as ")[0].strip()
+		df = meta.get_field(fieldname)
+		if df and df.fieldtype == "Link" and df.options and fieldname != "name":
+			result[fieldname] = df.options
+	return result
+
+
+def send_search_link_titles(meta, values):
+	"""# beeone: _link_titles for the Link columns of dict rows (one query per doctype)."""
+	from frappe.desk.link_title import get_titles_by_doctype, send_link_titles
+
+	links = get_column_link_doctypes(meta, get_std_fields_list(meta, "name"))
+	links.update({df.fieldname: df.options for df in meta.get_link_fields() if df.options})
+	names = {}
+	for row in values:
+		for fieldname, doctype in links.items():
+			if isinstance(row, dict) and row.get(fieldname):
+				names.setdefault(doctype, set()).add(row[fieldname])
+	if names:
+		send_link_titles(get_titles_by_doctype(names))
+
+
 def get_std_fields_list(meta, key):
 	# get additional search fields
 	sflist = ["name"]
@@ -405,7 +444,11 @@ def get_std_fields_list(meta, key):
 	return sflist
 
 
-def build_for_autosuggest(res: list[tuple], doctype: str) -> list[LinkSearchResults]:
+def build_for_autosuggest(
+	res: list[tuple], doctype: str, *, columns: list[str] | None = None, custom_query: bool = False
+) -> list[LinkSearchResults]:
+	from frappe.desk.link_title import get_link_title_field, get_link_titles, get_titles_by_doctype
+
 	def to_string(parts):
 		return ", ".join(
 			unique(_(cstr(part)) if meta.translated_doctype else cstr(part) for part in parts if part)
@@ -413,17 +456,56 @@ def build_for_autosuggest(res: list[tuple], doctype: str) -> list[LinkSearchResu
 
 	results = []
 	meta = frappe.get_meta(doctype)
+
+	# beeone: Link search-field columns show titles of their records, not codes
+	if columns and not custom_query:
+		link_columns = get_column_link_doctypes(meta, columns)
+		names = {}
+		for item in res:
+			for index, column in enumerate(columns[: len(item)]):
+				doctype_ = link_columns.get(column.split(" as ")[0].strip())
+				if doctype_ and item[index]:
+					names.setdefault(doctype_, set()).add(item[index])
+		titles = get_titles_by_doctype(names)
+		if titles:
+			rows = []
+			for item in res:
+				item = list(item)
+				for index, column in enumerate(columns[: len(item)]):
+					doctype_ = link_columns.get(column.split(" as ")[0].strip())
+					if doctype_ and index and item[index]:
+						item[index] = titles.get(f"{doctype_}::{item[index]}", item[index])
+				rows.append(item)
+			res = rows
+
 	if meta.show_title_field_in_link:
+		custom_titles = {}
+		if custom_query and meta.opaque_name:
+			# beeone: a custom query may return anything after the name; labels are always titles
+			title_field = get_link_title_field(doctype)
+			if title_field:
+				custom_titles = get_link_titles(doctype, title_field, {item[0] for item in res})
+
 		for item in res:
 			item = list(item)
 			if len(item) == 1:
 				item = [item[0], item[0]]
-			label = _(item[1]) if meta.translated_doctype else item[1]
-			item[1] = item[0]
+			if custom_titles:
+				label = custom_titles.get(item[0]) or item[0]
+				description = to_string(part for part in item[1:] if part not in (label, item[0]))
+				results.append({"value": item[0], "description": description, "label": label})
+				continue
 
-			if len(item) >= 3 and item[2] == label:
+			label = _(item[1]) if meta.translated_doctype else item[1]
+			if meta.opaque_name and not custom_query:
+				# beeone: the code is not shown under the title
+				del item[1]
+			else:
+				item[1] = item[0]
+
+			if len(item) >= 3 - meta.opaque_name and item[2 - meta.opaque_name] == label:
 				# remove redundant title ("label") value
-				del item[2]
+				del item[2 - meta.opaque_name]
 
 			autosuggest_row = {"value": item[0], "description": to_string(item[1:])}
 			if label:

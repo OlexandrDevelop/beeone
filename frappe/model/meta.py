@@ -126,7 +126,13 @@ def load_doctype_from_file(doctype):
 	return txt
 
 
+OPAQUE_AUTONAMES = {"hash", "autoincrement", "uuid"}
+OPAQUE_NAMING_RULES = {"Random", "Autoincrement", "UUID"}
+
+
 class Meta(Document):
+	opaque_name = 0  # beeone: set in process()
+
 	_metaclass = True
 	default_fields = list(default_fields)[1:]
 	special_doctypes = frozenset(
@@ -175,6 +181,7 @@ class Meta(Document):
 		self.apply_property_setters()
 		self.init_field_caches()
 		self.sort_fields()
+		self.set_implicit_link_title()
 		self.get_valid_columns()
 		self.set_custom_permissions()
 		self.add_custom_links_and_actions()
@@ -182,6 +189,51 @@ class Meta(Document):
 
 	def as_dict(self, no_nulls=False):
 		return _serialize(self, no_nulls=no_nulls)
+
+	def has_opaque_name(self) -> bool:
+		"""True when document names are meaningless codes (hash, autoincrement, UUID)."""
+		if self.get("istable") or self.get("issingle") or self.get("is_virtual"):
+			return False
+		autoname = (self.get("autoname") or "").strip().lower()
+		return autoname in OPAQUE_AUTONAMES or self.get("naming_rule") in OPAQUE_NAMING_RULES
+
+	def set_implicit_link_title(self):
+		"""# beeone: a link to a doctype with opaque names always shows the title, whatever the app set."""
+		self.opaque_name = 1 if self.has_opaque_name() else 0
+		if not self.opaque_name:
+			return
+
+		if not self.get("title_field") or self.title_field == "name":
+			fieldname = self._implicit_title_field()
+			if not fieldname:
+				return
+			self.title_field = fieldname
+			self.implicit_title_field = fieldname
+		self.show_title_field_in_link = 1
+
+	def _implicit_title_field(self) -> str | None:
+		"""First human Data field: title/subject/*_name, then a search field, then a required one."""
+		candidates = [
+			df
+			for df in self.fields
+			if df.fieldtype == "Data" and not df.hidden and not df.is_virtual and not df.permlevel
+		]
+		if not candidates:
+			return None
+
+		def is_name_like(df):
+			return df.fieldname in ("title", "subject") or df.fieldname.endswith("_name")
+
+		named = [df for df in candidates if is_name_like(df)]
+		if named:
+			return next((df for df in named if df.reqd), named[0]).fieldname
+
+		by_name = {df.fieldname: df for df in candidates}
+		for fieldname in (self.get("search_fields") or "").split(","):
+			if fieldname.strip() in by_name:
+				return fieldname.strip()
+
+		return next((df.fieldname for df in candidates if df.reqd), None)
 
 	def get_link_fields(self):
 		return self.get("fields", {"fieldtype": "Link", "options": ["!=", "[Select]"]})
