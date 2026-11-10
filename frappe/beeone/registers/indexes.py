@@ -5,7 +5,8 @@
 
 The reports read the movements in three ways, and each gets an index:
 
-- balance, turnover and the turnover-balance report filter by dimensions and a date range:
+- balance, turnover and the turnover-balance report filter by dimensions and a date range, and the slice of an
+  information register (the latest row of a key on a date) filters by dimensions and `date <=`:
   index (dimensions..., date);
 - a report of one period without dimension filters (turnovers of a month): index (date);
 - the card of a document, the check and the delete of its movements: index (recorder type, recorder).
@@ -29,8 +30,8 @@ def index_plan(reg) -> dict[str, list[str]]:
 	dims = totals.dimensions(reg)[:MAX_INDEX_DIMENSIONS]
 	if reg.date_field:
 		plan["period"] = [reg.date_field]
-		# an information register is read by slices on the period: it keeps the one period index
-		if dims and not totals.is_information(reg):
+		# an information register is read by slices (`select_last`: dimensions equal, date <= at), the same index serves them
+		if dims:
 			plan["dimensions_date"] = [*dims, reg.date_field]
 	recorder = [f for f in (reg.registrar_type_field, reg.registrar_field) if f]
 	if recorder:

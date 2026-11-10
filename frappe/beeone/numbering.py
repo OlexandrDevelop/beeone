@@ -15,7 +15,7 @@ A DocType takes its names from the settings with `"autoname": "numbering"`, or c
 import frappe
 from frappe import _
 from frappe.model.naming import getseries
-from frappe.utils import getdate
+from frappe.utils import cint, getdate
 
 RESET_NEVER = "Never"
 RESET_YEARLY = "Yearly"
@@ -68,6 +68,47 @@ def next_name(
 	return head + number
 
 
+def next_names(
+	count: int,
+	prefix: str,
+	digits: int = 6,
+	*,
+	scope: str = "",
+	scope_chars: int = 0,
+	reset: str = RESET_NEVER,
+	date=None,
+	separator: str = "-",
+	key: str | None = None,
+	ref_doctype: str = "",
+) -> list[str]:
+	"""The next `count` names of a series in one counter update (a bulk load takes a block, not a number per document).
+
+	The arguments and the counter key are the ones of `next_name`; the names are the same ones `count` calls would give.
+	"""
+	from frappe.beeone import db
+
+	count = int(count)
+	if count < 1:
+		return []
+	period = period_label(reset, date)
+	glue = separator or ""
+	head = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
+	if head:
+		head += glue
+	series_key = key or f"NS:{ref_doctype}:{head}"
+	try:
+		db.insert_missing("Series", {"name": series_key, "current": 0})
+	except Exception as e:
+		if db.dialect().is_lock_conflict(e):
+			raise frappe.QueryDeadlockError(_("Another user changes the same data. Try again."))
+		raise
+	series = frappe.qb.DocType("Series")
+	current = frappe.qb.from_(series).where(series.name == series_key).for_update().select("current").run()
+	first = cint(current[0][0] if current and current[0][0] is not None else 0) + 1
+	frappe.db.sql("UPDATE `tabSeries` SET `current` = %s WHERE `name`=%s", (first + count - 1, series_key))
+	return [head + ("%0" + str(int(digits)) + "d") % n for n in range(first, first + count)]
+
+
 def get_setting(ref_doctype: str, scope: str | None = None):
 	"""The setting of the type for the scope; the setting without scope is the fallback."""
 	fields = ["prefix", "separator", "digits", "scope_chars", "reset", "scope", "scope_field", "date_field"]
@@ -80,6 +121,12 @@ def get_setting(ref_doctype: str, scope: str | None = None):
 
 def name_for(doc) -> str | None:
 	"""Name of a new document from its Numbering Setting, or None when there is no setting."""
+	names = names_for(doc, 1)
+	return names[0] if names else None
+
+
+def get_setting_for(doc):
+	"""The Numbering Setting that applies to a document (its scope value is looked up in the document)."""
 	scope = None
 	for scope_field in frappe.get_all(
 		DOCTYPE,
@@ -93,11 +140,17 @@ def name_for(doc) -> str | None:
 		):
 			scope = value
 			break
-	setting = get_setting(doc.doctype, scope)
+	return get_setting(doc.doctype, scope)
+
+
+def names_for(doc, count: int) -> list[str]:
+	"""`count` names for documents like `doc` (same scope and period), or [] when there is no setting."""
+	setting = get_setting_for(doc)
 	if not setting:
-		return None
+		return []
 	date = doc.get(setting.date_field) if setting.date_field else None
-	return next_name(
+	return next_names(
+		count,
 		setting.prefix,
 		setting.digits or 6,
 		scope=setting.scope,

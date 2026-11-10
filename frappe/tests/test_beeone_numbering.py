@@ -144,6 +144,25 @@ class TestBeeoneNumbering(IntegrationTestCase):
 		self.assertEqual(name, "L-Acme-2024-00042")
 		frappe.db.delete("Series", {"name": "LEGACY:test"})
 
+	def test_next_names_block_equals_single_calls(self):
+		frappe.db.delete("Series", {"name": ["in", ["LEGACY:block", "LEGACY:single"]]})
+		frappe.db.sql("INSERT INTO `tabSeries` (`name`, `current`) VALUES ('LEGACY:block', 41), ('LEGACY:single', 41)")
+		kwargs = {"scope": "Acme Ltd", "scope_chars": 4, "reset": "Yearly", "date": "2024-05-05"}
+		block = numbering.next_names(3, "L", 5, key="LEGACY:block", **kwargs)
+		single = [numbering.next_name("L", 5, key="LEGACY:single", **kwargs) for _i in range(3)]
+		self.assertEqual(block, single)
+		self.assertEqual(block[0], "L-Acme-2024-00042")
+		self.assertEqual(numbering.next_names(1, "L", 5, key="LEGACY:block", **kwargs), ["L-Acme-2024-00045"])
+		self.assertEqual(numbering.next_names(0, "L", 5, key="LEGACY:block", **kwargs), [])
+		self.assertEqual(frappe.db.sql("SELECT `current` FROM `tabSeries` WHERE `name` = 'LEGACY:block'")[0][0], 45)
+		frappe.db.delete("Series", {"name": ["in", ["LEGACY:block", "LEGACY:single"]]})
+
+	def test_next_names_new_series_starts_at_one(self):
+		names = numbering.next_names(2, "NB", 3, ref_doctype="T893 Block Doc")
+		self.assertEqual(names, ["NB-001", "NB-002"])
+		self.assertEqual(numbering.next_name("NB", 3, ref_doctype="T893 Block Doc"), "NB-003")
+		frappe.db.delete("Series", {"name": "NS:T893 Block Doc:NB-"})
+
 	def test_no_cyrillic_in_core_module(self):
 		for path in (Path(numbering.__file__), Path(__file__).parents[1] / "core/doctype/numbering_setting"):
 			files = [path] if path.is_file() else [p for p in path.iterdir() if p.is_file()]
