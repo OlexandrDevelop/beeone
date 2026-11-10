@@ -210,6 +210,95 @@ test.describe("List View", () => {
 		).toBeAttached();
 	});
 
+	test.describe("scroll position of the virtual list", () => {
+		test.beforeAll(async ({ admin }) => {
+			const { message: count } = await admin.call("frappe.client.get_count", {
+				doctype: "ToDo",
+			});
+			for (let i = count; i < 150; i++) {
+				await admin.insert_doc("ToDo", { description: `T-882 scroll row ${i}` });
+			}
+		});
+
+		async function open_virtual_list(page, desk) {
+			await desk.go_to_list("ToDo");
+			await page.waitForFunction(() => window.cur_list?.data?.length > 0);
+			await page.evaluate(() => {
+				cur_list.filter_area.clear();
+				cur_list.virtualization_threshold = 1;
+				cur_list.virtual_page_size = 20;
+				cur_list.render_list();
+			});
+			await expect(
+				page.locator('.list-row-container[data-virtual-row="1"]').first()
+			).toBeAttached();
+			// let the refresh caused by clearing the filters settle
+			await page.waitForTimeout(1500);
+		}
+
+		const state = (page) =>
+			page.evaluate(() => {
+				const c = cur_list.$result.parent(".result-container")[0];
+				return {
+					top: c.scrollTop,
+					length: cur_list.data.length,
+					first: c.querySelector('.list-row-container[data-virtual-row="1"]')?.dataset
+						.name,
+				};
+			});
+
+		test("keeps the scroll position after auto-load", async ({ page, desk }) => {
+			await open_virtual_list(page, desk);
+			const before = await page.evaluate(async () => {
+				const c = cur_list.$result.parent(".result-container")[0];
+				const rows = cur_list.data.length;
+				c.scrollTop = (c.scrollHeight / cur_list.get_virtual_total_rows()) * rows * 0.8;
+				await new Promise((r) => setTimeout(r, 200));
+				return { top: c.scrollTop, length: rows };
+			});
+			await expect.poll(async () => (await state(page)).length).toBeGreaterThan(before.length);
+			await page.waitForTimeout(500);
+			const after = await state(page);
+			expect(before.top).toBeGreaterThan(0);
+			expect(Math.abs(after.top - before.top)).toBeLessThan(3);
+		});
+
+		test("keeps the scroll position on refresh with the same query", async ({
+			page,
+			desk,
+		}) => {
+			await open_virtual_list(page, desk);
+			await page.evaluate(() => {
+				const c = cur_list.$result.parent(".result-container")[0];
+				c.scrollTop = 300;
+			});
+			await page.waitForTimeout(300);
+			const before = await state(page);
+			await page.evaluate(() => {
+				cur_list.last_args = null;
+				return cur_list.refresh();
+			});
+			await page.waitForTimeout(500);
+			const after = await state(page);
+			expect(before.top).toBeGreaterThan(0);
+			expect(Math.abs(after.top - before.top)).toBeLessThan(3);
+			expect(after.first).toBe(before.first);
+		});
+
+		test("goes back to the top when the filter changes", async ({ page, desk }) => {
+			await open_virtual_list(page, desk);
+			await page.evaluate(() => {
+				cur_list.$result.parent(".result-container")[0].scrollTop = 300;
+			});
+			await page.waitForTimeout(300);
+			await page.evaluate(() => {
+				cur_list.filter_area.add([["ToDo", "description", "like", "%T-882%"]]);
+			});
+			await page.waitForTimeout(1500);
+			expect((await state(page)).top).toBe(0);
+		});
+	});
+
 	test("keeps mobile virtual rows rendered during fast downward scroll", async ({
 		page,
 		desk,

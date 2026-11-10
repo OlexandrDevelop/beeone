@@ -431,11 +431,31 @@ frappe.views.BaseList = class BaseList {
 			return;
 		}
 
-		let main_rect = $(".main-section").get(0).getBoundingClientRect();
-		let result_top = $result_container.get(0).getBoundingClientRect().top - main_rect.top;
-		let resultContainerHeight = Math.floor(
-			main_rect.height - this.$paging_area.get(0).getBoundingClientRect().height - result_top
-		);
+		let resultContainerHeight;
+		const shell_scroller = this.$result.closest(".bo-win-body").length
+			? window.beeone?.shell?.scroll_parent?.(this.$result[0])
+			: null;
+		if (shell_scroller) {
+			// inside a shell window .main-section is the whole viewport; size to the window
+			const padding_bottom = parseFloat(getComputedStyle(shell_scroller).paddingBottom) || 0;
+			resultContainerHeight = Math.max(
+				Math.floor(
+					shell_scroller.getBoundingClientRect().bottom -
+						$result_container.get(0).getBoundingClientRect().top -
+						this.$paging_area.get(0).getBoundingClientRect().height -
+						padding_bottom
+				),
+				200
+			);
+		} else {
+			let main_rect = $(".main-section").get(0).getBoundingClientRect();
+			let result_top = $result_container.get(0).getBoundingClientRect().top - main_rect.top;
+			resultContainerHeight = Math.floor(
+				main_rect.height -
+					this.$paging_area.get(0).getBoundingClientRect().height -
+					result_top
+			);
+		}
 		$result_container.css({
 			height: resultContainerHeight + "px",
 		});

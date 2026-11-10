@@ -1012,6 +1012,10 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 
 		this.prune_checked_docnames();
 		this.capture_column_widths_from_dom();
+		// before the teardown below: it collapses the container and resets scrollTop
+		const restore_scroll_top = this.should_use_virtualization()
+			? this.get_virtual_restore_scroll_top()
+			: null;
 
 		// clear rows
 		this.$result.find(".list-row-container").remove();
@@ -1034,7 +1038,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			// lists) BEFORE the first window render — otherwise the window
 			// math reads the container's own content as the viewport
 			this.set_result_height();
-			this.render_virtual_rows(true);
+			this.render_virtual_rows(true, 0, restore_scroll_top);
 		} else {
 			// Small list path: original behaviour — render every row into the DOM.
 			if (frappe.views.ListView.prototype.teardown_virtualization_scroll_handler) {

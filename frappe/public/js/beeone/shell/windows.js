@@ -131,6 +131,12 @@ function tell_size(win, g) {
 		if (win.body_h !== h) {
 			win.body_h = h;
 			win.body.style.setProperty("--bo-body-h", h + "px");
+			// a list sizes its scrollbox from the window; no resize event fires for a maximize/restore
+			const l = window.cur_list;
+			if (l?.view === "List" && l.$result?.[0] && win.body.contains(l.$result[0])) {
+				l.set_result_height();
+				l.render_virtual_rows?.(true, 0, l.get_virtual_restore_scroll_top?.() ?? null);
+			}
 		}
 	};
 	// the first size at once; a later one when the window has settled: restyling the whole page of a window in the middle of

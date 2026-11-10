@@ -134,6 +134,7 @@ export const list_view_virtualization = {
 		this.virtualization_state.row_height_prefix_total_rows = 0;
 		this.virtualization_state.last_is_mobile = null;
 		this.virtualization_state.container = null;
+		this.virtualization_state.query_key = null;
 		this.virtualization_state.scroll_handler = null;
 		this.virtualization_state.resize_handler = null;
 	},
@@ -364,7 +365,23 @@ export const list_view_virtualization = {
 		return Math.abs(prev - max_height) > 1;
 	},
 
-	render_virtual_rows(force = false, remeasure_attempt = 0) {
+	get_virtual_query_key() {
+		return JSON.stringify({
+			filters: this.get_filters_for_args(),
+			order_by: this.sort_selector && this.sort_selector.get_sql_string(),
+		});
+	},
+
+	// Scroll position to keep across a full render_list() teardown: the current
+	// one while the query is unchanged (auto-load, realtime, refresh), else 0.
+	get_virtual_restore_scroll_top() {
+		const $container = this.$result.parent(".result-container");
+		if (!$container.length) return null;
+		if (this.virtualization_state.query_key !== this.get_virtual_query_key()) return 0;
+		return $container.scrollTop() || 0;
+	},
+
+	render_virtual_rows(force = false, remeasure_attempt = 0, scroll_top_override = null) {
 		if (!this.virtualization_state.enabled) {
 			return;
 		}
@@ -384,7 +401,9 @@ export const list_view_virtualization = {
 
 		// Step 1: compute visible window from scroll position
 		const row_buffer = this.get_virtualization_row_buffer();
-		const scroll_top = $container.scrollTop() || 0;
+		const scroll_top =
+			scroll_top_override !== null ? scroll_top_override : $container.scrollTop() || 0;
+		this.virtualization_state.query_key = this.get_virtual_query_key();
 		// clamped: an auto-height container reports its own content (spacers
 		// included) as innerHeight, which would inflate the row window until
 		// the whole list is in the DOM
@@ -429,6 +448,12 @@ export const list_view_virtualization = {
 		}
 		this.$result.append(window_html);
 
+		// the teardown in render_list() clamped scrollTop to 0; the spacers
+		// restored the full height, so the saved position is accepted again
+		if (scroll_top_override !== null) {
+			$container[0].scrollTop = scroll_top_override;
+		}
+
 		if (!frappe.is_mobile()) {
 			this.apply_column_widths();
 		}
@@ -437,7 +462,7 @@ export const list_view_virtualization = {
 		if (this.measure_virtual_row_height(start) && remeasure_attempt < 2) {
 			this.virtualization_state.start = -1;
 			this.virtualization_state.end = -1;
-			this.render_virtual_rows(true, remeasure_attempt + 1);
+			this.render_virtual_rows(true, remeasure_attempt + 1, scroll_top_override);
 			return;
 		}
 
