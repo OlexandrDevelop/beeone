@@ -226,7 +226,7 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 	cell_html(value, translate, fieldname) {
 		if (value == null) return "";
 		value = cstr(value);
-		const df = fieldname && this.meta.get_field(fieldname);
+		const df = fieldname && frappe.meta.get_field(this.doctype, fieldname);
 		if (df && df.fieldtype === "Link" && df.options) {
 			// beeone: a Link column shows the title of the record when it is known
 			value = frappe.utils.get_link_title(df.options, value) || value;

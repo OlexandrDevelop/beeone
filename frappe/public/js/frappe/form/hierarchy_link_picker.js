@@ -215,6 +215,8 @@ frappe.ui.form.HierarchyLinkPicker = class HierarchyLinkPicker extends frappe.ui
 		}
 		this.$scroll.scrollTop(0);
 		this.set_active(start);
+		// keys work from the search box; a double click on a row or a tree click took the focus
+		if (!opts.from_tree) this.$search.trigger("focus");
 	}
 
 	render_chunk() {
@@ -239,7 +241,6 @@ frappe.ui.form.HierarchyLinkPicker = class HierarchyLinkPicker extends frappe.ui
 			? __("Double click or Enter to open the group")
 			: __("Double click or Enter to select");
 		return `<tr role="option" id="${this.id}-${n}" aria-selected="false" tabindex="-1"
-				${r.is_group && !r.selectable ? 'aria-disabled="true"' : ""}
 				class="${r.is_group ? "is-group" : ""}" title="${frappe.utils.escape_html(hint)}">
 				${cells.map((c) => `<td>${c}</td>`).join("")}</tr>`;
 	}

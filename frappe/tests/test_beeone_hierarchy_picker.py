@@ -129,7 +129,7 @@ class TestBeeoneHierarchyPicker(IntegrationTestCase):
 		self.assertEqual(sorted(rows), ["Child 1", "Child 2", "Child 3"])
 		self.assertEqual(rows["Child 1"]["parent_title"], "Parent 1")
 		self.assertEqual(rows["Child 3"]["parent_title"], "Parent 2")
-		self.assertEqual(data["group"], "")
+		self.assertEqual(data["group"], "Parent 2")  # echoed; the client keeps its tree while searching
 
 	def test_custom_query_ignoring_scope_is_still_scoped(self):
 		query = "frappe.tests.test_beeone_hierarchy_picker.all_rows_query"

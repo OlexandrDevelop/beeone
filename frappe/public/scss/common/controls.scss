@@ -380,10 +380,6 @@ select.form-control {
 		.link-picker-sentinel {
 			height: 1px;
 		}
-
-		tbody tr[aria-disabled="true"] td:first-child {
-			opacity: 0.8;
-		}
 	}
 }
 
