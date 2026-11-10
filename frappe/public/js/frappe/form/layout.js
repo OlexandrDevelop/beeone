@@ -751,7 +751,8 @@ frappe.ui.form.Layout = class Layout {
 			}
 
 			if (f.df.fieldtype === "Table") {
-				for (const row of f.grid?.grid_rows || []) {
+				// the rows still to be built (a big table) take the dependencies when they are built
+				for (const row of f.grid?.built_rows || []) {
 					row?.refresh_dependency();
 				}
 			}

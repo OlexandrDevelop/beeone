@@ -37,9 +37,25 @@ class TestBeeoneGrid(IntegrationTestCase):
 
 	def test_render_walks_every_row(self):
 		js = (self.public / "js" / "frappe" / "form" / "grid.js").read_text()
-		body = js[js.index("render_result_rows($rows) {") :][:2600]
+		body = js[js.index("render_result_rows($rows) {") :][:3600]
 		self.assertIn("for (let ri = 0; ri < result_length; ri++)", body)
-		self.assertNotRegex(body, r"delete this\.grid_rows\[")
+		self.assertNotRegex(body, r"delete this\._?grid_rows\[")
+
+	def test_a_big_table_is_built_in_chunks_but_every_reader_gets_all_rows(self):
+		js = (self.public / "js" / "frappe" / "form" / "grid.js").read_text()
+		# grid_rows is a getter that first builds the pending tail; only the renderer reads the raw array
+		self.assertIn("get grid_rows() {\n\t\tthis.render_pending_rows();", js)
+		self.assertIn("get grid_rows_by_docname() {\n\t\tthis.render_pending_rows();", js)
+		self.assertIn("render_pending_rows(PENDING_CHUNK)", js)
+		layout = (self.public / "js" / "frappe" / "form" / "layout.js").read_text()
+		self.assertIn("f.grid?.built_rows", layout)
+
+	def test_rows_off_screen_are_not_laid_out(self):
+		scss = (self.public / "scss" / "common" / "grid.scss").read_text()
+		block = scss[scss.index(".grid-body .rows > .grid-row:not(.grid-row-open)") :][:200]
+		self.assertIn("content-visibility: auto", block)
+		# an edited row keeps its popups (link suggestions)
+		self.assertIn(":not(:has(.editable-row))", block)
 
 	def test_add_row_has_no_page_arguments(self):
 		js = (self.public / "js" / "frappe" / "form" / "grid.js").read_text()

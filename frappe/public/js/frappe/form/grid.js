@@ -54,6 +54,10 @@ frappe.ui.form.close_grid_form = function () {
 	}
 };
 
+// Rows built in one go; the rest of a bigger table is built on in smaller chunks, one per animation frame.
+const RENDER_CHUNK = 200;
+const PENDING_CHUNK = 50;
+
 export default class Grid {
 	constructor(opts) {
 		$.extend(this, opts);
@@ -279,6 +283,88 @@ export default class Grid {
 		$(`<a href="${this.df.documentation_url}" target="_blank">
 			${frappe.utils.icon("circle-question-mark", "sm")}
 		</a>`).appendTo($help);
+	}
+
+	// Every reader of grid_rows gets all the rows: a pending (still unbuilt) tail is built first.
+	get grid_rows() {
+		this.render_pending_rows();
+		return this._grid_rows;
+	}
+
+	// The rows built so far; does not build the pending ones.
+	get built_rows() {
+		return this._grid_rows;
+	}
+
+	set grid_rows(rows) {
+		this.cancel_pending_rows();
+		this._grid_rows = rows;
+	}
+
+	get grid_rows_by_docname() {
+		this.render_pending_rows();
+		return this._grid_rows_by_docname;
+	}
+
+	set grid_rows_by_docname(rows) {
+		this._grid_rows_by_docname = rows;
+	}
+
+	cancel_pending_rows() {
+		this._pending_from = null;
+		if (this._pending_frame) {
+			cancelAnimationFrame(this._pending_frame);
+			this._pending_frame = null;
+		}
+	}
+
+	// Build the rows that render_result_rows left for later: `limit` of them (all by default).
+	render_pending_rows(limit = Infinity) {
+		const from = this._pending_from;
+		if (from == null) return;
+
+		const end = Math.min(this.data.length, from + limit);
+		const $rows = this._pending_parent;
+		for (let ri = from; ri < end; ri++) {
+			const d = this.data[ri];
+			if (!d) break;
+			const grid_row = this.build_row($rows, d, ri);
+			this._grid_rows[ri] = grid_row;
+			this._grid_rows_by_docname[d.name] = grid_row;
+		}
+		this.toggle_checkboxes(this.display_status !== "Read");
+
+		if (end >= this.data.length) {
+			this.cancel_pending_rows();
+		} else {
+			this._pending_from = end;
+			this.schedule_pending_rows();
+		}
+	}
+
+	schedule_pending_rows() {
+		if (this._pending_frame) cancelAnimationFrame(this._pending_frame);
+		this._pending_frame = requestAnimationFrame(() => {
+			this._pending_frame = null;
+			this.render_pending_rows(PENDING_CHUNK);
+		});
+	}
+
+	build_row($rows, d, ri) {
+		if (d.idx === undefined) {
+			d.idx = ri + 1;
+		}
+		if (d.name === undefined) {
+			d.name = this.get_random_name();
+		}
+		return new GridRow({
+			parent: $rows,
+			parent_df: this.df,
+			docfields: this.docfields,
+			doc: d,
+			frm: this.frm,
+			grid: this,
+		});
 	}
 
 	setup_check() {
@@ -692,7 +778,7 @@ export default class Grid {
 		// redraw
 		this.make_head();
 
-		if (!this.grid_rows) {
+		if (!this._grid_rows) {
 			/** @type {GridRow[]} */
 			this.grid_rows = [];
 		}
@@ -732,51 +818,60 @@ export default class Grid {
 		}
 
 		let result_length = this.data.length;
-		if (!this.grid_rows) {
+		if (!this._grid_rows) {
 			return;
 		}
+		this.cancel_pending_rows();
 
 		// index existing rows by doc object reference for identity-based matching
 		let rows_by_doc = new Map();
-		for (let row of this.grid_rows) {
+		for (let row of this._grid_rows) {
 			if (row?.doc) {
 				rows_by_doc.set(row.doc, row);
 			}
 		}
 
 		let matched_rows = new Set();
+		let created = 0;
+		let can_defer = null;
+		let built_to = result_length;
 
 		for (let ri = 0; ri < result_length; ri++) {
 			const d = this.data[ri];
 			if (!d) {
 				return;
 			}
-			if (d.idx === undefined) {
-				d.idx = ri + 1;
-			}
-			if (d.name === undefined) {
-				d.name = this.get_random_name();
-			}
 
 			let grid_row = rows_by_doc.get(d);
 			if (grid_row) {
 				matched_rows.add(grid_row);
+				if (d.idx === undefined) {
+					d.idx = ri + 1;
+				}
+				if (d.name === undefined) {
+					d.name = this.get_random_name();
+				}
 				grid_row.refresh();
 			} else {
-				grid_row = new GridRow({
-					parent: $rows,
-					parent_df: this.df,
-					docfields: this.docfields,
-					doc: d,
-					frm: this.frm,
-					grid: this,
-				});
+				// A big table is shown whole but built in chunks, so the page stays alive. Only when
+				// no later row exists yet (first render, switch of the document, a bulk append).
+				if (created >= RENDER_CHUNK) {
+					if (can_defer === null) {
+						can_defer = this.data.slice(ri).every((x) => !rows_by_doc.has(x));
+					}
+					if (can_defer) {
+						built_to = ri;
+						break;
+					}
+				}
+				grid_row = this.build_row($rows, d, ri);
+				created++;
 			}
-			this.grid_rows[ri] = grid_row;
-			this.grid_rows_by_docname[d.name] = grid_row;
+			this._grid_rows[ri] = grid_row;
+			this._grid_rows_by_docname[d.name] = grid_row;
 		}
 
-		// remove stale / invisible rows
+		// remove stale rows
 		for (let [, row] of rows_by_doc) {
 			if (!matched_rows.has(row)) {
 				row.wrapper.remove();
@@ -786,20 +881,26 @@ export default class Grid {
 		// reorder DOM from the first mismatch onward
 		let $children = $rows.children();
 		let reorder_from = -1;
-		for (let i = 0; i < result_length; i++) {
-			if ($children.get(i) !== this.grid_rows[i].wrapper.get(0)) {
+		for (let i = 0; i < built_to; i++) {
+			if ($children.get(i) !== this._grid_rows[i].wrapper.get(0)) {
 				reorder_from = i;
 				break;
 			}
 		}
 		if (reorder_from >= 0) {
-			for (let ri = reorder_from; ri < result_length; ri++) {
-				$rows.append(this.grid_rows[ri].wrapper);
+			for (let ri = reorder_from; ri < built_to; ri++) {
+				$rows.append(this._grid_rows[ri].wrapper);
 			}
 		}
 
-		if (this.grid_rows.length > this.data.length) {
-			this.grid_rows.length = this.data.length;
+		if (this._grid_rows.length > built_to) {
+			this._grid_rows.length = built_to;
+		}
+
+		if (built_to < result_length) {
+			this._pending_from = built_to;
+			this._pending_parent = $rows;
+			this.schedule_pending_rows();
 		}
 	}
 

@@ -637,6 +637,14 @@ body[data-grid-density="comfortable"] .form-grid {
 	margin-left: var(--margin-md);
 }
 
+// All rows of a table part are in the DOM (no paging). A row off the screen is not laid out or painted,
+// so a table of thousands of rows scrolls and edits like a short one. A row being edited or opened keeps its
+// popups (link suggestions), so it is left out.
+.grid-body .rows > .grid-row:not(.grid-row-open):not(:has(.editable-row)) {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 34px;
+}
+
 .grid-row {
 	border-bottom: 1px solid var(--table-border-color);
 	background-color: var(--fg-color);
