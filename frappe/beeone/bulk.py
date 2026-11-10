@@ -45,7 +45,7 @@ def copy_rows(doctype: str, columns: list[str], rows: list) -> None:
 		for start in range(0, len(rows), COPY_ROWS):
 			dialect.copy_text(table, columns, csv_text(rows[start : start + COPY_ROWS]))
 	else:
-		dialect.multi_insert(table, columns, rows)
+		dialect.multi_insert(table, columns, [[None if v == "" else v for v in r] for r in rows])
 
 
 @contextmanager
