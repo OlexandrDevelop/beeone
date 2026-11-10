@@ -189,8 +189,10 @@ class Dialect:
 		"""(name, CREATE statement) of the indexes that only speed up reads: not the primary key, not unique."""
 		raise NotImplementedError
 
-	def copy_text(self, table: str, columns: list[str], text: str) -> None:
-		"""Load rows given as CSV text (an empty cell is NULL) into a table, in the transaction of the caller."""
+	def copy_text(self, table: str, columns: list[str], text: str, cursor=None) -> None:
+		"""Load rows given as CSV text (an empty cell is NULL) into a table, in the transaction of the caller.
+
+		`cursor` is a cursor of another connection (a worker of a parallel load); by default the one of `frappe.db`."""
 		raise NotImplementedError
 
 	def multi_insert(self, table: str, columns: list[str], rows: list) -> None:
@@ -330,7 +332,7 @@ class MariaDB(Dialect):
 			)
 		)
 
-	def copy_text(self, table: str, columns: list[str], text: str) -> None:
+	def copy_text(self, table: str, columns: list[str], text: str, cursor=None) -> None:
 		import csv
 		import io
 
@@ -506,11 +508,11 @@ class Postgres(Dialect):
 	def restore_index_sql(self, definition: str) -> str:
 		return definition.replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ", 1)
 
-	def copy_text(self, table: str, columns: list[str], text: str) -> None:
+	def copy_text(self, table: str, columns: list[str], text: str, cursor=None) -> None:
 		import io
 
 		sql = f"COPY {self.quote(table)} ({', '.join(self.quote(c) for c in columns)}) FROM STDIN WITH (FORMAT csv)"
-		frappe.db._cursor.copy_expert(sql, io.StringIO(text))
+		(cursor or frappe.db._cursor).copy_expert(sql, io.StringIO(text))
 
 	def session_settings(self, **settings) -> tuple[list[str], list[str]]:
 		names = {
