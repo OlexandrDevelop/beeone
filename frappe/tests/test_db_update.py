@@ -207,6 +207,8 @@ class TestDBUpdate(IntegrationTestCase):
 			with self.assertRaises(frappe.UniqueValidationError):
 				frappe.get_doc(doctype=doctype.name, bill_no="INV-001").insert()
 		finally:
+			# a duplicate aborts the transaction on PostgreSQL
+			frappe.db.rollback()
 			doctype.delete(force=True)
 			frappe.db.commit()  # nosemgrep
 
