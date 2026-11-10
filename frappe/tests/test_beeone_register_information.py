@@ -195,10 +195,11 @@ class TestBeeoneRegisterInformation(IntegrationTestCase):
 		self.assertEqual(reg.register_kind, "Information: Periodic")
 
 	def test_period_index_exists(self):
+		# the index of the period alone; the index (dimensions..., date) of the slice (T-893) has the date last
 		table = "tab" + PRICE
 		query = {
 			"mariadb": "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() "
-			"AND table_name = %s AND index_name LIKE 'beeone_ix_%%' AND column_name = 'valid_from'",
+			"AND table_name = %s AND index_name LIKE 'beeone_ix_%%' AND column_name = 'valid_from' AND seq_in_index = 1",
 			"postgres": "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = current_schema() "
 			"AND tablename = %s AND indexname LIKE 'beeone_ix_%%' AND indexdef LIKE '%%(valid_from)%%'",
 		}[db.dialect().name]
