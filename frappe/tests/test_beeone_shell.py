@@ -407,3 +407,23 @@ class TestBeeoneShell(IntegrationTestCase):
 		# the title stays in the DOM (window name, taskbar); it is hidden visually only
 		self.assertIn("clip: rect(0 0 0 0)", block)
 		self.assertNotIn("display: none", block)
+
+	def test_close_prompt_is_a_screen_level_dialog_and_modals_are_centered(self):
+		app = Path(frappe.get_app_path("frappe")) / "public"
+		js = (app / "js" / "beeone" / "shell" / "windows.js").read_text()
+		ui = (app / "js" / "beeone" / "shell" / "ui.js").read_text()
+		css = (app / "scss" / "beeone" / "shell" / "_shell.scss").read_text()
+		body = js[js.index("function confirm_close(") :][:1800]
+		# a window is transformed, so the prompt must live on <body> (beeone.ui.dialog), never inside win.el
+		self.assertIn("beeone.ui.dialog(", body)
+		self.assertNotIn("win.el.appendChild", body)
+		for s in ("save", "drop", "cancel"):
+			self.assertIn(f'data-s="{s}"', body)
+		self.assertNotRegex(css, r"\.bo-sheet\s*\{[^}]*position:\s*absolute")
+		self.assertRegex(
+			css, r"body\.bo-shell \.modal:not\(\.modal-minimize\) > \.modal-dialog\s*\{[^}]*align-items:\s*center"
+		)
+		# keyboard: focus trap, Enter = primary, Esc = cancel
+		block = ui[ui.index("beeone.ui.dialog = function") :][:4500]
+		for token in ('"Tab"', '"Enter"', '"Escape"', "focusin"):
+			self.assertIn(token, block)

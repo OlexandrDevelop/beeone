@@ -178,11 +178,13 @@ frappe.provide("beeone.ui");
 
 	// ---------------------------------------------------------------- own dialogs (.bo-dialog)
 	// Frappe dialogs are restyled in the app CSS; this one is for the shell (search, shortcuts).
+	const open_dialogs = [];
+	const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 	beeone.ui.dialog = function (opts) {
 		const back = document.createElement("div");
-		back.className = "bo-dialog-backdrop";
+		back.className = "bo-dialog-backdrop" + (opts.className ? " " + opts.className : "");
 		back.innerHTML =
-			`<div class="bo-dialog${opts.wide ? " bo-dialog--wide" : ""}" role="dialog" aria-modal="true" ` +
+			`<div class="bo-dialog${opts.wide ? " bo-dialog--wide" : ""}" role="${opts.role || "dialog"}" aria-modal="true" ` +
 			`aria-label="${esc(opts.title || "")}" tabindex="-1"${opts.width ? ` style="width:min(${opts.width}px,100%)"` : ""}>` +
 			opts.html +
 			"</div>";
@@ -195,18 +197,56 @@ frappe.provide("beeone.ui");
 			const ms = parseFloat(getComputedStyle(back).animationDuration) * 1000 || 0;
 			setTimeout(() => back.remove(), ms + 10);
 			document.removeEventListener("keydown", on_key, true);
+			document.removeEventListener("focusin", on_focusin, true);
+			const at = open_dialogs.indexOf(back);
+			if (at >= 0) open_dialogs.splice(at, 1);
 			if (last && last.focus) last.focus({ preventScroll: true });
 			if (opts.on_close) opts.on_close();
 		};
+		const focusable = () => [...box.querySelectorAll(FOCUSABLE)].filter((el) => !el.disabled && el.getClientRects().length);
 		const on_key = (e) => {
-			if (opts.locked) return;
+			// only the top-most dialog reacts
+			if (open_dialogs[open_dialogs.length - 1] !== back) return;
 			if (e.key === "Escape") {
+				if (opts.locked) return;
 				e.stopPropagation();
 				e.preventDefault();
 				close();
+			} else if (e.key === "Tab") {
+				const list = focusable();
+				if (!list.length) {
+					e.preventDefault();
+					return box.focus();
+				}
+				const first = list[0];
+				const end = list[list.length - 1];
+				if (!box.contains(document.activeElement) || (e.shiftKey && (document.activeElement === first || document.activeElement === box))) {
+					e.preventDefault();
+					(e.shiftKey ? end : first).focus();
+				} else if (!e.shiftKey && document.activeElement === end) {
+					e.preventDefault();
+					first.focus();
+				}
+			} else if (e.key === "Enter" && !e.isComposing) {
+				const t = e.target;
+				if (t && t.closest && t.closest("button, a, textarea, select, [contenteditable=true]")) return;
+				const primary = box.querySelector("[data-primary], .bo-btn--primary");
+				if (primary && !primary.disabled) {
+					e.preventDefault();
+					e.stopPropagation();
+					primary.click();
+				}
 			}
 		};
+		// focus never leaves the dialog while it is the top-most one
+		const on_focusin = (e) => {
+			if (open_dialogs[open_dialogs.length - 1] !== back || back.classList.contains("leaving")) return;
+			if (back.contains(e.target) || (e.target.closest && e.target.closest(".modal, .awesomplete, .datepickers-container, .datepicker"))) return;
+			box.focus({ preventScroll: true });
+		};
+		open_dialogs.push(back);
 		document.addEventListener("keydown", on_key, true);
+		document.addEventListener("focusin", on_focusin, true);
 		back.addEventListener("mousedown", (e) => {
 			if (e.target === back && !opts.locked) close();
 		});

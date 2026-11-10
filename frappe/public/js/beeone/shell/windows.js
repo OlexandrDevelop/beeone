@@ -725,22 +725,29 @@ export function close(key, force) {
 
 function confirm_close(win) {
 	focus(win.key);
-	if (win.el.querySelector(".bo-sheet")) return;
-	const sheet = document.createElement("div");
-	sheet.className = "bo-sheet bo-dialog";
-	sheet.innerHTML =
-		`<div class="bo-sheet-box" role="alertdialog"><h3>${esc(__("Save changes?"))}</h3>` +
-		`<p>${esc(__('"{0}" has changes. If you close it without saving, the changes will be lost.', [win.title]))}</p>` +
-		`<div class="bo-sheet-act"><button type="button" class="bo-btn bo-btn--primary" data-s="save">${esc(__("Save and close"))}</button>` +
-		`<button type="button" class="bo-btn" data-s="drop">${esc(__("Don't save"))}</button>` +
-		`<button type="button" class="bo-btn bo-btn--ghost" data-s="cancel">${esc(__("Cancel"))}</button></div></div>`;
-	win.el.appendChild(sheet);
-	sheet.querySelector("[data-s=save]").focus();
-	sheet.addEventListener("click", (e) => {
+	if (win.sheet) return;
+	// a screen-level dialog on <body>: a window is transformed, so nothing inside it can cover the viewport
+	const dlg = beeone.ui.dialog({
+		className: "bo-sheet",
+		role: "alertdialog",
+		title: __("Save changes?"),
+		width: 440,
+		html:
+			`<div class="bo-dialog-head"><h3>${esc(__("Save changes?"))}</h3></div>` +
+			`<div class="bo-dialog-body"><p>${esc(__('"{0}" has changes. If you close it without saving, the changes will be lost.', [win.title]))}</p></div>` +
+			`<div class="bo-dialog-foot"><button type="button" class="bo-btn bo-btn--ghost" data-s="cancel" data-close>${esc(__("Cancel"))}</button>` +
+			`<button type="button" class="bo-btn" data-s="drop">${esc(__("Don't save"))}</button>` +
+			`<button type="button" class="bo-btn bo-btn--primary" data-s="save" autofocus>${esc(__("Save and close"))}</button></div>`,
+		on_close: () => {
+			win.sheet = null;
+		},
+	});
+	win.sheet = dlg;
+	dlg.el.addEventListener("click", (e) => {
 		const act = e.target.closest("[data-s]");
 		if (!act) return;
 		const what = act.dataset.s;
-		sheet.remove();
+		dlg.close();
 		if (what === "drop") close(win.key, true);
 		if (what === "save" && win.page && win.page.frm) {
 			win.page.frm.save(null, () => close(win.key, true));

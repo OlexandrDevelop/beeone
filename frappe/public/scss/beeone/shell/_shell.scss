@@ -817,39 +817,26 @@ html[data-theme="dark"] .bo-sk-wrap::after {
 	display: none;
 }
 
-/* the sheet that asks to save a form */
-.bo-sheet {
-	position: absolute;
-	inset: 44px 0 0;
-	z-index: 6;
-	display: grid;
-	place-items: center;
-	background: var(--bo-backdrop-soft);
-}
-
-.bo-sheet-box {
-	width: min(420px, calc(100% - 32px));
-	padding: 18px 20px;
-	border-radius: var(--bo-r-dialog);
-	background: var(--bo-surface-raised);
-	border: 1px solid var(--bo-border);
-	box-shadow: var(--bo-shadow-lg);
-}
-
-.bo-sheet-box h3 {
-	margin: 0 0 6px;
-	font-size: 16px;
-}
-
-.bo-sheet-box p {
-	margin: 0 0 16px;
+/* the prompt that asks to save a form is a beeone.ui.dialog on <body> (screen-level, centered) */
+.bo-sheet .bo-dialog-body p {
+	margin: 0;
 	color: var(--bo-text-2);
 }
 
-.bo-sheet-act {
+/* Frappe modals are on <body> above the shell already; center them on the viewport */
+body.bo-shell .modal:not(.modal-minimize) > .modal-dialog {
 	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+	align-items: center;
+	min-height: calc(100% - 3.5rem);
+}
+
+body.bo-shell .modal:not(.modal-minimize) > .modal-dialog > .modal-content {
+	width: 100%;
+}
+
+body.bo-shell .modal-backdrop.show {
+	background: var(--bo-backdrop);
+	opacity: 1;
 }
 
 /* ---------- Frappe pages inside a window ----------
