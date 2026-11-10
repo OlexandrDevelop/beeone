@@ -155,7 +155,7 @@ class PostgresTable(DBTable):
 			if col.fieldname not in new_column_names and not frappe.db.get_column_index(
 				self.table_name, col.fieldname, unique=True
 			):
-				index_name = frappe.db.make_index_name(self.table_name, f"unique_{col.fieldname}")
+				index_name = frappe.db.make_index_name(self.table_name, f"{col.fieldname}_key")
 				create_contraint_query += (
 					f'CREATE UNIQUE INDEX IF NOT EXISTS "{index_name}" ON `{self.table_name}`(`{col.fieldname}`);'
 				)
