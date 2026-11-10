@@ -105,7 +105,7 @@ def next_names(
 	series = frappe.qb.DocType("Series")
 	current = frappe.qb.from_(series).where(series.name == series_key).for_update().select("current").run()
 	first = cint(current[0][0] if current and current[0][0] is not None else 0) + 1
-	frappe.db.sql("UPDATE `tabSeries` SET `current` = %s WHERE `name`=%s", (first + count - 1, series_key))
+	frappe.qb.update(series).set(series.current, first + count - 1).where(series.name == series_key).run()
 	return [head + ("%0" + str(int(digits)) + "d") % n for n in range(first, first + count)]
 
 
