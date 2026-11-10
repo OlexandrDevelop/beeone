@@ -529,6 +529,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 
 		target = f"{quote(self.db_schema)}.{quote(table_name)} ({', '.join(quote(c) for c in columns)})"
 		self.commit()
+		# commit() opens the next transaction at once, end it: autocommit can not change inside one
+		self._conn.commit()
 		self._conn.autocommit = True
 		try:
 			drop_invalid()
