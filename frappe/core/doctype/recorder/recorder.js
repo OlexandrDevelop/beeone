@@ -10,9 +10,7 @@ frappe.ui.form.on("Recorder", {
 		frm.disable_save();
 		frm._sort_order = {};
 		frm.trigger("setup_sort");
-		frm.fields_dict.sql_queries.grid.grid_pagination.page_length = 500;
 		refresh_field("sql_queries");
-		frm.fields_dict.timeline.grid.grid_pagination.page_length = 500;
 		refresh_field("timeline");
 		frm.trigger("format_grid");
 		frm.add_custom_button(__("Suggest Optimizations"), () => {

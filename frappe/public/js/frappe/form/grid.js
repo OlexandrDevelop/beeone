@@ -2,7 +2,6 @@
 // MIT License. See license.txt
 
 import GridRow from "./grid_row";
-import GridPagination from "./grid_pagination";
 import { get_grid_settings_key } from "./grid_settings_key";
 import {
 	apply_table_density,
@@ -170,8 +169,6 @@ export default class Grid {
 								css_class: "grid-add-multiple-rows hidden",
 							})}
 						</div>
-						<div class="grid-pagination">
-						</div>
 						<div class="grid-bulk-actions text-right">
 							${frappe.ui.button.html({
 								label: __("Download"),
@@ -212,7 +209,6 @@ export default class Grid {
 
 		this.setup_add_row();
 
-		this.setup_grid_pagination();
 		this.update_idx_and_name();
 
 		this.custom_buttons = {};
@@ -285,13 +281,6 @@ export default class Grid {
 		</a>`).appendTo($help);
 	}
 
-	setup_grid_pagination() {
-		this.grid_pagination = new GridPagination({
-			grid: this,
-			wrapper: this.wrapper,
-		});
-	}
-
 	setup_check() {
 		this.wrapper.on("click touchend", ".grid-row-check", (e) => {
 			if (e.type === "touchend") {
@@ -309,12 +298,7 @@ export default class Grid {
 				this.form_grid.find(".grid-row-check").prop("checked", checked);
 
 				// set following rows as checked in model
-				let result_length = this.grid_pagination.get_result_length();
-				let page_index = this.grid_pagination.page_index;
-				let page_length = this.grid_pagination.page_length;
-				for (let ri = (page_index - 1) * page_length; ri < result_length; ri++) {
-					this.grid_rows[ri].select(checked);
-				}
+				this.grid_rows.forEach((row) => row && row.select(checked));
 			} else if (docname) {
 				if (e.shiftKey && this.last_checked_docname) {
 					this.check_range(docname, this.last_checked_docname, checked);
@@ -385,7 +369,7 @@ export default class Grid {
 	duplicate_rows() {
 		let selected_children = this.get_selected_children();
 		selected_children.forEach((doc) => {
-			this.add_new_row(null, null, false, doc, false);
+			this.add_new_row(null, null, false, doc);
 			this.check_range(doc.name, doc.name, false);
 		});
 	}
@@ -425,9 +409,6 @@ export default class Grid {
 		frappe.run_serially(tasks);
 
 		this.wrapper.find(".grid-heading-row .grid-row-check:checked:first").prop("checked", 0);
-		if (selected_children.length == this.grid_pagination.page_length) {
-			this.scroll_to_top();
-		}
 	}
 
 	delete_all_rows() {
@@ -719,9 +700,7 @@ export default class Grid {
 		/** @type {Record<string, GridRow>} */
 		this.grid_rows_by_docname = {};
 
-		this.grid_pagination.update_page_numbers();
 		this.render_result_rows($rows);
-		this.grid_pagination.check_page_number();
 		this.wrapper.find(".grid-empty").toggleClass("hidden", Boolean(this.data.length));
 
 		// toolbar
@@ -752,10 +731,7 @@ export default class Grid {
 			$rows = $(this.parent).find(".rows");
 		}
 
-		let result_length = this.grid_pagination.get_result_length();
-		let page_index = this.grid_pagination.page_index;
-		let page_length = this.grid_pagination.page_length;
-		let page_start = (page_index - 1) * page_length;
+		let result_length = this.data.length;
 		if (!this.grid_rows) {
 			return;
 		}
@@ -770,7 +746,7 @@ export default class Grid {
 
 		let matched_rows = new Set();
 
-		for (let ri = page_start; ri < result_length; ri++) {
+		for (let ri = 0; ri < result_length; ri++) {
 			const d = this.data[ri];
 			if (!d) {
 				return;
@@ -809,24 +785,16 @@ export default class Grid {
 
 		// reorder DOM from the first mismatch onward
 		let $children = $rows.children();
-		let page_count = result_length - page_start;
 		let reorder_from = -1;
-		for (let i = 0; i < page_count; i++) {
-			if ($children.get(i) !== this.grid_rows[page_start + i].wrapper.get(0)) {
+		for (let i = 0; i < result_length; i++) {
+			if ($children.get(i) !== this.grid_rows[i].wrapper.get(0)) {
 				reorder_from = i;
 				break;
 			}
 		}
 		if (reorder_from >= 0) {
-			for (let ri = page_start + reorder_from; ri < result_length; ri++) {
+			for (let ri = reorder_from; ri < result_length; ri++) {
 				$rows.append(this.grid_rows[ri].wrapper);
-			}
-		}
-
-		// clear non-visible slots to prevent duplicates and stale references
-		for (let i = 0; i < this.grid_rows.length; i++) {
-			if (i < page_start || i >= result_length) {
-				delete this.grid_rows[i];
 			}
 		}
 
@@ -860,7 +828,6 @@ export default class Grid {
 				}
 			}
 		} else if (
-			this.grid_rows.length < this.grid_pagination.page_length &&
 			!this.df.allow_bulk_edit
 		) {
 			this.wrapper
@@ -962,14 +929,14 @@ export default class Grid {
 				}
 				// prevent drag behaviour if _sortable property is "false"
 				let idx = $(event.dragged).closest(".grid-row").attr("data-idx");
-				let doc = this.data[idx % this.grid_pagination.page_length];
+				let doc = this.data[idx - 1];
 				if (doc && doc._sortable === false) {
 					return false;
 				}
 			},
 			onUpdate: (event) => {
 				let idx = $(event.item).closest(".grid-row").attr("data-idx") - 1;
-				let doc = this.data[idx % this.grid_pagination.page_length];
+				let doc = this.data[idx];
 				this.renumber_based_on_dom();
 				this.frm &&
 					this.frm.script_manager.trigger(
@@ -1206,22 +1173,16 @@ export default class Grid {
 
 	setup_add_row() {
 		this.wrapper.find(".grid-add-row").click(() => {
-			this.add_new_row(null, null, true, null, true);
+			this.add_new_row(null, null, true, null);
 			this.set_focus_on_row();
 
 			return false;
 		});
 	}
 
-	add_new_row(idx, callback, show, copy_doc, go_to_last_page = false, go_to_first_page = false) {
+	add_new_row(idx, callback, show, copy_doc) {
 		let cannot_add_rows = this.cannot_add_rows || (this.df && this.df.cannot_add_rows);
 		if (this.is_editable() && !cannot_add_rows) {
-			if (go_to_last_page) {
-				this.grid_pagination.go_to_last_page_to_add_row();
-			} else if (go_to_first_page) {
-				this.grid_pagination.go_to_page(1);
-			}
-
 			if (this.frm) {
 				var d = frappe.model.add_child(
 					this.frm.doc,
@@ -1278,8 +1239,7 @@ export default class Grid {
 
 		$rows.find(".grid-row").each((i, item) => {
 			let $item = $(item);
-			let index =
-				(this.grid_pagination.page_index - 1) * this.grid_pagination.page_length + i;
+			let index = i;
 			let d = this.grid_rows_by_docname[$item.attr("data-name")].doc;
 			d.idx = index + 1;
 			$item.attr("data-idx", d.idx);
@@ -1507,7 +1467,6 @@ export default class Grid {
 		const run = () => {
 			const row = this.grid_rows[idx];
 			if (!row || !row.doc) return false;
-			row.change_page_if_reqd(idx);
 			if (row.is_readonly_inline()) {
 				const $cell = row.wrapper.find(".grid-static-col[tabindex]").first();
 				if ($cell.length) $cell.trigger("focus");
@@ -1671,7 +1630,6 @@ export default class Grid {
 				target: this,
 				txt: "",
 			});
-			this.grid_pagination.go_to_last_page_to_add_row();
 			return false;
 		});
 		this.multiple_set = true;

@@ -1724,7 +1724,7 @@ frappe.ui.form.on("Data Import", {
 
 	setup_value_mappings_grid(frm) {
 		const grid = frm.fields_dict.value_mappings?.grid;
-		if (!grid?.grid_pagination) return;
+		if (!grid?.wrapper) return;
 
 		frm.set_df_property("value_mappings", "cannot_add_rows", true);
 		frm.set_df_property("value_mappings", "cannot_delete_rows", true);

@@ -104,7 +104,6 @@ body[data-grid-density="comfortable"] .form-grid {
 
 .grid-footer-read-only {
 	.grid-buttons > :not(.grid-density-toggle),
-	.grid-pagination,
 	.grid-bulk-actions {
 		display: none !important;
 	}
@@ -906,43 +905,6 @@ body[data-grid-density="comfortable"] .form-grid {
 	.es-button:not(:last-child) {
 		margin-right: 4px;
 	}
-}
-
-.grid-pagination {
-	padding: 0;
-	display: flex;
-	align-items: center;
-
-	.last-page {
-		margin-left: 5px;
-	}
-}
-
-.page-text {
-	display: inline-block;
-	cursor: default;
-	margin-right: 6px;
-}
-
-.current-page-number {
-	width: 16px;
-	text-align: center;
-	border: none;
-	cursor: text;
-
-	&:focus {
-		outline: none;
-	}
-}
-
-.prev-page {
-	margin-left: var(--margin-xs);
-	text-decoration: none;
-}
-
-.next-page {
-	margin-right: var(--margin-xs);
-	text-decoration: none;
 }
 
 .page-number {

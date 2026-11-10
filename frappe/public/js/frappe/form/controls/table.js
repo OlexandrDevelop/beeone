@@ -19,7 +19,6 @@ frappe.ui.form.ControlTable = class ControlTable extends frappe.ui.form.Control 
 		this.$wrapper.on("paste", ":text", async (e) => {
 			const table_field = this.df.fieldname;
 			const grid = this.grid;
-			const grid_pagination = grid.grid_pagination;
 			const grid_rows = grid.grid_rows;
 			const doctype = grid.doctype;
 			const row_docname = $(e.target).closest(".grid-row").data("name");

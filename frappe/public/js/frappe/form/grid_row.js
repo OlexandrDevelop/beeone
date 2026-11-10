@@ -958,7 +958,6 @@ export default class GridRow {
 				}
 
 				this.grid.prevent_build = true;
-				this.grid.grid_pagination.go_to_page(1);
 				this.grid.refresh();
 				this.grid.prevent_build = false;
 			}, 500)
@@ -1708,25 +1707,8 @@ export default class GridRow {
 	open_row_at_index(row_index) {
 		if (!this.grid.data[row_index]) return;
 
-		this.change_page_if_reqd(row_index);
 		this.grid.grid_rows[row_index].toggle_view(true);
 		return true;
-	}
-	change_page_if_reqd(row_index) {
-		const { page_index, page_length } = this.grid.grid_pagination;
-
-		row_index++;
-		let new_page;
-
-		if (row_index <= (page_index - 1) * page_length) {
-			new_page = page_index - 1;
-		} else if (row_index > page_index * page_length) {
-			new_page = page_index + 1;
-		}
-
-		if (new_page) {
-			this.grid.grid_pagination.go_to_page(new_page);
-		}
 	}
 	// Escape plain-text field values before passing to frappe.format(), so the formatted
 	// output is safe to inject via .html(). Mirrors the same pre-escaping in base_input.js.
