@@ -85,6 +85,24 @@ class Dialect:
 		q = self.quote
 		self.ddl(f"CREATE INDEX IF NOT EXISTS {q(name)} ON {q(table)} ({', '.join(q(c) for c in columns)})")
 
+	def _index_columns(self, table: str) -> dict[str, list[str]]:
+		"""The columns of every usable index of a table, in index order."""
+		raise NotImplementedError
+
+	def index_on(self, table: str, columns: list[str]) -> str | None:
+		"""The name of an index whose leading columns are `columns`, whatever its name is."""
+		for name, index_columns in self._index_columns(table).items():
+			if index_columns[: len(columns)] == list(columns):
+				return name
+		return None
+
+	def lex_condition(self, columns: list[str], values: list, op: str, or_equal: bool = False) -> tuple[str, list]:
+		"""The condition that the tuple of `columns` is `op` (< or >) than `values`, compared field by field.
+
+		The OR expansion becomes a range of the index in MariaDB.
+		"""
+		return _lex(columns, values, op, or_equal)
+
 	def _require_not_null(self, table: str, column: str):
 		"""The partition key is part of the primary key, so the column must be NOT NULL already."""
 		row = frappe.db.sql(
@@ -168,6 +186,14 @@ class Dialect:
 		raise NotImplementedError
 
 
+def _group(rows) -> dict[str, list[str]]:
+	"""Rows of (index, column) in index order to {index: [columns]}."""
+	indexes: dict[str, list[str]] = {}
+	for index, column in rows:
+		indexes.setdefault(index, []).append(column)
+	return indexes
+
+
 class MariaDB(Dialect):
 	name = "mariadb"
 	quote_char = "`"
@@ -175,6 +201,15 @@ class MariaDB(Dialect):
 
 	def _schema_rule(self) -> str:
 		return "table_schema = DATABASE()"
+
+	def _index_columns(self, table: str) -> dict[str, list[str]]:
+		rows = frappe.db.sql(
+			"SELECT index_name, column_name, sub_part FROM information_schema.statistics "
+			"WHERE table_schema = DATABASE() AND table_name = %s ORDER BY index_name, seq_in_index",
+			table,
+		)
+		prefixed = {name for name, _column, sub_part in rows if sub_part is not None}
+		return _group((name, column) for name, column, _sub_part in rows if name not in prefixed)
 
 	def _table_options(self) -> str:
 		return " ENGINE=InnoDB ROW_FORMAT=DYNAMIC CHARACTER SET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
@@ -254,6 +289,25 @@ class MariaDB(Dialect):
 
 class Postgres(Dialect):
 	name = "postgres"
+
+	def _index_columns(self, table: str) -> dict[str, list[str]]:
+		rows = frappe.db.sql(
+			"SELECT i.relname, a.attname FROM pg_index x "
+			"JOIN pg_class t ON t.oid = x.indrelid JOIN pg_class i ON i.oid = x.indexrelid "
+			"JOIN pg_namespace n ON n.oid = t.relnamespace "
+			"CROSS JOIN LATERAL unnest(x.indkey) WITH ORDINALITY AS k(attnum, ord) "
+			"JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum "
+			"WHERE t.relname = %s AND n.nspname = current_schema() AND x.indisvalid AND x.indpred IS NULL "
+			"ORDER BY i.relname, k.ord",
+			table,
+		)
+		return _group(rows)
+
+	def lex_condition(self, columns: list[str], values: list, op: str, or_equal: bool = False) -> tuple[str, list]:
+		"""A row comparison: PostgreSQL makes an index range of it, but not of the OR expansion."""
+		names = ", ".join(self.quote(c) for c in columns)
+		marks = ", ".join(["%s"] * len(columns))
+		return f"(({names}) {op}{'=' if or_equal else ''} ({marks}))", list(values)
 
 	def _schema_rule(self) -> str:
 		return "table_schema = current_schema()"
@@ -423,6 +477,17 @@ def ensure_index(table: str, tag: str, columns: list[str]):
 	dialect().ensure_index(table, _index_name(table, tag), columns)
 
 
+def ensure_columns_index(table: str, tag: str, columns: list[str]):
+	"""Create an index like `ensure_index`, unless an index with these leading columns is there under any name."""
+	if not dialect().index_on(table, columns):
+		ensure_index(table, tag, columns)
+
+
+def index_on(table: str, columns: list[str]) -> str | None:
+	"""The name of an index of the table that starts with the columns, or None."""
+	return dialect().index_on(table, columns)
+
+
 def drop_index(table: str, tag: str):
 	"""Drop an index made by `ensure_index`, when it is there."""
 	dialect().drop_index(table, _index_name(table, tag))
@@ -495,6 +560,45 @@ def _lex(columns: list[str], values: list, op: str, or_equal: bool = False) -> t
 	return "(" + " OR ".join(parts) + ")", params
 
 
+def range_sql(
+	doctype: str,
+	columns: list[str],
+	order: list[str],
+	filters: dict | None = None,
+	after: tuple | None = None,
+	until: tuple | None = None,
+	before: tuple | None = None,
+	descending: bool = False,
+	limit: int | None = None,
+	lock: bool = False,
+) -> tuple[str, list]:
+	"""The SQL and parameters of `select_range`.
+
+	`after`, `until` and `before` are values of the `order` columns: rows after (>), up to and
+	with (<=) and before (<) that position. `lock` reads the latest committed rows and locks them.
+	"""
+	q = quote
+	where, params = [], []
+	for column, value in (filters or {}).items():
+		where.append(f"{q(column)} = %s")
+		params.append(value)
+	for position, op, or_equal in ((after, ">", False), (until, "<", True), (before, "<", False)):
+		if position is not None:
+			condition, values = dialect().lex_condition(order, list(position), op, or_equal)
+			where.append(condition)
+			params += values
+	way = "DESC" if descending else "ASC"
+	sql = f"SELECT {', '.join(q(c) for c in columns)} FROM {q('tab' + doctype)}"
+	if where:
+		sql += " WHERE " + " AND ".join(where)
+	sql += f" ORDER BY {', '.join(f'{q(c)} {way}' for c in order)}"
+	if limit:
+		sql += f" LIMIT {int(limit)}"
+	if lock:
+		sql += " FOR UPDATE"
+	return sql, params
+
+
 def select_range(
 	doctype: str,
 	columns: list[str],
@@ -512,25 +616,7 @@ def select_range(
 	`after`, `until` and `before` are values of the `order` columns: rows after (>), up to and
 	with (<=) and before (<) that position. `lock` reads the latest committed rows and locks them.
 	"""
-	q = quote
-	where, params = [], []
-	for column, value in (filters or {}).items():
-		where.append(f"{q(column)} = %s")
-		params.append(value)
-	for position, op, or_equal in ((after, ">", False), (until, "<", True), (before, "<", False)):
-		if position is not None:
-			condition, values = _lex(order, list(position), op, or_equal)
-			where.append(condition)
-			params += values
-	way = "DESC" if descending else "ASC"
-	sql = f"SELECT {', '.join(q(c) for c in columns)} FROM {q('tab' + doctype)}"
-	if where:
-		sql += " WHERE " + " AND ".join(where)
-	sql += f" ORDER BY {', '.join(f'{q(c)} {way}' for c in order)}"
-	if limit:
-		sql += f" LIMIT {int(limit)}"
-	if lock:
-		sql += " FOR UPDATE"
+	sql, params = range_sql(doctype, columns, order, filters, after, until, before, descending, limit, lock)
 	return frappe.db.sql(sql, params, as_dict=True)
 
 

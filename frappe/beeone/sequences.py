@@ -37,6 +37,12 @@ from frappe.utils import get_datetime, getdate, now
 
 LOCK_WAIT = 60
 ORDER = ["posting_date", "posting_time", "doc_creation", "document_name", "document_type", "document_part"]
+ENTRY_TABLE = "tabSequence Entry"
+# The order of the entries of a key (`_entries`) and the entries of a document (`_stored_entries`, the deletes)
+ENTRY_INDEXES = {
+	"sequence_order": ["sequence", "key_hash", *ORDER],
+	"document": ["document_type", "document_name"],
+}
 BOUNDARY_FIELDS = [
 	"name",
 	"sequence",
@@ -54,6 +60,14 @@ BOUNDARY_FIELDS = [
 	"boundary_part",
 ]
 KEEP = object()
+
+
+def ensure_entry_indexes():
+	"""Create the indexes of Sequence Entry that are not there, whatever their names are. DDL commits."""
+	if not db.table_exists(ENTRY_TABLE):
+		return
+	for tag, columns in ENTRY_INDEXES.items():
+		db.ensure_columns_index(ENTRY_TABLE, tag, columns)
 
 
 class Position(NamedTuple):

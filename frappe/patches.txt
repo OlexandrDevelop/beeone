@@ -278,3 +278,4 @@ frappe.patches.v16_0.wrap_string_zones_in_beta_layouts
 frappe.patches.v16_0.set_print_format_for_doctype
 frappe.patches.v16_0.fill_sequence_part_columns
 frappe.patches.v16_0.add_missing_postgres_indexes
+frappe.patches.v16_0.add_sequence_entry_indexes

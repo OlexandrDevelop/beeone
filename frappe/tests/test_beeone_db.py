@@ -80,6 +80,13 @@ class TestBeeoneDb(IntegrationTestCase):
 		self.assertEqual(params, [1, 1, 2, 1, 2])
 		self.assertEqual(sql.count("OR"), 2)
 
+	def test_lex_condition_dialects(self):
+		sql, params = db.Postgres().lex_condition(["a", "b"], [1, 2], ">")
+		self.assertEqual((sql, params), ('(("a", "b") > (%s, %s))', [1, 2]))
+		sql, params = db.Postgres().lex_condition(["a", "b"], [1, 2], "<", or_equal=True)
+		self.assertEqual((sql, params), ('(("a", "b") <= (%s, %s))', [1, 2]))
+		self.assertEqual(db.MariaDB().lex_condition(["a", "b"], [1, 2], ">"), db._lex(["a", "b"], [1, 2], ">"))
+
 	def test_postgres_sql(self):
 		d = db.Postgres()
 		self.assertEqual(d.quote('a"b'), '"ab"')
