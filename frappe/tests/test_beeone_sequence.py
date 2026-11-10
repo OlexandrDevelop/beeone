@@ -297,6 +297,45 @@ class TestBeeoneSequence(SequenceCase):
 		self._doc(2, 100)
 		self.assertEqual(self._take(), [d2.name])
 
+	def test_rebuild_entries_sql_gives_the_entries_and_the_boundary_of_rebuild_entries(self):
+		frappe.get_doc(
+			{
+				"doctype": "Sequence",
+				"sequence_name": SEQUENCE,
+				"mode": "Synchronous",
+				"key_fields": "",
+				"documents": [{"doctype": "Sequence Document", "document_type": DOCUMENT}],
+				"registers": [{"doctype": "Sequence Register", "register": LEDGER}],
+			}
+		).insert()
+		clear_cache()
+		self._doc(1, 1), self._doc(3, 10, time_="09:30:00"), self._doc(2, 5), self._doc(4, 7, submit=False)
+
+		def entries():
+			rows = frappe.get_all(
+				"Sequence Entry",
+				filters={"sequence": SEQUENCE},
+				fields=["key", "key_hash", "posting_date", "posting_time", "doc_creation", "document_type", "document_name", "document_part"],
+				order_by="document_name",
+			)
+			return [tuple(str(v) for v in r.values()) for r in rows]
+
+		sequences.rebuild_entries(SEQUENCE)
+		expected, boundary = entries(), sequences.boundary(SEQUENCE)
+		self.assertEqual(len(expected), 3)
+		self.assertEqual(sequences.rebuild_entries_sql(SEQUENCE), 3)
+		self.assertEqual(entries(), expected)
+		after = sequences.boundary(SEQUENCE)
+		self.assertEqual(after["moment"], boundary["moment"])
+		self.assertEqual(frappe.db.count("Sequence Boundary", {"sequence": SEQUENCE}), 1)
+		self.assertEqual(sequences.rebuild_entries_sql(SEQUENCE), 3)  # safe to repeat
+		self.assertEqual(entries(), expected)
+
+	def test_rebuild_entries_sql_refuses_a_sequence_with_key_fields(self):
+		self._sequence()
+		with self.assertRaises(frappe.ValidationError):
+			sequences.rebuild_entries_sql(SEQUENCE)
+
 	def test_suspended_marks_the_boundary_and_restores_later(self):
 		self._sequence()
 		d1, d2, d3 = self._doc(1, 1), self._doc(3, 10), self._doc(5, 100)

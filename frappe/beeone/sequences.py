@@ -29,10 +29,12 @@ from frappe.beeone.sequence_meta import (
 	boundary_name,
 	document_keys,
 	get_sequence,
+	key_fields,
 	key_hash,
 	key_text,
 	sequences_of,
 )
+from frappe.model.base_document import get_controller
 from frappe.utils import get_datetime, getdate, now
 
 LOCK_WAIT = 60
@@ -58,6 +60,24 @@ BOUNDARY_FIELDS = [
 	"boundary_name",
 	"boundary_doctype",
 	"boundary_part",
+]
+ENTRY_COLUMNS = [
+	"name",
+	"owner",
+	"creation",
+	"modified",
+	"modified_by",
+	"docstatus",
+	"idx",
+	"sequence",
+	"key",
+	"key_hash",
+	"posting_date",
+	"posting_time",
+	"doc_creation",
+	"document_type",
+	"document_name",
+	"document_part",
 ]
 KEEP = object()
 
@@ -570,6 +590,60 @@ def rebuild_entries(sequence: str) -> None:
 						last[key] = max(last.get(key, ppos), ppos)
 	for key, pos in last.items():
 		_save(_ensure_row(sequence, key), pos)
+
+
+def rebuild_entries_sql(sequence: str, doctypes: list[str] | None = None) -> int:
+	"""`rebuild_entries` for a big load of documents: one INSERT ... SELECT per document type, no document is loaded.
+
+	Only for a sequence without key fields (one key) and for documents without parts: it raises otherwise. The entries
+	of the document types (default: all of the sequence) are replaced, and the boundary goes to the last entry.
+	Returns the number of entries written.
+	"""
+	import uuid
+
+	seq = get_sequence(sequence)
+	if key_fields(seq):
+		frappe.throw(_("Sequence {0} has key fields: use rebuild_entries").format(sequence))
+	q = db.quote
+	key = ()
+	token = uuid.uuid4().hex[:10]
+	written = 0
+	for number, row in enumerate(seq.documents):
+		doctype = row.document_type
+		if doctypes is not None and doctype not in doctypes:
+			continue
+		controller = get_controller(doctype)
+		if getattr(controller, "sequence_by_parts", False) or hasattr(controller, "get_sequence_parts"):
+			frappe.throw(_("Document type {0} has sequence parts: use rebuild_entries").format(doctype))
+		meta = frappe.get_meta(doctype)
+		date = next((f for f in ("posting_date", "transaction_date") if meta.has_field(f)), None)
+		date_sql = q(date) if date else f"CAST({q('creation')} AS DATE)"
+		time_sql = q("posting_time") if meta.has_field("posting_time") else "CAST('00:00:00' AS TIME)"
+		frappe.db.delete("Sequence Entry", {"sequence": sequence, "document_type": doctype})
+		frappe.db.sql(
+			f"INSERT INTO {q(ENTRY_TABLE)} ({', '.join(q(c) for c in ENTRY_COLUMNS)}) "
+			f"SELECT CONCAT(%s, ROW_NUMBER() OVER (ORDER BY {q('name')})), %s, {q('creation')}, {q('creation')}, %s, 0, 0, "
+			f"%s, %s, %s, {date_sql}, {time_sql}, {q('creation')}, %s, {q('name')}, '' "
+			f"FROM {q('tab' + doctype)} WHERE {q('docstatus')} = 1",
+			(f"{token}{number:03d}-", frappe.session.user, frappe.session.user, sequence,
+			 key_text(key), key_hash(key), doctype),
+		)
+		written += frappe.db.sql(
+			f"SELECT COUNT(*) FROM {q(ENTRY_TABLE)} WHERE {q('sequence')} = %s AND {q('document_type')} = %s",
+			(sequence, doctype),
+		)[0][0]
+	name = _ensure_row(sequence, key)
+	last = frappe.db.sql(
+		f"SELECT {', '.join(q(c) for c in ORDER)} FROM {q(ENTRY_TABLE)} WHERE {q('sequence')} = %s "
+		f"ORDER BY {', '.join(q(c) + ' DESC' for c in ORDER)} LIMIT 1",
+		sequence,
+	)
+	if last:
+		date, time, creation, doc_name, doc_type, part = last[0]
+		_save(name, Position(getdate(date), _timedelta(time), get_datetime(creation), doc_name, doc_type, part or ""))
+	else:
+		_save(name, None)
+	return written
 
 
 # background -----------------------------------------------------------------------------------

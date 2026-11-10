@@ -185,6 +185,38 @@ class Dialect:
 	def release_lock(self, name: str) -> None:
 		raise NotImplementedError
 
+	def secondary_indexes(self, table: str) -> list[tuple[str, str]]:
+		"""(name, CREATE statement) of the indexes that only speed up reads: not the primary key, not unique."""
+		raise NotImplementedError
+
+	def copy_text(self, table: str, columns: list[str], text: str) -> None:
+		"""Load rows given as CSV text (an empty cell is NULL) into a table, in the transaction of the caller."""
+		raise NotImplementedError
+
+	def multi_insert(self, table: str, columns: list[str], rows: list) -> None:
+		"""INSERT of many rows by statements of up to 1000 rows."""
+		q = self.quote
+		head = f"INSERT INTO {q(table)} ({', '.join(q(c) for c in columns)}) VALUES "
+		one = "(" + ", ".join(["%s"] * len(columns)) + ")"
+		step = max(1, min(1000, 30000 // len(columns)))
+		for start in range(0, len(rows), step):
+			part = rows[start : start + step]
+			frappe.db.sql(head + ", ".join([one] * len(part)), [v for row in part for v in row])
+
+	def session_settings(self, **settings) -> tuple[list[str], list[str]]:
+		"""(statements that turn the bulk load settings on, statements that put the defaults back)."""
+		raise NotImplementedError
+
+	def analyze(self, table: str) -> None:
+		raise NotImplementedError
+
+	def restore_index_sql(self, definition: str) -> str:
+		"""The saved CREATE statement made safe to repeat."""
+		return definition
+
+	def index_exists(self, table: str, name: str) -> bool:
+		raise NotImplementedError
+
 
 def _group(rows) -> dict[str, list[str]]:
 	"""Rows of (index, column) in index order to {index: [columns]}."""
@@ -275,6 +307,40 @@ class MariaDB(Dialect):
 
 	def release_lock(self, name: str) -> None:
 		frappe.db.sql("SELECT RELEASE_LOCK(%s)", self._lock_name(name))
+
+	def secondary_indexes(self, table: str) -> list[tuple[str, str]]:
+		q = self.quote
+		rows = frappe.db.sql(
+			"SELECT index_name, column_name, sub_part FROM information_schema.statistics "
+			"WHERE table_schema = DATABASE() AND table_name = %s AND non_unique = 1 AND index_name <> 'PRIMARY' "
+			"AND index_type <> 'FULLTEXT' ORDER BY index_name, seq_in_index",
+			table,
+		)
+		columns: dict[str, list[str]] = {}
+		for name, column, sub_part in rows:
+			columns.setdefault(name, []).append(q(column) + (f"({int(sub_part)})" if sub_part else ""))
+		return [(n, f"CREATE INDEX {q(n)} ON {q(table)} ({', '.join(c)})") for n, c in columns.items()]
+
+	def index_exists(self, table: str, name: str) -> bool:
+		return bool(
+			frappe.db.sql(
+				"SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() "
+				"AND table_name = %s AND index_name = %s LIMIT 1",
+				(table, name),
+			)
+		)
+
+	def copy_text(self, table: str, columns: list[str], text: str) -> None:
+		import csv
+		import io
+
+		self.multi_insert(table, columns, [[None if v == "" else v for v in r] for r in csv.reader(io.StringIO(text))])
+
+	def session_settings(self, **settings) -> tuple[list[str], list[str]]:
+		return ["SET unique_checks = 0, foreign_key_checks = 0"], ["SET unique_checks = 1, foreign_key_checks = 1"]
+
+	def analyze(self, table: str) -> None:
+		frappe.db.sql(f"ANALYZE TABLE {self.quote(table)}")
 
 	def month_start(self, expr: str) -> str:
 		return f"DATE_ADD(LAST_DAY(DATE_SUB({expr}, INTERVAL 1 MONTH)), INTERVAL 1 DAY)"
@@ -417,6 +483,47 @@ class Postgres(Dialect):
 
 	def release_lock(self, name: str) -> None:
 		frappe.db.sql("SELECT pg_advisory_unlock(%s)", self._lock_key(name))
+
+	def secondary_indexes(self, table: str) -> list[tuple[str, str]]:
+		rows = frappe.db.sql(
+			"SELECT i.relname, pg_get_indexdef(x.indexrelid) FROM pg_index x "
+			"JOIN pg_class t ON t.oid = x.indrelid JOIN pg_class i ON i.oid = x.indexrelid "
+			"JOIN pg_namespace n ON n.oid = t.relnamespace "
+			"WHERE t.relname = %s AND n.nspname = current_schema() AND NOT x.indisunique AND NOT x.indisprimary "
+			"ORDER BY i.relname",
+			table,
+		)
+		return [(name, definition) for name, definition in rows]
+
+	def index_exists(self, table: str, name: str) -> bool:
+		return bool(
+			frappe.db.sql(
+				"SELECT 1 FROM pg_indexes WHERE schemaname = current_schema() AND tablename = %s AND indexname = %s",
+				(table, name),
+			)
+		)
+
+	def restore_index_sql(self, definition: str) -> str:
+		return definition.replace("CREATE INDEX ", "CREATE INDEX IF NOT EXISTS ", 1)
+
+	def copy_text(self, table: str, columns: list[str], text: str) -> None:
+		import io
+
+		sql = f"COPY {self.quote(table)} ({', '.join(self.quote(c) for c in columns)}) FROM STDIN WITH (FORMAT csv)"
+		frappe.db._cursor.copy_expert(sql, io.StringIO(text))
+
+	def session_settings(self, **settings) -> tuple[list[str], list[str]]:
+		names = {
+			"synchronous_commit": "off",
+			"work_mem": settings.get("work_mem", "256MB"),
+			"maintenance_work_mem": settings.get("maintenance_work_mem", "1GB"),
+			"max_parallel_maintenance_workers": str(settings.get("parallel_maintenance", 4)),
+		}
+		on = [f"SET {k} = '{v}'" for k, v in names.items()]
+		return on, [f"RESET {k}" for k in names]
+
+	def analyze(self, table: str) -> None:
+		frappe.db.sql(f"ANALYZE {self.quote(table)}")
 
 	def month_start(self, expr: str) -> str:
 		return f"CAST(DATE_TRUNC('month', {expr}) AS DATE)"

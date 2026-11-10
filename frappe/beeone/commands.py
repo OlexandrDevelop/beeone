@@ -175,4 +175,21 @@ def partition_register(context, register, first_year, last_year):
 		frappe.destroy()
 
 
+@beeone.command("bulk-restore-indexes")
+@pass_context
+def bulk_restore_indexes(context):
+	"""Build again the indexes that an interrupted bulk load dropped (they are saved in __beeone_bulk_indexes)."""
+	from frappe.beeone import bulk
+
+	if not context.sites:
+		raise frappe.SiteNotSpecifiedError
+
+	frappe.init(context.sites[0])
+	frappe.connect()
+	try:
+		print(f"{bulk.restore_indexes()} indexes restored")
+	finally:
+		frappe.destroy()
+
+
 commands = [beeone]

@@ -168,3 +168,21 @@ class TestBeeoneNumbering(IntegrationTestCase):
 			files = [path] if path.is_file() else [p for p in path.iterdir() if p.is_file()]
 			for f in files:
 				self.assertIsNone(re.search("[Ѐ-ӿ]", f.read_text()), f)
+
+
+class TestBeeoneNumberingReserve(IntegrationTestCase):
+	def test_reserve_gives_a_block_and_next_name_goes_on_after_it(self):
+		key = "NS:Beeone Reserve Probe:R-"
+		frappe.db.delete("Series", {"name": key})
+		self.assertEqual(numbering.reserve(key, 5), 1)
+		self.assertEqual(numbering.reserve(key, 3), 6)
+		self.assertEqual(numbering.next_name("R", 4, key=key, separator="-"), "R-0009")
+		self.assertEqual(numbering.reserve(key, 1), 10)
+		with self.assertRaises(frappe.ValidationError):
+			numbering.reserve(key, 0)
+		frappe.db.delete("Series", {"name": key})
+
+	def test_stem_is_the_text_before_the_counter(self):
+		self.assertEqual(numbering.stem("TP", reset="Yearly", date="2025-03-04", separator=""), "TP2025")
+		self.assertEqual(numbering.stem("R", separator="-"), "R-")
+		self.assertEqual(numbering.stem("", separator="-"), "")

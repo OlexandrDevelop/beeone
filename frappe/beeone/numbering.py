@@ -31,6 +31,22 @@ def period_label(reset: str, date=None) -> str:
 	return ""
 
 
+def stem(
+	prefix: str,
+	*,
+	scope: str = "",
+	scope_chars: int = 0,
+	reset: str = RESET_NEVER,
+	date=None,
+	separator: str = "-",
+) -> str:
+	"""The text before the counter: prefix, scope part and period, each followed by the separator."""
+	period = period_label(reset, date)
+	glue = separator or ""
+	head = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
+	return head + glue if head else head
+
+
 def next_name(
 	prefix: str,
 	digits: int = 6,
@@ -52,11 +68,9 @@ def next_name(
 	"""
 	from frappe.beeone import db
 
-	period = period_label(reset, date)
-	glue = separator or ""
-	head = glue.join(p for p in (prefix, (scope or "")[: int(scope_chars or 0)], period) if p)
-	if head:
-		head += glue
+	head = stem(
+		prefix, scope=scope, scope_chars=scope_chars, reset=reset, date=date, separator=separator
+	)
 	series_key = key or f"NS:{ref_doctype}:{head}"
 	try:
 		db.insert_missing("Series", {"name": series_key, "current": 0})
@@ -107,6 +121,24 @@ def next_names(
 	first = cint(current[0][0] if current and current[0][0] is not None else 0) + 1
 	frappe.qb.update(series).set(series.current, first + count - 1).where(series.name == series_key).run()
 	return [head + ("%0" + str(int(digits)) + "d") % n for n in range(first, first + count)]
+
+
+def reserve(series_key: str, count: int) -> int:
+	"""Take `count` numbers of a counter at once and return the first one; the next `next_name` goes on after the block.
+
+	A bulk load names its documents itself (`first`, `first + 1`, ...) and writes them without `getseries` per row.
+	"""
+	from frappe.beeone import db
+	from frappe.query_builder import DocType
+
+	if count < 1:
+		frappe.throw(_("Reserve at least one number"))
+	db.insert_missing("Series", {"name": series_key, "current": 0})
+	series = DocType("Series")
+	current = frappe.qb.from_(series).where(series.name == series_key).for_update().select(series.current).run()
+	first = int(current[0][0] or 0) + 1
+	frappe.qb.update(series).set(series.current, first - 1 + count).where(series.name == series_key).run()
+	return first
 
 
 def get_setting(ref_doctype: str, scope: str | None = None):
