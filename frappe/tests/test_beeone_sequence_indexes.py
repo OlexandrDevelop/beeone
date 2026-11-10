@@ -100,6 +100,8 @@ class TestBeeoneSequenceIndexes(IntegrationTestCase):
 			frappe.db.sql(f"ANALYZE TABLE {db.quote(ENTRY_TABLE)}")
 
 	def plan(self, sql, params):
+		if params is None:
+			params = ()
 		if frappe.db.db_type == "postgres":
 			row = frappe.db.sql(f"EXPLAIN (FORMAT JSON) {sql}", params)[0][0]
 			plan = row if isinstance(row, list) else json.loads(row)
