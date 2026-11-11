@@ -1190,6 +1190,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			sticky: true,
 			format: (value, row, column, data, filter) => {
 				const col = level_of(data);
+				// a report may give a level the title to show: "<field>_title" (a document as "<kind> <number> від <date>")
+				const title = data && data[col.fieldname + "_title"];
+				if (title) return col.format(title, row, { ...col, fieldtype: "Data", options: null }, data, filter);
 				return col.format(data ? data[col.fieldname] : value, row, col, data, filter);
 			},
 		};
