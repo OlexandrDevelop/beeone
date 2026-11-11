@@ -9,6 +9,8 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 
 	// A hierarchical catalog gets the picker with the tree of groups, any other the flat one.
 	static open(opts) {
+		// beeone: the list form of the catalog is the selection form, as in 1C
+		if (frappe.ui.form.link_pick.start(opts.target, opts.doctype)) return;
 		frappe.model.with_doctype(opts.doctype, () => {
 			const Hierarchical = frappe.ui.form.HierarchyLinkPicker;
 			const picker =
@@ -279,3 +281,134 @@ frappe.ui.form.LinkPicker = class LinkPicker {
 		this.target.select_from_picker(row.value, row.label);
 	}
 };
+
+// beeone: "Select from list" (the button of a Link field, F4) opens the list form of the catalog in its window,
+// with the filters of the field, as the selection form of 1C. A click on an element (Enter; a double click in a
+// hierarchy) puts it into the field, closes the list window it opened and returns to the document; Esc or
+// "Cancel" returns without a change. A field with a custom server query keeps the dialog above (a list cannot
+// repeat that query).
+frappe.ui.form.link_pick = {
+	session: null,
+
+	start(target, doctype) {
+		if (!target || !doctype || !frappe.model.can_read(doctype) && !(frappe.boot.user.all_read || []).includes(doctype))
+			return false;
+		const args = target.get_search_args("") || {};
+		if (args.query) return false;
+		const options = {};
+		let filters = args.filters;
+		if (typeof filters === "string") {
+			try {
+				filters = JSON.parse(filters);
+			} catch (e) {
+				filters = null;
+			}
+		}
+		if (Array.isArray(filters)) {
+			for (const f of filters) {
+				const [field, op, value] = f.length >= 4 ? [f[1], f[2], f[3]] : f;
+				if (field) options[field] = op === "=" ? value : [op, value];
+			}
+		} else if (filters && typeof filters === "object") {
+			Object.assign(options, filters);
+		}
+		const windows = beeone?.shell?.windows;
+		this.cancel(false);
+		this.session = {
+			doctype,
+			target,
+			back: frappe.get_route(),
+			label: __(target.df.label, null, target.df.parent),
+			before: new Set(windows ? windows.list().map((w) => w.key) : []),
+			shown: false,
+		};
+		frappe.route_options = options;
+		frappe.set_route("List", doctype);
+		setTimeout(() => this.mark(), 400);
+		return true;
+	},
+
+	active(doctype) {
+		return this.session && this.session.doctype === doctype ? this.session : null;
+	},
+
+	// the banner over the list of the session
+	mark() {
+		const s = this.session;
+		if (!s) return;
+		const list = window.cur_list;
+		if (!list || list.doctype !== s.doctype || !list.page) {
+			if (!s.tries || s.tries < 10) {
+				s.tries = (s.tries || 0) + 1;
+				setTimeout(() => this.mark(), 300);
+			}
+			return;
+		}
+		s.shown = true;
+		s.list = list;
+		$(list.page.main).find(".bo-pick-banner").remove();
+		const $b = $(`<div class="bo-pick-banner">
+			<span>${frappe.utils.escape_html(
+				__("Selection for the field «{0}»: click an element or press Enter", [s.label])
+			)}</span>
+			<button type="button" class="btn btn-xs btn-default bo-pick-cancel">${__("Cancel")}</button>
+		</div>`);
+		$b.find(".bo-pick-cancel").on("click", () => this.cancel(true));
+		$(list.page.main).prepend($b);
+	},
+
+	choose(name, label) {
+		const s = this.session;
+		if (!s) return false;
+		this.session = null;
+		this.unmark(s);
+		this.leave(s).then(() => s.target.select_from_picker(name, label));
+		return true;
+	},
+
+	cancel(go_back) {
+		const s = this.session;
+		if (!s) return;
+		this.session = null;
+		this.unmark(s);
+		if (go_back) this.leave(s).then(() => s.target.on_link_picker_cancel?.());
+	},
+
+	unmark(s) {
+		s.list && $(s.list.page.main).find(".bo-pick-banner").remove();
+	},
+
+	// back to the document; the list window opened for the selection is closed
+	leave(s) {
+		const windows = beeone?.shell?.windows;
+		const opened = windows
+			? windows
+					.list()
+					.map((w) => w.key)
+					.filter((k) => !s.before.has(k) && k.split("/")[1] === s.doctype)
+			: [];
+		return Promise.resolve(frappe.set_route(s.back)).then(() => {
+			for (const key of opened) windows.close(key, true);
+			return new Promise((r) => setTimeout(r, 50));
+		});
+	},
+};
+
+$(document).on("keydown", (e) => {
+	const pick = frappe.ui.form.link_pick;
+	if (e.key !== "Escape" || !pick.session || !pick.session.shown) return;
+	if ($(".modal.show").length) return;
+	const list = window.cur_list;
+	if (!list || list.doctype !== pick.session.doctype) return;
+	e.preventDefault();
+	pick.cancel(true);
+});
+
+frappe.router?.on?.("change", () => {
+	const pick = frappe.ui.form.link_pick;
+	const s = pick.session;
+	if (!s || !s.shown) return;
+	const route = frappe.get_route();
+	if (route[0] === "List" && route[1] === s.doctype) return;
+	pick.cancel(false);
+});

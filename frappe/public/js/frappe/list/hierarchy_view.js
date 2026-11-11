@@ -306,7 +306,16 @@ frappe.views.HierarchyView = class HierarchyView extends frappe.views.ListView {
 	}
 
 	open_form(doc) {
+		if (this.bo_pick_doc(doc)) return;
 		frappe.set_route(this.get_form_link(doc));
+	}
+
+	// beeone: the hierarchy is the selection form of a Link field: an element (not a group) is chosen
+	bo_pick_doc(doc) {
+		const pick = frappe.ui.form.link_pick;
+		if (!doc || doc.is_group || !pick || !pick.active(this.doctype)) return false;
+		const title = this.meta?.title_field ? doc[this.meta.title_field] : null;
+		return pick.choose(doc.name, title || null);
 	}
 
 	open_list_row($row) {
@@ -346,6 +355,11 @@ frappe.views.HierarchyView = class HierarchyView extends frappe.views.ListView {
 				return;
 			}
 			const $container = $row.closest(".list-row-container");
+			if ($container.attr("data-is-group") !== "1" && this.bo_pick_doc(this.row_doc($container))) {
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
 			// the name of a group drills in; the name of an element is a normal link to its form
 			if ($target.closest("a").length) {
 				if ($container.attr("data-is-group") === "1") {

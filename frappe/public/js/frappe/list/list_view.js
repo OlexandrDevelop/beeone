@@ -2079,12 +2079,37 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	}
 
 	open_list_row($row) {
+		if (this.bo_pick($row)) return;
 		$row.find("a[data-name]")[0]?.click();
+	}
+
+	// beeone: the list is the selection form of a Link field (frappe.ui.form.link_pick): a row is chosen
+	bo_pick($row) {
+		const pick = frappe.ui.form.link_pick;
+		if (!pick || !pick.active(this.doctype)) return false;
+		const name =
+			$row.closest(".list-row-container").attr("data-name") ||
+			$row.find(".list-row-checkbox").attr("data-name") ||
+			$row.find("a[data-name]").attr("data-name");
+		if (!name) return false;
+		const doc = (this.data || []).find((d) => d.name === name);
+		if (doc && doc.is_group && this.bo_is_hierarchy) return false;
+		const title = doc && this.meta?.title_field ? doc[this.meta.title_field] : null;
+		return pick.choose(name, title || null);
 	}
 
 	setup_list_click() {
 		this.$result.on("click", ".list-row, .image-view-header, .file-header", (e) => {
 			const $target = $(e.target);
+			if (
+				!(e.ctrlKey || e.metaKey) &&
+				!$target.is(":checkbox, [data-toggle='dropdown']") &&
+				this.bo_pick($(e.currentTarget))
+			) {
+				e.preventDefault();
+				e.stopPropagation();
+				return false;
+			}
 			// tick checkbox if Ctrl/Meta key is pressed
 			if ((e.ctrlKey || e.metaKey) && !$target.is("a")) {
 				const $list_row = $(e.currentTarget);

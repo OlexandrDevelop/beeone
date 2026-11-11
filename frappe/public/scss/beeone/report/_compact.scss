@@ -136,3 +136,21 @@
 		display: none !important;
 	}
 }
+
+// The list form open as the selection form of a Link field (frappe.ui.form.link_pick)
+.bo-pick-banner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 4px 0 6px;
+	padding: 6px 12px;
+	border-radius: var(--border-radius, 6px);
+	background: var(--bg-blue, #e8f0fe);
+	color: var(--text-color);
+	font-size: 12px;
+	font-weight: 600;
+
+	.bo-pick-cancel {
+		margin-left: auto;
+	}
+}

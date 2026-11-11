@@ -36151,3 +36151,11 @@ msgstr "Закріпити"
 #: frappe/public/js/frappe/utils/datatable.js
 msgid "Unfreeze"
 msgstr "Відкріпити"
+
+#: frappe/public/js/frappe/form/link_picker.js
+msgid "Selection for the field «{0}»: click an element or press Enter"
+msgstr "Вибір для поля «{0}»: клацніть елемент або натисніть Enter"
+
+#: frappe/public/js/beeone/shell/windows.js
+msgid "Hierarchy"
+msgstr "Ієрархія"
