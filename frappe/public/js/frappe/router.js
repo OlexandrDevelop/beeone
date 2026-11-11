@@ -129,6 +129,12 @@ frappe.router = {
 		for (let doctype of frappe.boot.user.can_read) {
 			this.routes[this.slug(doctype)] = { doctype: doctype };
 		}
+		// beeone: a read-only doctype (a register, "User Cannot Search") is not searchable, but its list opens
+		// (the register explorer opens a register as its list)
+		for (let doctype of frappe.boot.user.all_read || []) {
+			const slug = this.slug(doctype);
+			if (!this.routes[slug]) this.routes[slug] = { doctype: doctype };
+		}
 		if (frappe.boot.doctype_layouts) {
 			for (let doctype_layout of frappe.boot.doctype_layouts) {
 				this.routes[this.slug(doctype_layout.name)] = {
