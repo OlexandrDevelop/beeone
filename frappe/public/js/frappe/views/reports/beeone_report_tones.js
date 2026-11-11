@@ -35,12 +35,13 @@ frappe.beeone_report_tones = {
 	},
 
 	// html is already escaped by frappe.format
-	wrap(html, { step = 0, total = false, negative = false } = {}) {
-		if (!step && !total && !negative) return html;
+	wrap(html, { step = 0, total = false, negative = false, group = false } = {}) {
+		if (!step && !total && !negative && !group) return html;
 		const cls = ["bo-rt"];
 		if (step) cls.push("bo-rt-" + step);
 		if (total) cls.push("bo-rt-total");
 		if (negative) cls.push("bo-rt-neg");
+		if (group) cls.push("bo-rt-group");
 		return `<div class="${cls.join(" ")}">${html}</div>`;
 	},
 };

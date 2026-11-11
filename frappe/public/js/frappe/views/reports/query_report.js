@@ -1157,11 +1157,106 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.tree_report = this.data.some((d) => "indent" in d);
 		// beeone: depth of the tree, the shades of the levels follow it
 		this.bo_tree_depth = this.tree_report ? frappe.beeone_report_tones.depth(this.data) : 1;
+		this.bo_levels = this.bo_hierarchy_levels();
+	}
+
+	// beeone: the grouping of 1C. The leading group columns of a tree report (one per level) become one hierarchy
+	// column: a row shows only the value of its own level, under the header "Level 1 / Level 2 / ...".
+	bo_hierarchy_levels() {
+		if (!this.tree_report || this.bo_tree_depth < 2) return null;
+		const levels = this.columns.filter((c) => !c.hidden).slice(0, this.bo_tree_depth);
+		const numeric = frappe.beeone_report_tones.NUMERIC;
+		if (levels.length < 2 || levels.some((c) => numeric.includes(c.fieldtype))) return null;
+		return levels;
+	}
+
+	bo_datatable_columns(columns) {
+		const levels = this.bo_levels;
+		if (!levels) return columns;
+		const names = new Set(levels.map((c) => c.fieldname));
+		const level_of = (data) => levels[Math.min(cint(data && data.indent), levels.length - 1)];
+		for (const row of this.data) {
+			const col = level_of(row);
+			row._bo_group = row[col.fieldname];
+		}
+		const hierarchy = {
+			id: "_bo_group",
+			fieldname: "_bo_group",
+			fieldtype: "Data",
+			name: levels.map((c) => c.name).join(" / "),
+			label: levels.map((c) => c.label).join(" / "),
+			width: Math.max(240, ...levels.map((c) => c.width || 0)),
+			editable: false,
+			sticky: true,
+			format: (value, row, column, data, filter) => {
+				const col = level_of(data);
+				return col.format(data ? data[col.fieldname] : value, row, col, data, filter);
+			},
+		};
+		return [hierarchy, ...columns.filter((c) => !names.has(c.fieldname))];
+	}
+
+	// beeone: the header stays on top: the body scrolls in its own area that ends at the bottom of the window
+	bo_fit_height() {
+		const $scroll = this.$report.find(".dt-scrollable");
+		if (!$scroll.length) return;
+		const area = this.$report.closest(".bo-win-body")[0];
+		const bottom = area ? area.getBoundingClientRect().bottom : window.innerHeight;
+		const top = $scroll[0].getBoundingClientRect().top;
+		const footer = (this.$report_footer && this.$report_footer.outerHeight(true)) || 0;
+		const room = Math.max(160, Math.floor(bottom - top - footer - 16));
+		// the body renders only the rows in view, so it needs a height: the rows, at most the room left
+		const rows = this.datatable ? this.datatable.bodyRenderer.visibleRowIndices.length : this.data.length;
+		const cell = (this.datatable && this.datatable.options.cellHeight) || 22;
+		$scroll.css({ height: Math.min(room, (rows + 1) * (cell + 1)) + "px", "max-height": room + "px" });
+	}
+
+	// beeone: the upper tier of the header: a band over the columns that share `bo_band` (the parts of a resource)
+	bo_render_bands() {
+		const header = this.$report.find(".dt-header")[0];
+		if (!header || !this.datatable) return;
+		$(header).find(".bo-band-row").remove();
+		const cells = $(header).find(".dt-row-header .dt-cell--header").toArray();
+		const columns = this.datatable.getColumns();
+		if (!columns.some((c) => c.bo_band)) return;
+		const band = $(`<div class="bo-band-row"></div>`);
+		let run = null;
+		cells.forEach((cell, i) => {
+			const label = (columns[i] && columns[i].bo_band) || "";
+			const width = cell.getBoundingClientRect().width;
+			if (run && run.label === label && label) {
+				run.width += width;
+			} else {
+				run = { label, width, sticky: columns[i] && columns[i].sticky };
+				band.append((run.el = $(`<div class="bo-band"></div>`)));
+				if (run.sticky) run.el.addClass("bo-band--sticky");
+			}
+			run.el.css("width", run.width + "px").text(label);
+		});
+		$(header).prepend(band);
+	}
+
+	bo_after_render() {
+		this.$report.addClass("bo-report");
+		this.bo_render_bands();
+		this.bo_fit_height();
+		// a group opened or closed changes the number of rows in view
+		const refit = () => setTimeout(() => this.bo_fit_height(), 50);
+		this.$report.off("click.bo-fit").on("click.bo-fit", ".dt-tree-node__toggle", refit);
+		this.$report_footer && this.$report_footer.off("click.bo-fit").on("click.bo-fit", "button", refit);
+		if (!this.bo_resize) {
+			// the page settles after the render (filters, messages, the window size): fit again when it does
+			this.bo_resize = frappe.utils.debounce(() => this.bo_fit_height(), 100);
+			$(window).on("resize", this.bo_resize);
+			const area = this.$report.closest(".bo-win-body")[0];
+			if (area && window.ResizeObserver) new ResizeObserver(this.bo_resize).observe(area);
+		}
+		setTimeout(() => this.bo_fit_height(), 300);
 	}
 
 	render_datatable() {
 		let data = this.data;
-		let columns = this.columns.filter((col) => !col.hidden);
+		let columns = this.bo_datatable_columns(this.columns.filter((col) => !col.hidden));
 
 		if (this.report_doc?.ref_doctype) {
 			columns = this.update_masked_fields_in_columns(columns, this.report_doc?.ref_doctype);
@@ -1199,12 +1294,14 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			let datatable_options = {
 				columns: columns,
 				data: data,
-				inlineFilters: true,
+				// beeone: a compact report as in 1C: no row numbers and no filter row
+				inlineFilters: false,
+				serialNoColumn: false,
 				language: frappe.boot.lang,
 				translations: frappe.utils.datatable.get_translations(),
 				treeView: this.tree_report,
 				layout: "fixed",
-				cellHeight: 33,
+				cellHeight: 22,
 				showTotalRow: this.raw_data.add_total_row && !this.report_settings.tree,
 				direction: frappe.utils.is_rtl() ? "rtl" : "ltr",
 				hooks: {
@@ -1224,6 +1321,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		if (this.report_settings.after_datatable_render) {
 			this.report_settings.after_datatable_render(this.datatable);
 		}
+		this.bo_after_render();
 
 		this.setup_link_side_panel();
 	}
@@ -1482,11 +1580,12 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					// proxy it using the first data object
 					// applied to Float, Currency fields, needed only for currency formatting.
 					// make first data column have value 'Total'
-					let index = 1;
+					// beeone: no row number column
+					let index = 0;
 
 					if (this.report_settings.get_datatable_options) {
 						let datatable = this.report_settings.get_datatable_options({});
-						if (datatable && datatable.checkboxColumn) index = 2;
+						if (datatable && datatable.checkboxColumn) index = 1;
 					}
 
 					if (column.colIndex === index && !value) {
@@ -1499,17 +1598,23 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				}
 				// beeone: tone of the hierarchy level and red negatives (WCAG AA palette)
 				const tones = frappe.beeone_report_tones;
+				// beeone: as in 1C, a zero is an empty cell and a sum has no currency sign
+				const numeric = tones.NUMERIC.includes(column.fieldtype);
+				const empty = numeric && !flt(value);
+				const shown =
+					column.fieldtype === "Currency"
+						? { ...column, fieldtype: "Float", precision: column.precision || 2 }
+						: column;
+				const level = data && !bo_total ? cint(data.indent) : 0;
 				return tones.wrap(
-					frappe.format(
-						value,
-						column,
-						{ for_print: false, always_show_decimals: true },
-						data
-					),
+					empty
+						? ""
+						: frappe.format(value, shown, { for_print: false, always_show_decimals: true }, data),
 					{
 						step: bo_total ? 0 : tones.step(data && data.indent, this.bo_tree_depth || 1),
 						total: bo_total,
 						negative: tones.is_negative(value, column.fieldtype),
+						group: !bo_total && this.tree_report && level < (this.bo_tree_depth || 1) - 1,
 					}
 				);
 			};

@@ -1,0 +1,64 @@
+// Compact reports as in 1C: small type, dense rows, a two-tier header and bold group rows.
+// The classes are set by query_report.js (bo_after_render, beeone_report_tones.wrap).
+.bo-report {
+	--bo-report-font: 12px;
+
+	.datatable {
+		font-size: var(--bo-report-font);
+	}
+
+	.dt-cell__content {
+		padding: 2px 6px !important;
+		line-height: 17px;
+		font-size: var(--bo-report-font);
+	}
+
+	.dt-cell--header .dt-cell__content {
+		padding: 3px 6px !important;
+		font-weight: 600;
+		text-align: center;
+		white-space: normal;
+		line-height: 15px;
+	}
+
+	.dt-tree-node {
+		line-height: 17px;
+	}
+
+	.dt-tree-node__toggle {
+		width: 12px;
+		height: 12px;
+	}
+
+	.bo-band-row {
+		display: flex;
+		background: var(--dt-header-cell-bg, var(--subtle-fg));
+		border-bottom: 1px solid var(--dt-border-color, var(--border-color));
+	}
+
+	.bo-band {
+		flex: none;
+		box-sizing: border-box;
+		padding: 3px 6px;
+		font-weight: 600;
+		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		border-right: 1px solid var(--dt-border-color, var(--border-color));
+		line-height: 15px;
+	}
+
+	.bo-band:empty {
+		border-right-color: transparent;
+	}
+
+	.dt-cell:has(.bo-rt-group),
+	.dt-cell:has(.bo-rt-total) {
+		font-weight: 700;
+	}
+
+	.dt-cell--sticky {
+		background-clip: padding-box;
+	}
+}
