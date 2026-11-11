@@ -7,6 +7,8 @@ frappe.utils.datatable.get_translations = function () {
 		"Sort Descending": __("Sort Descending"),
 		"Reset sorting": __("Reset sorting"),
 		"Remove column": __("Remove column"),
+		Freeze: __("Freeze"),
+		Unfreeze: __("Unfreeze"),
 		"No Data": __("No Data"),
 		"{count} cells copied": {
 			1: __("{count} cell copied"),

@@ -2219,7 +2219,15 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 								label: __("From Document Type"),
 								reqd: 1,
 								options: this.linked_doctypes?.map((df) => ({
-									label: df.doctype + " (" + frappe.unscrub(df.fieldname) + ")",
+									// beeone: translated names, the label of the report column of the link
+									label:
+										__(df.doctype) +
+										" (" +
+										__(
+											(this.columns.find((c) => c.fieldname === df.fieldname) || {})
+												.label || frappe.unscrub(df.fieldname)
+										) +
+										")",
 									value: JSON.stringify({
 										doctype: df.doctype,
 										fieldname: df.fieldname,
@@ -2271,6 +2279,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 								})),
 							},
 						],
+						primary_action_label: __("Add"),
 						primary_action: (values) => {
 							const custom_columns = [];
 							const { doctype, fieldname } = JSON.parse(values.doctype);
