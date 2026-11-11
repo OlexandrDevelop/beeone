@@ -62,3 +62,77 @@
 		background-clip: padding-box;
 	}
 }
+
+// The report form as in 1C: one thin row of buttons (the tree levels on the left), one row of filters, the table
+// down to the bottom of the window; no footer and no "generated" message.
+.bo-report-page {
+	.page-head {
+		min-height: 0;
+		height: auto;
+		padding: 2px 0;
+
+		.row {
+			min-height: 30px;
+		}
+
+		.page-actions .btn {
+			height: 26px;
+			padding: 0 10px;
+			font-size: 12px;
+		}
+	}
+
+	.bo-tree-bar {
+		display: flex;
+		gap: 2px;
+		align-items: center;
+		margin-right: auto;
+		padding-left: 12px;
+
+		.btn {
+			height: 24px;
+			min-width: 24px;
+			padding: 0 6px;
+			font-size: 12px;
+		}
+	}
+
+	.page-body {
+		padding-top: 0;
+	}
+
+	.page-wrapper,
+	.layout-main-section {
+		padding-top: 0 !important;
+		margin-top: 0 !important;
+	}
+
+	.page-form {
+		padding: 4px 8px !important;
+		margin-bottom: 4px !important;
+		gap: 4px 6px;
+
+		.frappe-control {
+			margin-bottom: 0 !important;
+			padding: 0 2px !important;
+		}
+
+		.form-control,
+		.input-with-feedback {
+			height: 26px !important;
+			min-height: 26px;
+			padding: 2px 8px !important;
+			font-size: 12px;
+		}
+
+		.checkbox label,
+		.label-area {
+			font-size: 12px;
+		}
+	}
+
+	.bo-report-status,
+	.bo-report-footer {
+		display: none !important;
+	}
+}

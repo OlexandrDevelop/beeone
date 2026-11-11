@@ -1241,6 +1241,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 	bo_after_render() {
 		this.$report.addClass("bo-report");
+		this.page.wrapper.addClass("bo-report-page");
 		this.bo_render_bands();
 		this.bo_fit_height();
 		// a group opened or closed changes the number of rows in view
@@ -2477,7 +2478,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		$(".page-head-content").removeClass("border-bottom");
 
 		let page_form = this.page.main.find(".page-form");
-		this.$status = $(`<div class="form-message text-muted small"></div>`)
+		this.$status = $(`<div class="form-message text-muted small bo-report-status"></div>`)
 			.hide()
 			.insertAfter(page_form);
 		this.$report_message = $(`<div class="form-message text-muted small"></div>`)
@@ -2503,40 +2504,33 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	show_footer_message() {
+		// beeone: no footer, as in 1C. The levels of a tree report are buttons in the page head; the hint about the
+		// filter row (it is off) and the execution time are not shown.
 		this.$report_footer && this.$report_footer.remove();
-		this.$report_footer = $(`<div class="report-footer text-muted"></div>`).appendTo(
-			this.page.main
-		);
-		if (this.tree_report) {
-			this.$tree_footer = $(`<div class="tree-footer col-md-12">
-				<div class="input-group">
-				  <input id="tree-level" type="number" class="form-control" style="max-width: 120px; border-right: 1px solid var(--border-color);" aria-label="Tree Level" value="2">
-					<button class="btn btn-xs btn-secondary" style="border-top-left-radius: 0px; border-bottom-left-radius: 0px;" data-action="set_tree_level">
-						${__("Set Level")}</button>
-					<button class="btn btn-xs btn-secondary" data-action="expand_all_rows">
-						${__("Expand All")}</button>
-					<button class="btn btn-xs btn-secondary" data-action="collapse_all_rows">
-						${__("Collapse All")}</button>
-				</div>
-			</div>`);
-			$(this.$report_footer).append(this.$tree_footer);
-			if (this.report_settings.initial_depth == 0) {
-				this.$tree_footer.find("[data-action=expand_all_rows]").show();
-				this.$tree_footer.find("[data-action=collapse_all_rows]").hide();
-			} else {
-				this.$tree_footer.find("[data-action=collapse_all_rows]").show();
-				this.$tree_footer.find("[data-action=expand_all_rows]").hide();
-			}
-		}
-
-		const message = __(
-			"For comparison, use >5, <10 or =324. For ranges, use 5:10 (for values between 5 & 10)."
-		);
-		const execution_time_msg = __("Execution Time: {0} sec", [this.execution_time || 0.1]);
-
-		this.$report_footer.append(`<div class="col-md-12">
-			<span">${message}</span><span class="pull-right">${execution_time_msg}</span>
-		</div>`);
+		this.$report_footer = $(`<div class="report-footer bo-report-footer"></div>`).appendTo(this.page.main);
+		this.page.wrapper.find(".bo-tree-bar").remove();
+		this.$tree_footer = null;
+		if (!this.tree_report) return;
+		const depth = this.bo_tree_depth || 1;
+		const levels = Array.from(
+			{ length: depth },
+			(_, i) =>
+				`<button class="btn btn-xs btn-default" data-bo-level="${i}" title="${__("Level")} ${i + 1}">${i + 1}</button>`
+		).join("");
+		this.$tree_footer = $(`<div class="bo-tree-bar">
+			<input id="tree-level" type="hidden" value="${depth}">
+			${levels}
+			<button class="btn btn-xs btn-default" data-action="expand_all_rows" title="${__("Expand All")}">${__("Expand All")}</button>
+			<button class="btn btn-xs btn-default" data-action="collapse_all_rows" title="${__("Collapse All")}">${__("Collapse All")}</button>
+		</div>`).prependTo(this.page.wrapper.find(".page-head .row").first());
+		const all_open = this.report_settings.initial_depth !== 0;
+		this.$tree_footer.find("[data-action=expand_all_rows]").toggle(!all_open);
+		this.$tree_footer.find("[data-action=collapse_all_rows]").toggle(all_open);
+		this.$tree_footer.on("click", "[data-bo-level]", (e) => {
+			this.$tree_footer.find("#tree-level").val(cint(e.currentTarget.dataset.boLevel) + 1);
+			this.set_tree_level();
+			setTimeout(() => this.bo_fit_height(), 50);
+		});
 	}
 
 	expand_all_rows() {

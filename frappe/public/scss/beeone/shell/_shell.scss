@@ -28,8 +28,8 @@ body.bo-shell .sticky-top.navbar {
 	z-index: 100;
 	display: grid;
 	grid-template-columns: var(--bo-rail-width) minmax(0, 1fr);
-	grid-template-rows: 48px minmax(0, 1fr) 44px;
-	grid-template-areas: "rail top" "rail desk" "rail task";
+	grid-template-rows: minmax(0, 1fr) 44px;
+	grid-template-areas: "rail desk" "rail task";
 	background: var(--bo-desk);
 	color: var(--bo-text);
 	isolation: isolate;
@@ -1849,7 +1849,7 @@ body.bo-shell .modal-backdrop.show {
 /* ---------- compact: one window at full size ---------- */
 body.bo-compact #bo-app {
 	grid-template-columns: minmax(0, 1fr);
-	grid-template-areas: "top" "desk" "task";
+	grid-template-areas: "desk" "task";
 }
 
 body.bo-compact #bo-rail,
@@ -1864,7 +1864,7 @@ body.bo-compact .bo-task-menu {
 body.bo-compact #bo-panel {
 	left: 0;
 	width: 100%;
-	top: 48px;
+	top: 0;
 	bottom: 44px;
 }
 

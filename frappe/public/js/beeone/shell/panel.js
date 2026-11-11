@@ -60,10 +60,7 @@ export function build() {
 		`<div class="bo-rail-list" id="bo-rail-list"></div>` +
 		`<div class="bo-rail-bottom"><button type="button" class="bo-rail-btn" data-act="user" title="${esc(user)}" aria-label="${esc(user)}">` +
 		`<span class="bo-avatar">${esc(initials(user))}</span></button></div></nav>` +
-		`<header id="bo-top"><div class="bo-top-chips" id="bo-chips"></div>` +
-		`<button type="button" class="bo-search" data-act="search">${icon("search")}<span>${esc(__("Find a command, report or open window…"))}</span><kbd>Ctrl K</kbd></button>` +
-		`<div class="bo-top-end"><button type="button" class="bo-top-btn" data-act="theme" title="${esc(__("Theme"))}" aria-label="${esc(__("Theme"))}">${icon("sun")}</button>` +
-		`<button type="button" class="bo-top-btn" data-act="bell" title="${esc(__("Notifications"))}" aria-label="${esc(__("Notifications"))}">${icon("bell")}<i class="bo-dot-badge" hidden></i></button></div></header>` +
+		// no top bar: search is Ctrl K, the theme and notifications are in the user menu
 		`<main id="bo-desk"><div id="bo-desk-bg"></div><div id="bo-wins"></div></main>` +
 		`<footer id="bo-task" role="toolbar" aria-label="${esc(__("Open windows"))}">` +
 		`<button type="button" class="bo-task-menu" data-act="sections" aria-label="${esc(__("Sections"))}" aria-expanded="false" aria-controls="bo-panel">${icon("menu")}</button>` +
@@ -660,6 +657,10 @@ function user_menu(trigger) {
 		`<button class="bo-menu-item" data-a="accent-cobalt">${icon("check", accent === "cobalt" ? "" : "bo-i-hide")}${esc(__("Accent: cobalt"))}</button>` +
 		`<button class="bo-menu-item" data-a="accent-teal">${icon("check", accent === "teal" ? "" : "bo-i-hide")}${esc(__("Accent: teal"))}</button>` +
 		`<div class="bo-menu-sep"></div>` +
+		`<button class="bo-menu-item" data-a="search">${icon("search")}${esc(__("Search"))} <kbd>Ctrl K</kbd></button>` +
+		`<button class="bo-menu-item" data-a="theme">${icon(document.documentElement.getAttribute("data-theme") === "dark" ? "sun" : "moon")}${esc(__("Theme"))}</button>` +
+		`<button class="bo-menu-item" data-a="bell">${icon("bell")}${esc(__("Notifications"))}</button>` +
+		`<div class="bo-menu-sep"></div>` +
 		`<button class="bo-menu-item" data-a="reset">${icon("undo")}${esc(__("Reset layout"))}</button>` +
 		`<button class="bo-menu-item" data-a="keys">${icon("book")}${esc(__("Keyboard shortcuts"))}</button>` +
 		`<button class="bo-menu-item" data-a="settings">${icon("gear")}${esc(__("My Settings"))}</button>` +
@@ -671,6 +672,9 @@ function user_menu(trigger) {
 		(item) => {
 			const a = item.dataset.a;
 			if (a === "accent-cobalt" || a === "accent-teal") beeone.shell.set_accent(a.slice(7));
+			else if (a === "search") open_search();
+			else if (a === "theme") toggle_theme();
+			else if (a === "bell") frappe.set_route("List", "Notification Log");
 			else if (a === "reset") beeone.shell.reset_layout();
 			else if (a === "keys") help();
 			else if (a === "settings") frappe.set_route("Form", "User", frappe.session.user);
