@@ -214,6 +214,17 @@ body.bo-shell {
 }
 
 /* shell: desk, rail, windows (docs/platform/SHELL.md §7) */
+/* the dark block comes first: its selector is more specific, so the order does not change the result */
+html[data-theme="dark"] body.bo-shell {
+	--bo-desk: #0d1016;
+	--bo-rail: #07090d;
+	--bo-rail-text: #aab3c5;
+	--bo-rail-active: #fff;
+	--bo-rail-hover: rgb(255 255 255 / 0.08);
+	--bo-shadow-win: 0 22px 44px -12px rgb(0 0 0 / 0.75);
+	--bo-shadow-win-idle: 0 4px 12px -4px rgb(0 0 0 / 0.5);
+}
+
 body.bo-shell {
 	--bo-desk: #eef0f4;
 	--bo-rail: #f4f6fa;
@@ -226,16 +237,6 @@ body.bo-shell {
 	--bo-r-btn: 8px;
 	--bo-r-win: 12px;
 	--bo-r-dialog: 14px;
-}
-
-html[data-theme="dark"] body.bo-shell {
-	--bo-desk: #0d1016;
-	--bo-rail: #07090d;
-	--bo-rail-text: #aab3c5;
-	--bo-rail-active: #fff;
-	--bo-rail-hover: rgb(255 255 255 / 0.08);
-	--bo-shadow-win: 0 22px 44px -12px rgb(0 0 0 / 0.75);
-	--bo-shadow-win-idle: 0 4px 12px -4px rgb(0 0 0 / 0.5);
 }
 
 /* the second accent of the user: teal */
