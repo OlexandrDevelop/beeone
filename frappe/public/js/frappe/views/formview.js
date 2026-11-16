@@ -123,6 +123,8 @@ frappe.views.FormFactory = class FormFactory extends frappe.views.Factory {
 		this.clear_attachment_preview_state();
 		const key = this.page_key(doctype_layout, name);
 		frappe.container.change_to(key);
+		// beeone: activating an open form window through the shell keeps it as is (unsaved changes survive)
+		if (beeone?.shell?.windows?.wins?.syncing && frappe.views.formview[key].frm.doc) return;
 		frappe.views.formview[key].frm.refresh(name);
 	}
 

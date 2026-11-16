@@ -9,6 +9,8 @@ frappe.views.BaseList = class BaseList {
 	}
 
 	show() {
+		// beeone: activating an already rendered window through the shell does not reload its list
+		if (beeone?.shell?.windows?.wins?.syncing && this.init_promise && this.page) return;
 		return frappe.run_serially([
 			() => this.show_skeleton(),
 			() => this.fetch_meta(),

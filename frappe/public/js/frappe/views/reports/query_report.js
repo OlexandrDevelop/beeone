@@ -26,6 +26,8 @@ frappe.standard_pages["query-report"] = function (page_name) {
 	$(wrapper).bind("show", function () {
 		// beeone: every window has its own report; the shown one is the current report
 		frappe.query_report = report;
+		// beeone: activating an already loaded report window through the shell does not reload it
+		if (beeone?.shell?.windows?.wins?.syncing && report.init_promise) return;
 		report.show();
 	});
 };
