@@ -24,6 +24,33 @@ export const wins = {
 	syncing: false,
 };
 
+// ------------------------------------------------------------------ sync flag
+
+// frappe.set_route() only pushes the history state: the router renders later (after an await), so the page
+// "show" runs after the shell call returned. The flag therefore lives until the router's "change" event, which
+// is triggered after render(); the timer clears it when the route did not change and no event comes.
+let sync_timer = null;
+let sync_listening = false;
+
+function listen_router() {
+	if (sync_listening || !frappe.router?.on) return;
+	sync_listening = true;
+	frappe.router.on("change", () => {
+		clearTimeout(sync_timer);
+		wins.syncing = false;
+	});
+}
+
+function arm_sync() {
+	listen_router();
+	clearTimeout(sync_timer);
+	sync_timer = setTimeout(() => {
+		wins.syncing = false;
+	}, 2000);
+}
+
+listen_router();
+
 // ------------------------------------------------------------------ keys
 
 export function kind_of(route) {
@@ -333,8 +360,8 @@ export function pending(route) {
 	if (!win) win = create(route, { state: "normal" });
 	show_loader(win);
 	wins.syncing = true;
+	arm_sync();
 	focus(key, { route: false });
-	wins.syncing = false;
 	if (fresh && !RM.matches) open_anim(win);
 }
 
@@ -372,8 +399,8 @@ export function host(page) {
 	win.el.dataset.key = key;
 	refresh_title(win);
 	wins.syncing = true;
+	arm_sync();
 	focus(key, { route: false, animate: fresh });
-	wins.syncing = false;
 	end_loader(win);
 	enforce_limit();
 }
@@ -581,14 +608,14 @@ function route_to(win) {
 	const same = is_window_route(now) && route_key(now) === win.key;
 	if (win.parked || !win.page) {
 		wins.syncing = true;
+		arm_sync();
 		frappe.set_route(...win.route);
-		wins.syncing = false;
 		return;
 	}
 	if (!same) {
 		wins.syncing = true;
+		arm_sync();
 		frappe.set_route(...win.route);
-		wins.syncing = false;
 	}
 }
 
@@ -700,8 +727,8 @@ export function show_desktop() {
 	blur();
 	if (is_window_route(frappe.get_route())) {
 		wins.syncing = true;
+		arm_sync();
 		frappe.set_route("beeone-desktop");
-		wins.syncing = false;
 	}
 }
 
@@ -726,8 +753,8 @@ export function close(key, force) {
 			if (next) route_to(next);
 			else if (is_window_route(frappe.get_route())) {
 				wins.syncing = true;
+				arm_sync();
 				frappe.set_route("beeone-desktop");
-				wins.syncing = false;
 			}
 		}
 		paint_state();
