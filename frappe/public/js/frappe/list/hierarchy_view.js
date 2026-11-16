@@ -275,6 +275,8 @@ frappe.views.HierarchyView = class HierarchyView extends frappe.views.ListView {
 	get_subject_element(doc, title) {
 		const div = super.get_subject_element(doc, title);
 		if (!doc.is_group) return div;
+		// a group is opened, not ticked for a bulk action: no checkbox next to its name
+		div.querySelector(".list-row-checkbox")?.closest("span")?.remove();
 		const link = div.querySelector("a");
 		if (link) {
 			link.classList.add("is-group");

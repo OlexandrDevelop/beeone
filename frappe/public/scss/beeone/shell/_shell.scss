@@ -109,12 +109,12 @@ body.bo-shell .sticky-top.navbar {
 
 .bo-rail-btn:hover {
 	background: var(--bo-rail-hover);
-	color: #fff;
+	color: var(--bo-rail-active);
 }
 
 .bo-rail-btn.is-active {
 	background: var(--bo-rail-hover);
-	color: #fff;
+	color: var(--bo-rail-active);
 }
 
 .bo-rail-btn.is-active::before {
@@ -1478,7 +1478,40 @@ body.bo-shell .modal-backdrop.show {
 }
 
 #bo-rail .bo-rail-btn:focus-visible {
-	box-shadow: inset 0 0 0 2px #fff;
+	box-shadow: inset 0 0 0 2px var(--bo-rail-active);
+}
+
+/* ---------- maximized document: the table part takes the free height, the comment and the totals sit at the bottom ---------- */
+.bo-win.is-max .page-body > .container,
+.bo-win.is-max .page-body .layout-main,
+.bo-win.is-max .page-body .layout-main-section-wrapper,
+.bo-win.is-max .layout-main-section,
+.bo-win.is-max .form-layout,
+.bo-win.is-max .form-page {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 100%;
+}
+
+.bo-win.is-max .form-section:has(.form-grid) {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+}
+
+.bo-win.is-max .form-section:has(.form-grid) .form-grid,
+.bo-win.is-max .form-section:has(.form-grid) .grid-body {
+	flex: 1 1 auto;
+}
+
+.bo-win.is-max .form-section:has(.form-grid) + .form-section,
+.bo-win.is-max .form-footer,
+.bo-win.is-max .doc-totals,
+.bo-win.is-max .form-totals,
+.bo-win.is-max .grid-footer {
+	flex-shrink: 0;
+	margin-top: auto;
 }
 
 /* ---------- search (Ctrl K) ---------- */
