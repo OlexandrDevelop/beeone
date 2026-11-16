@@ -39,6 +39,17 @@ frappe.views.ListFactory = class ListFactory extends frappe.views.Factory {
 			return;
 		}
 
+		// beeone: a catalog whose app turned the core hierarchy off (listview_settings.hierarchy_view = false,
+		// the app draws its own groups pane) never opens as the core Hierarchy view, whatever route or last view asks
+		if (
+			view_name === "Hierarchy" &&
+			frappe.views.HierarchyView &&
+			frappe.listview_settings[doctype]?.hierarchy_view === false
+		) {
+			frappe.set_route("list", doctype, "list");
+			return;
+		}
+
 		let view_class = frappe.views[view_name + "View"];
 		if (!view_class) view_class = frappe.views.ListView;
 
