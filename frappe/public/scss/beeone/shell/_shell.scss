@@ -1494,6 +1494,15 @@ body.bo-shell .modal-backdrop.show {
 	min-height: 100%;
 }
 
+/* the column keeps the full width of the window. Frappe sizes the form's main column for the side panel
+   (`body[data-route^="Form"] .layout-main-section-wrapper { width: calc(100% - var(--form-sidebar-width)) }`); in a row that width
+   is overridden by the flex-basis, in this column it is the cross size, so the form stopped one panel width short of the window */
+.bo-win.is-max .page-body .layout-main-section-wrapper {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+}
+
 .bo-win.is-max .form-section:has(.form-grid) {
 	display: flex;
 	flex-direction: column;
