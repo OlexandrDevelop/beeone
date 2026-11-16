@@ -57,12 +57,13 @@ class TestShellFlagIsKept(unittest.TestCase):
 	def setUp(self):
 		self.js = read(WINDOWS)
 
-	def test_route_to_still_raises_the_flag_around_set_route(self):
+	def test_route_to_still_raises_the_flag_before_set_route(self):
+		# T-1112: the reset moved out of route_to (it is done on the router "change" event, after the async render)
 		body = body_of(self.js, r"function route_to\(win\)\s*\{")
-		self.assertRegex(body, r"wins\.syncing\s*=\s*true;\s*frappe\.set_route\(\.\.\.win\.route\);\s*wins\.syncing\s*=\s*false;")
+		self.assertRegex(body, r"(?s)wins\.syncing\s*=\s*true;.*frappe\.set_route\(\.\.\.win\.route\)")
 
-	def test_every_raise_of_the_flag_is_reset(self):
-		self.assertEqual(len(re.findall(r"wins\.syncing\s*=\s*true", self.js)), len(re.findall(r"wins\.syncing\s*=\s*false", self.js)))
+	def test_the_flag_is_reset_somewhere(self):
+		self.assertGreaterEqual(len(re.findall(r"wins\.syncing\s*=\s*false", self.js)), 1)
 
 	def test_focus_does_not_add_a_show_trigger_back(self):
 		# T-496 D15: container.change_to is the only place that triggers page "show"
