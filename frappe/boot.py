@@ -99,6 +99,8 @@ def get_bootinfo():
 	load_country_doc(bootinfo)
 	load_currency_docs(bootinfo)
 
+	bootinfo.beeone_form = get_beeone_form()
+
 	for method in hooks.boot_session or []:
 		frappe.get_attr(method)(bootinfo)
 
@@ -169,6 +171,22 @@ def load_conf_settings(bootinfo):
 	for key in ("developer_mode", "socketio_port", "file_watcher_port"):
 		if key in frappe.conf:
 			bootinfo[key] = frappe.conf.get(key)
+
+
+def get_beeone_form():
+	"""# beeone: what the apps turned on for the form template (public/js/beeone/form): apps, doctypes, exclude."""
+
+	def flat(hook):
+		out = []
+		for value in frappe.get_hooks(hook) or []:
+			out.extend([value] if isinstance(value, str) else value)
+		return sorted(set(out))
+
+	return {
+		"apps": flat("beeone_form_apps"),
+		"doctypes": flat("beeone_form_doctypes"),
+		"exclude": flat("beeone_form_exclude"),
+	}
 
 
 def get_boot_module_app():

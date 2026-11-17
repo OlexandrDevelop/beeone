@@ -1,0 +1,796 @@
+/* HiveTrade Classic forms (T-853): one layout for catalogs and documents.
+ * Columns follow the WINDOW width (.bo-win[data-bw], SHELL.md T-704): 1 below 560 px, 2 up to 1439 px, 3 from 1440 px.
+ * Outside the shell the same breakpoints use @media. Motion: opacity/transform only, <= 160 ms, off for reduced motion.
+ * The palette is our own (deep teal + slate + amber for drafts), derived from the shell tokens. */
+
+/* Tokens are explicit hex values (not shell fallbacks) so that every text/background pair can be measured:
+ * tests/test_form_contrast.py parses this block and checks WCAG 2.2 AA (1.4.3 text >= 4.5, 1.4.11 controls >= 3).
+ * The pale shell grey (third text level, ~3:1) is never used for text in forms. */
+.bf-form {
+	--bf-accent: #0b7285;
+	--bf-accent-hover: #095c6b;
+	--bf-accent-weak: #e3f4f7;
+	--bf-accent-line: #a5dbe3;
+	--bf-on-accent: #ffffff;
+	--bf-surface: #ffffff;
+	--bf-surface-2: #f2f4f7;
+	--bf-line: #e4e7ec; /* decorative: card separators, interior row lines */
+	--bf-line-ctl: #7b8597; /* controls: inputs, table frame, header line (>= 3:1) */
+	--bf-text: #0e1525;
+	--bf-label: #263244;
+	--bf-text-2: #475467;
+	--bf-ok: #0f766e;
+	--bf-ok-weak: #dcf5ef;
+	--bf-draft: #5b4aa6;
+	--bf-draft-weak: #efecfa;
+	--bf-err: #b42318;
+	--bf-err-weak: #fdecec;
+	--bf-warn: #8a5300;
+	--bf-warn-weak: #fff4db;
+	--bf-locked-bg: #eef1f5;
+	--bf-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+html[data-theme="dark"] .bf-form {
+	--bf-accent: #3cc3d6;
+	--bf-accent-hover: #6fd6e4;
+	--bf-accent-weak: rgb(60 195 214 / 0.14);
+	--bf-accent-line: rgb(60 195 214 / 0.4);
+	--bf-on-accent: #06232a;
+	--bf-surface: #12151c;
+	--bf-surface-2: #181c25;
+	--bf-line: #252a35;
+	--bf-line-ctl: #6b7586;
+	--bf-text: #e8ecf3;
+	--bf-label: #d5dbe5;
+	--bf-text-2: #a6afbf;
+	--bf-ok: #4fd8bf;
+	--bf-ok-weak: rgb(79 216 191 / 0.14);
+	--bf-draft: #b3a4ff;
+	--bf-draft-weak: rgb(179 164 255 / 0.14);
+	--bf-err: #ff8a8d;
+	--bf-err-weak: rgb(255 138 141 / 0.14);
+	--bf-warn: #f5b748;
+	--bf-warn-weak: rgb(245 183 72 / 0.14);
+	--bf-locked-bg: #1d222c;
+}
+
+.bf-form {
+	--bf-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2 1.5 13.5h13z'/%3E%3Cpath d='M8 6.5v3.2M8 11.8v.1'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------- head */
+.bf-head {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 16px;
+	padding: 4px 0 8px;
+	min-width: 0;
+}
+/* T-869: the title and the command bar share one row; the window buttons sit to the right of the bar */
+.bf-title-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	flex: 0 1 auto;
+	overflow: hidden;
+}
+.bf-title {
+	margin: 0;
+	font-size: 17px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--bf-text);
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.bf-type {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--bf-text-2);
+	letter-spacing: 0.02em;
+}
+.bf-badge {
+	display: inline-flex;
+	align-items: center;
+	height: 22px;
+	padding: 0 9px;
+	border-radius: 11px;
+	font-size: 11.5px;
+	font-weight: 600;
+	white-space: nowrap;
+	background: var(--bf-surface-2);
+	color: var(--bf-text-2);
+}
+.bf-badge[hidden] {
+	display: none;
+}
+.bf-badge--draft {
+	background: var(--bf-draft-weak);
+	color: var(--bf-draft);
+}
+.bf-badge--posted {
+	background: var(--bf-ok-weak);
+	color: var(--bf-ok);
+}
+.bf-badge--cancelled {
+	background: var(--bf-err-weak);
+	color: var(--bf-err);
+}
+.bf-badge--status {
+	background: var(--bf-accent-weak);
+	color: var(--bf-accent);
+}
+.bf-dirty {
+	font-size: 11.5px;
+	color: var(--bf-draft);
+	opacity: 0;
+	transform: translateX(-4px);
+	transition: opacity 0.16s var(--bf-ease), transform 0.16s var(--bf-ease);
+}
+/* hidden it takes no room in the head row */
+.bf-dirty:not(.is-on) {
+	display: none;
+}
+.bf-dirty {
+	white-space: nowrap;
+}
+.bf-dirty.is-on {
+	opacity: 1;
+	transform: none;
+}
+
+/* command bar: the 1C names */
+/* the bar never wraps under the title: a long title is cut with an ellipsis instead */
+.bf-bar {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 6px;
+	flex: 1 0 auto;
+}
+/* a form window closes with its own window button: the bar's Close would be a second cross */
+.bo-win.is-chromeless .bf-bar [data-bf-cmd="close_list"] {
+	display: none;
+}
+.bf-bar .bf-right {
+	margin-left: auto;
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+.bf-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 30px;
+	padding: 0 12px;
+	border: 1px solid var(--bf-line-ctl);
+	border-radius: 7px;
+	background: var(--bf-surface);
+	color: var(--bf-text);
+	font: inherit;
+	font-size: 12.5px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.16s var(--bf-ease), border-color 0.16s var(--bf-ease), transform 0.16s var(--bf-ease);
+}
+.bf-btn:hover {
+	background: var(--bf-accent-weak);
+	border-color: var(--bf-accent-line);
+}
+.bf-btn:active {
+	transform: translateY(1px);
+}
+.bf-btn:focus-visible {
+	outline: 2px solid var(--bf-accent);
+	outline-offset: 1px;
+}
+.bf-btn--primary {
+	background: var(--bf-accent);
+	border-color: var(--bf-accent);
+	color: var(--bf-on-accent);
+}
+.bf-btn--primary:hover {
+	background: var(--bf-accent-hover);
+	border-color: var(--bf-accent-hover);
+}
+.bf-btn--ghost {
+	border-color: transparent;
+	background: transparent;
+}
+.bf-btn--icon {
+	min-width: 30px;
+	width: 30px;
+	padding: 0;
+	justify-content: center;
+}
+.bf-btn--sm {
+	height: 26px;
+	padding: 0 9px;
+	font-size: 12px;
+}
+.bf-btn[disabled] {
+	opacity: 0.6;
+	pointer-events: none;
+	border-style: dashed;
+}
+.bf-btn[aria-pressed="true"] {
+	background: var(--bf-accent-weak);
+	border-color: var(--bf-accent);
+	color: var(--bf-accent);
+	font-weight: 600;
+}
+.bf-sep {
+	width: 1px;
+	height: 18px;
+	background: var(--bf-line);
+	margin: 0 2px;
+}
+
+/* ---------------------------------------------------------------- cards and groups */
+.bf-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.bf-card {
+	background: var(--bf-surface);
+	border: 1px solid var(--bf-line);
+	border-radius: 10px;
+	/* no clipping here: it cut the Link/Select/date lists at the card edge; the corners are rounded on the edge children */
+	position: relative;
+	animation: bf-in 0.16s var(--bf-ease) backwards;
+}
+.bf-card > :first-child {
+	border-top-left-radius: 9px;
+	border-top-right-radius: 9px;
+}
+.bf-card > :last-child {
+	border-bottom-left-radius: 9px;
+	border-bottom-right-radius: 9px;
+}
+/* the card holding an open list or the focus paints above the next card and below nothing but the sticky footer */
+.bf-card:focus-within,
+.bf-card:has(.awesomplete > ul:not([hidden])) {
+	z-index: 4;
+}
+@keyframes bf-in {
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+}
+.bf-tabs {
+	position: relative;
+	display: flex;
+	gap: 2px;
+	padding: 0 8px;
+	border-bottom: 1px solid var(--bf-line);
+	background: var(--bf-surface-2);
+	/* many tabs scroll sideways without a visible bar; never vertically (the underline sits inside the strip) */
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+}
+.bf-tabs::-webkit-scrollbar {
+	display: none;
+}
+.bf-tab {
+	position: relative;
+	height: 34px;
+	padding: 0 12px;
+	border: 0;
+	background: transparent;
+	color: var(--bf-label);
+	font: inherit;
+	font-size: 12.5px;
+	font-weight: 500;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: color 0.16s var(--bf-ease);
+}
+.bf-tab::after {
+	content: "";
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: 0;
+	height: 2px;
+	border-radius: 2px;
+	background: var(--bf-accent);
+	transform: scaleX(0);
+	transition: transform 0.16s var(--bf-ease);
+}
+.bf-tab:hover {
+	color: var(--bf-text);
+}
+.bf-tab.is-on {
+	color: var(--bf-accent);
+	font-weight: 600;
+}
+.bf-tab.is-on::after {
+	transform: scaleX(1);
+}
+.bf-tab:focus-visible {
+	outline: 2px solid var(--bf-accent);
+	outline-offset: -2px;
+}
+.bf-count {
+	margin-left: 4px;
+	padding: 0 6px;
+	border-radius: 9px;
+	background: var(--bf-accent-weak);
+	color: var(--bf-accent);
+	font-size: 11px;
+}
+.bf-count:empty {
+	display: none;
+}
+.bf-tab.has-error::before {
+	/* an alert triangle, not a colour-only dot (WCAG 1.4.1); the tab carries a title and sr-only text */
+	content: "";
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	margin-right: 6px;
+	vertical-align: -1px;
+	background: var(--bf-err);
+	-webkit-mask: var(--bf-icon-alert) center / contain no-repeat;
+	mask: var(--bf-icon-alert) center / contain no-repeat;
+}
+.bf-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+}
+.bf-grp {
+	padding: 10px 12px 12px;
+}
+.bf-grp[hidden] {
+	display: none;
+}
+/* Stable head (T-864): all groups sit in one grid cell, so the card is as tall as the tallest group
+ * and does not jump when the tab changes. Inactive groups stay in the layout but are invisible and inert. */
+.bf-main {
+	display: grid;
+	grid-template-rows: auto 1fr;
+	grid-template-columns: minmax(0, 1fr);
+}
+.bf-main > .bf-tabs {
+	grid-row: 1;
+}
+.bf-main > .bf-grp {
+	grid-row: 2;
+	grid-column: 1;
+}
+.bf-main > .bf-grp.is-off {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+/* the dense grid: 1 column / 2 columns / 3 columns from 1440 px */
+.bf-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px 14px;
+}
+.bf-grid > .frappe-control {
+	grid-column: span 1;
+	margin: 0;
+	min-width: 0;
+}
+.bf-grid > .frappe-control:is([data-fieldtype="Small Text"], [data-fieldtype="Text"], [data-fieldtype="Text Editor"], [data-fieldtype="HTML"], [data-fieldtype="Code"]) {
+	grid-column: 1 / -1;
+}
+.bf-grid > .frappe-control.hide-control {
+	display: none !important;
+}
+.bf-form .bf-grid .form-group {
+	margin: 0;
+}
+.bf-form .bf-grid .control-label {
+	margin-bottom: 2px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--bf-label);
+}
+.bf-form .bf-grid .help-box,
+.bf-form .bf-grid .help,
+.bf-form .bf-grid .description {
+	font-size: 11.5px;
+	font-weight: 400;
+	color: var(--bf-text-2);
+}
+.bf-form .bf-grid .form-control,
+.bf-form .bf-grid .like-disabled-input {
+	height: 30px;
+	padding: 0 8px;
+	font-size: 12.5px;
+	border-radius: 6px;
+	color: var(--bf-text);
+}
+
+/* Field states (T-864, WCAG 1.4.1 / 1.4.11). base_input.js sets data-bo-state on every control:
+ * text = value only (no box), edit = solid control border, locked = dashed border + tint + lock icon. */
+.bf-form .bf-grid [data-bo-state="edit"] .form-control:not(:disabled):not([readonly]) {
+	background: var(--bf-surface);
+	border: 1px solid var(--bf-line-ctl);
+}
+.bf-form .bf-grid [data-bo-state="text"] .control-value {
+	height: auto;
+	min-height: 30px;
+	display: flex;
+	align-items: center;
+	padding: 0;
+	border: 0;
+	border-bottom: 1px solid transparent;
+	background: transparent;
+	font-weight: 500;
+	color: var(--bf-text);
+}
+.bf-form .bf-grid [data-bo-state="locked"] .control-value,
+.bf-form .bf-grid [data-bo-state="locked"] .form-control {
+	display: flex;
+	align-items: center;
+	background: var(--bf-locked-bg);
+	border: 1px dashed var(--bf-line-ctl);
+	color: var(--bf-text);
+	cursor: not-allowed;
+}
+.bf-form .bf-grid [data-bo-state="locked"] .control-value::after {
+	background: var(--bf-text-2);
+}
+/* required: asterisk on the label; required and empty: 3px bar on the start edge and a tint */
+.bf-form .bf-grid .control-label.reqd::after {
+	content: " *";
+	color: var(--bf-err);
+	font-weight: 700;
+}
+.bf-form .bf-grid [data-bo-reqd="1"][data-bo-empty="1"][data-bo-state="edit"] .form-control {
+	box-shadow: inset 3px 0 0 var(--bf-warn);
+	background: var(--bf-warn-weak);
+}
+/* error: 2px border and an alert icon before the label (not colour only) */
+.bf-form .bf-grid .has-error .form-control {
+	border: 2px solid var(--bf-err);
+}
+.bf-form .bf-grid .has-error .control-label {
+	color: var(--bf-err);
+}
+.bf-form .bf-grid textarea.form-control {
+	height: auto;
+	min-height: 54px;
+	padding: 6px 8px;
+}
+.bf-form .bf-grid .checkbox {
+	margin: 0;
+	padding-top: 20px;
+}
+.bf-form .bf-grid .frappe-control[data-fieldtype="Check"] {
+	align-self: end;
+}
+.bf-form .bf-grid .form-control:focus {
+	outline: 2px solid var(--bf-accent);
+	outline-offset: 1px;
+	border-color: var(--bf-accent);
+}
+body.bo-shell .bo-win[data-bw~="lt560"] .bf-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+body.bo-shell .bo-win:not([data-bw~="lt1440"]) .bf-grid {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* plain /app (no shell): the same breakpoints by the viewport */
+@media (max-width: 559px) {
+	body:not(.bo-shell) .bf-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+@media (min-width: 1440px) {
+	body:not(.bo-shell) .bf-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+/* ---------------------------------------------------------------- table part
+ * One card: the tabs and the table commands share the top row, the column header and the rows sit on the
+ * same surface under it. No frame of the grid itself, no grey bands: only the card border and thin lines. */
+.bf-tp-head {
+	display: flex;
+	align-items: stretch;
+	min-height: 38px;
+	padding: 0 8px 0 4px;
+	border-bottom: 1px solid var(--bf-line);
+	background: var(--bf-surface);
+}
+.bf-tp-head .bf-tabs {
+	flex: 0 1 auto;
+	padding: 0;
+	border-bottom: 0;
+	background: transparent;
+}
+.bf-tp-head .bf-tab {
+	height: 38px;
+}
+.bf-tp-bar {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: 2px;
+	min-width: 0;
+	padding: 0 0 0 8px;
+}
+.bf-tp-head .bf-tabs + .bf-tp-bar::before {
+	content: "";
+	width: 1px;
+	height: 18px;
+	margin-right: 6px;
+	background: var(--bf-line);
+}
+.bf-tp-bar .bf-btn[data-bf="add"] {
+	color: var(--bf-accent);
+}
+.bf-tp-meta {
+	margin-left: auto;
+	font-size: 11.5px;
+	color: var(--bf-text-2);
+	white-space: nowrap;
+}
+.bf-tp-bar .bf-density {
+	margin-left: auto;
+}
+.bf-tp-bar .bf-density + .bf-tp-meta {
+	margin-left: 8px;
+}
+.bf-tp-body .bf-tp-sec[hidden] {
+	display: none;
+}
+.bf-tp-body .frappe-control {
+	margin: 0;
+}
+/* Hide only the table field's own label (the section title is in the tab bar). The row form
+ * (.grid-form-body) and the grid cells keep their labels: they were hidden by the old, wider rule (T-864). */
+.bf-tp-body .bf-tp-sec > .frappe-control > .form-group > .clearfix,
+.bf-tp-body .bf-tp-sec > .frappe-control > .grid-field > .control-label {
+	display: none;
+}
+.bf-tp-body .grid-form-body .control-label,
+.bf-tp-body .form-in-grid .control-label {
+	display: block;
+}
+.bf-form .bf-tp-body .form-grid-container {
+	border-radius: 9px;
+}
+/* T-887: the table part has one fixed height (set by F.fit_tp on .bf-tp), the rows scroll inside, the header is pinned */
+.bf-form .bf-tp {
+	--bf-grid-h: 360px;
+}
+.bf-form .bf-tp-body .form-grid-container {
+	height: var(--bf-grid-h);
+	overflow-y: auto;
+	overflow-x: auto;
+	overscroll-behavior: contain;
+}
+.bf-form .bf-tp-body .form-grid {
+	overflow: visible;
+}
+.bf-form .bf-tp-body .grid-heading-row {
+	position: sticky;
+	top: 0;
+	z-index: 3;
+}
+/* the core places the cell dropdown from the .grid-field rect */
+.bf-form .bf-tp-body .grid-field {
+	position: relative;
+}
+.bf-form .bf-tp-body .form-grid {
+	min-height: 0;
+	border: 0;
+	border-radius: 0;
+	background: var(--bf-surface);
+}
+.bf-form .bf-tp-body .grid-heading-row,
+.bf-form .bf-tp-body .grid-heading-row .grid-row,
+.bf-form .bf-tp-body .grid-heading-row .row-check,
+.bf-form .bf-tp-body .grid-heading-row .col {
+	border-radius: 0 !important;
+	background: var(--bf-surface);
+}
+.bf-form .bf-tp-body .grid-heading-row {
+	border-bottom: 1px solid var(--bf-line-ctl);
+}
+.bf-form .bf-tp-body .grid-body,
+.bf-form .bf-tp-body .grid-body .grid-static-col,
+.bf-form .bf-tp-body .grid-body .row-check,
+.bf-form .bf-tp-body .grid-body .row-index,
+.bf-form .bf-tp-body .grid-body .col:last-child {
+	border-radius: 0;
+	background: var(--bf-surface);
+}
+.bf-form .bf-tp-body .grid-body {
+	margin-bottom: 0;
+}
+/* column and row lines: the same thin line in the header and the body */
+.bf-form .bf-tp-body .grid-row > .row .col {
+	border-right-color: var(--bf-line);
+}
+.bf-form .bf-tp-body .grid-body .grid-row {
+	border-bottom: 1px solid var(--bf-line);
+}
+.bf-form .bf-tp-body .grid-body .grid-row:last-child {
+	border-bottom: 0;
+}
+.bf-form .bf-tp-body .grid-heading-row .data-row,
+.bf-form .bf-tp-body .grid-heading-row .col {
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--bf-label);
+}
+.bf-form .bf-tp-body .grid-row > .data-row {
+	font-size: 12.5px;
+	color: var(--bf-text);
+}
+.bf-form .bf-tp-body .grid-body .data-row {
+	color: var(--bf-text);
+}
+.bf-form .bf-tp-body .grid-row:hover .data-row:not(.editable-row) .grid-static-col {
+	background: var(--bf-surface-2);
+}
+/* selected rows: tint, a 3px bar on the start edge and the checked box (not colour only) */
+.bf-form .bf-tp-body .grid-row:has(.grid-row-check:checked) .grid-static-col,
+.bf-form .bf-tp-body .grid-row:has(.grid-row-check:checked) .row-check {
+	background: var(--bf-accent-weak);
+}
+.bf-form .bf-tp-body .grid-row:has(.grid-row-check:checked) .row-check {
+	box-shadow: inset 3px 0 0 var(--bf-accent);
+}
+.bf-form .bf-tp-body .grid-static-col:focus-visible {
+	outline: 2px solid var(--bf-accent) !important;
+	outline-offset: -2px;
+}
+.bf-form .bf-tp-body .grid-row .form-control:focus {
+	outline: 2px solid var(--bf-accent);
+	outline-offset: -2px;
+	box-shadow: none;
+	border: 0;
+}
+/* the row being edited keeps the text of the idle row: same font, size, weight and the 8px cell inset,
+   so a value does not jump or turn bold when the row turns into inputs */
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control .form-control,
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control[data-bo-state] .control-value,
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control .like-disabled-input,
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control .ql-editor {
+	font-family: inherit;
+	font-size: 12.5px;
+	font-weight: inherit;
+	letter-spacing: inherit;
+	line-height: 20px;
+	color: var(--bf-text);
+	padding-inline-start: 8px;
+}
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control .form-control,
+.bf-form .bf-tp-body .form-grid .editable-row .frappe-control[data-bo-state="text"] .control-value {
+	padding-inline-end: 8px;
+}
+/* a money input keeps the core room for its currency sign (₴, $), which is drawn over the input's edge;
+   the sign looks like the one of the idle cell */
+.bf-form .bf-tp-body .form-grid .editable-row .grid-currency-input.grid-currency-has-value.grid-currency-symbol-right .form-control {
+	padding-inline-end: calc(12px + var(--grid-currency-symbol-width, 1em));
+}
+.bf-form .bf-tp-body .form-grid .editable-row .grid-currency-input.grid-currency-has-value:not(.grid-currency-symbol-right) .form-control {
+	padding-inline-start: calc(12px + var(--grid-currency-symbol-width, 1em));
+}
+.bf-form .bf-tp-body .form-grid .editable-row .grid-currency-prefix,
+.bf-form .bf-tp-body .form-grid .editable-row .grid-currency-suffix {
+	font-size: 12.5px;
+	line-height: 20px;
+	color: var(--bf-text);
+}
+.bf-form .bf-tp-body .grid-static-col .static-area {
+	color: var(--bf-text);
+}
+.bf-form .bf-tp-body .grid-footer,
+.bf-form .bf-tp-body .grid-add-row {
+	display: none;
+}
+.bf-form .bf-tp-body .grid-empty {
+	height: auto;
+	padding: 14px 0;
+	color: var(--bf-text-2);
+}
+.bf-form .grid-link-open {
+	border-color: var(--bf-line-ctl);
+	background: var(--bf-surface);
+	color: var(--bf-text);
+}
+
+/* ---------------------------------------------------------------- totals footer */
+.bf-foot {
+	position: sticky;
+	bottom: 0;
+	z-index: 3;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-top: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--bf-line);
+	border-radius: 10px;
+	background: var(--bf-surface);
+	box-shadow: 0 -4px 10px -8px rgb(16 24 40 / 0.2);
+}
+.bf-foot[hidden] {
+	display: none;
+}
+.bf-comment {
+	flex: 1 1 auto;
+	min-width: 120px;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--bf-line-ctl);
+	border-radius: 6px;
+	background: var(--bf-surface);
+	color: var(--bf-text);
+	font: inherit;
+	font-size: 12.5px;
+}
+.bf-comment:focus {
+	outline: 2px solid var(--bf-accent);
+	outline-offset: 1px;
+	border-color: var(--bf-accent);
+}
+.bf-totals {
+	display: flex;
+	gap: 16px;
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--bf-text-2);
+	white-space: nowrap;
+}
+.bf-totals b {
+	font-variant-numeric: tabular-nums;
+	color: var(--bf-text);
+	font-weight: 600;
+}
+.bf-totals .bf-grand {
+	color: var(--bf-text);
+	font-size: 13.5px;
+}
+.bf-totals .bf-grand b {
+	color: var(--bf-accent);
+	font-size: 15px;
+}
+
+/* ---------------------------------------------------------------- the original Frappe layout is replaced */
+/* the Frappe dock a standard form (Currency) brings over the shell rail; the core shell hides it too (beeone T-869),
+   this copy keeps the live site clean until the core assets are rebuilt */
+body.bo-shell #desk-dock {
+	display: none !important;
+}
+.bf-gone {
+	display: none !important;
+}
+.bf-form.bf-bar-on .page-head .page-title > :not(.bf-head),
+.bf-form.bf-bar-on .page-head .page-actions {
+	display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bf-card,
+	.bf-btn,
+	.bf-tab,
+	.bf-tab::after,
+	.bf-dirty {
+		animation: none;
+		transition: none;
+	}
+}

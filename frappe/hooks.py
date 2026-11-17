@@ -27,6 +27,12 @@ beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional 
 #   beeone_posted_editable = ["Doctype", ...]
 #   beeone_posted_edit_checks = ["app.module.fn"]   # fn(doc) -> reason why the document cannot be edited, or None
 
+# beeone: the form template (public/js/beeone/form). An app opts in with
+#   beeone_form_apps = ["app"]          # every DocType of the app
+#   beeone_form_doctypes = ["Doctype"]  # single DocTypes of other apps
+#   beeone_form_exclude = ["Doctype"]   # DocTypes that keep the standard form
+# and may set beeone.form.LAYOUTS[doctype] / beeone.form.COMMANDS[doctype] in its JS.
+
 # website
 app_include_js = [
 	"libs.bundle.js",
