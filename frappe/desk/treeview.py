@@ -87,6 +87,11 @@ def _check_browse(doctype):
 		frappe.throw(_("No permission for {0}").format(_(doctype)), frappe.PermissionError)
 
 
+def _has_nested_set(doctype):
+	"""Trees linked only by the parent field (no lft/rgt columns) are browsed without subtree ranges."""
+	return frappe.db.has_column(doctype, "lft") and frappe.db.has_column(doctype, "rgt")
+
+
 @frappe.whitelist()
 def get_group_children(doctype: str, parent: str = "") -> list[dict]:
 	"""Groups (is_group=1) directly under `parent`, one level, with `expandable` = has subgroups."""
@@ -98,7 +103,9 @@ def _group_children(doctype, parent=""):
 	meta, parent_field, title = _tree_meta(doctype)
 	table = frappe.qb.DocType(doctype)
 
-	fields = ["name as value", f"{title} as title", "lft", "rgt"]
+	fields = ["name as value", f"{title} as title"]
+	if _has_nested_set(doctype):
+		fields += ["lft", "rgt"]
 	if frappe.db.has_column(doctype, "disabled"):
 		fields.append("disabled")
 
@@ -133,6 +140,7 @@ def get_group_path(doctype: str, name: str) -> list[dict]:
 	_check_browse(doctype)
 	meta, parent_field, title = _tree_meta(doctype)
 
+	nested_set = _has_nested_set(doctype)
 	path = []
 	seen = set()
 	current = name
@@ -140,14 +148,17 @@ def get_group_path(doctype: str, name: str) -> list[dict]:
 	while current and current not in seen and len(path) < 100:
 		seen.add(current)
 		row = frappe.db.get_value(
-			doctype, current, [parent_field, title, "lft", "rgt", "is_group"], as_dict=True
+			doctype,
+			current,
+			[parent_field, title, *(["lft", "rgt"] if nested_set else []), "is_group"],
+			as_dict=True,
 		)
 		if not row:
 			frappe.throw(_("{0} {1} not found").format(_(doctype), current), frappe.DoesNotExistError)
 		if first and not row.is_group:
 			frappe.throw(_("{0} is not a group").format(current))
 		first = False
-		path.append({"value": current, "title": row.get(title) or current, "lft": row.lft, "rgt": row.rgt})
+		path.append({"value": current, "title": row.get(title) or current, "lft": row.get("lft"), "rgt": row.get("rgt")})
 		current = row.get(parent_field)
 	path.reverse()
 	return path
