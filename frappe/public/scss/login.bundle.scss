@@ -178,4 +178,19 @@ body {
 		max-height: 32px;
 		width: auto;
 	}
+	.bo-brand-logo {
+		--icon-primary: #2563eb;
+		color: #0f172a;
+		line-height: 0;
+		svg {
+			display: block;
+			width: 156px;
+			height: 40px;
+		}
+	}
+}
+
+[data-theme="dark"] .page-card-head .bo-brand-logo {
+	--icon-primary: #3b82f6;
+	color: #fff;
 }

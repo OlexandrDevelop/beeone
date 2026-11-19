@@ -59,22 +59,50 @@ body.bo-shell .sticky-top.navbar {
 	height: 40px;
 	display: flex;
 	align-items: center;
-	padding-left: 10px;
+	padding-left: 6px;
 }
 
+/* the logo: graphite/white outline (currentColor) and the blue key elements (--icon-primary) */
 .bo-logo {
-	width: 34px;
-	height: 34px;
-	border-radius: 10px;
-	background: var(--bo-accent);
-	color: #fff;
-	display: grid;
-	place-items: center;
+	color: var(--bo-rail-active);
+	line-height: 0;
 }
 
-.bo-logo .bo-i {
-	width: 20px;
-	height: 20px;
+.bo-logo svg {
+	display: block;
+}
+
+.bo-logo-mark {
+	display: none;
+}
+
+#bo-app.bo-rail-collapsed {
+	--bo-rail-width: 64px;
+}
+
+#bo-app.bo-rail-collapsed #bo-rail {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+#bo-app.bo-rail-collapsed .bo-rail-top {
+	padding-left: 0;
+	justify-content: center;
+}
+
+#bo-app.bo-rail-collapsed .bo-logo-full,
+#bo-app.bo-rail-collapsed .bo-rail-label {
+	display: none;
+}
+
+#bo-app.bo-rail-collapsed .bo-logo-mark {
+	display: block;
+}
+
+#bo-app.bo-rail-collapsed .bo-rail-btn {
+	justify-content: center;
+	padding-left: 0;
+	padding-right: 0;
 }
 
 .bo-rail-list {

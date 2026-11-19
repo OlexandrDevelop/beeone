@@ -4,6 +4,10 @@ import { wins, focus, minimize, toggle_max, toggle_min, close, show_desktop, lis
 const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 const icon = (n, c) => beeone.ui.icon(n, c);
 const RM = window.matchMedia("(prefers-reduced-motion: reduce)");
+const FOLD_KEY = "beeone_rail_collapsed";
+// the logo is drawn by the platform; the caption is the name of the configuration (frappe.boot.beeone_brand, hook app_title)
+const brand = () => (frappe.boot && frappe.boot.beeone_brand) || {};
+const brand_label = () => ["BeeOne", brand().name].filter(Boolean).join(" ");
 const COLUMNS = [
 	{ key: "docs", title: () => __("Documents"), icon: "file" },
 	{ key: "refs", title: () => __("Catalogs"), icon: "book" },
@@ -56,9 +60,11 @@ export function build() {
 	const app = document.createElement("div");
 	app.id = "bo-app";
 	app.innerHTML =
-		`<nav id="bo-rail" aria-label="${esc(__("Sections"))}"><div class="bo-rail-top"><span class="bo-logo" aria-hidden="true">${icon("hexagon")}</span></div>` +
+		`<nav id="bo-rail" aria-label="${esc(__("Sections"))}"><div class="bo-rail-top"><span class="bo-logo bo-logo-full" role="img" aria-label="${esc(brand_label())}">${brand().logo || ""}</span>` +
+		`<span class="bo-logo bo-logo-mark" role="img" aria-label="${esc(brand_label())}">${brand().mark || ""}</span></div>` +
 		`<div class="bo-rail-list" id="bo-rail-list"></div>` +
-		`<div class="bo-rail-bottom"><button type="button" class="bo-rail-btn" data-act="user" title="${esc(user)}" aria-label="${esc(user)}">` +
+		`<div class="bo-rail-bottom"><button type="button" class="bo-rail-btn bo-rail-fold" data-act="fold" aria-pressed="false" title="${esc(__("Collapse the sections bar"))}" aria-label="${esc(__("Collapse the sections bar"))}">${icon("panel")}<span class="bo-rail-label">${esc(__("Collapse"))}</span></button>` +
+		`<button type="button" class="bo-rail-btn" data-act="user" title="${esc(user)}" aria-label="${esc(user)}">` +
 		`<span class="bo-avatar">${esc(initials(user))}</span></button></div></nav>` +
 		// no top bar: search is Ctrl K, the theme and notifications are in the user menu
 		`<main id="bo-desk"><div id="bo-desk-bg"></div><div id="bo-wins"></div></main>` +
@@ -69,12 +75,29 @@ export function build() {
 		`<div id="bo-panel" role="dialog" aria-modal="false" aria-labelledby="bo-fp-title" hidden></div><div id="bo-live" class="bo-sr" aria-live="polite"></div>`;
 	document.body.appendChild(app);
 	render_rail();
+	set_fold(localStorage.getItem(FOLD_KEY) === "1");
 	app.addEventListener("click", on_click);
 	document.getElementById("bo-rail-list").addEventListener("keydown", rail_keys);
 	document.addEventListener("mousedown", (e) => {
 		const panel = document.getElementById("bo-panel");
 		if (!panel.hidden && !e.target.closest("#bo-panel, #bo-rail, .bo-task-menu")) close_panel();
 	});
+}
+
+// collapsed rail: the compact mark and the icons only
+function set_fold(on) {
+	const app = document.getElementById("bo-app");
+	app.classList.toggle("bo-rail-collapsed", on);
+	const btn = app.querySelector('[data-act="fold"]');
+	const text = on ? __("Expand the sections bar") : __("Collapse the sections bar");
+	btn.setAttribute("aria-pressed", on ? "true" : "false");
+	btn.title = text;
+	btn.setAttribute("aria-label", text);
+	try {
+		localStorage.setItem(FOLD_KEY, on ? "1" : "0");
+	} catch (e) {
+		// storage is off: the state lasts until the reload
+	}
 }
 
 function initials(name) {
@@ -110,6 +133,7 @@ function on_click(e) {
 	else if (what === "bell") frappe.set_route("List", "Notification Log");
 	else if (what === "desktop") show_desktop();
 	else if (what === "sections") toggle_panel(null);
+	else if (what === "fold") set_fold(!document.getElementById("bo-app").classList.contains("bo-rail-collapsed"));
 	else if (what === "user") user_menu(act);
 }
 

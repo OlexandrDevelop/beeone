@@ -264,3 +264,23 @@ html[data-theme="dark"] body.bo-shell[data-bo-accent="teal"] {
 	--bo-row-selected-border: rgb(46 196 169 / 0.4);
 	--bo-focus-ring: 0 0 0 3px rgb(46 196 169 / 0.35);
 }
+
+/*
+ * Brand icons ("Architectural bracket"): the outline is currentColor, one key element is --icon-primary.
+ * --bg-sidebar is the real background of the rail (the rail is dark in both themes): the icon "settings"
+ * paints its sliders with it. On the dark rail the lighter blue is used in both themes.
+ */
+:root {
+	--icon-primary: #2563eb;
+	--bg-sidebar: #1f2533;
+}
+
+[data-theme="dark"],
+.dark {
+	--icon-primary: #3b82f6;
+	--bg-sidebar: #07090d;
+}
+
+#bo-rail {
+	--icon-primary: #3b82f6;
+}

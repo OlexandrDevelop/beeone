@@ -6,6 +6,19 @@ frappe.provide("beeone.ui");
 	const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 
 	// ---------------------------------------------------------------- icons (one inline sprite)
+	// brand icons of the sections ("Architectural bracket"): square caps, miter joins, one key element in --icon-primary
+	const BRAND_ICONS = {
+		dashboard: '<rect x="3.5" y="3.5" width="7" height="7" stroke="var(--icon-primary, #2563eb)"/><rect x="13.5" y="3.5" width="7" height="4.5"/><rect x="13.5" y="11" width="7" height="9.5"/><rect x="3.5" y="13.5" width="7" height="7"/>',
+		sales: '<path d="M4.5 8h15l1 12.5h-17L4.5 8Z"/><path d="M8.5 8V5.5h7V8" stroke="var(--icon-primary, #2563eb)"/><path d="M9 12.5h6" stroke="var(--icon-primary, #2563eb)"/>',
+		supply_chain: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z"/><path d="M3.5 7.5 12 12l8.5-4.5"/><path d="M12 12v9" stroke="var(--icon-primary, #2563eb)"/><path d="M7.75 5.25 16.25 9.75" stroke="var(--icon-primary, #2563eb)"/>',
+		operations: '<path d="M4 20h16"/><path d="M5.5 20V9.5l5 3.5V9.5l5 3.5V5.5h3V20"/><path d="M15.5 5.5h3V9h-3Z" stroke="var(--icon-primary, #2563eb)"/><path d="M8.5 16h2.5" stroke="var(--icon-primary, #2563eb)"/>',
+		finance_treasury: '<path d="M19.5 8V4.5h-15v15h15V16"/><path d="M4.5 8h15"/><path d="M15.5 11.5h5v4h-5v-4Z" stroke="var(--icon-primary, #2563eb)"/>',
+		hr_payroll: '<rect x="6.5" y="4.5" width="6" height="6"/><path d="M3.5 19.5v-3.5l2-2h8l2 2v3.5"/><path d="M16 5.5h3.5v4.5H16" stroke="var(--icon-primary, #2563eb)"/><path d="M17.5 14h2l1.5 1.5v4" stroke="var(--icon-primary, #2563eb)"/>',
+		accounting_tax: '<path d="M5 3.5h9.5L19 8v12.5H5V3.5Z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 11.5h7"/><path d="M8.5 15.5h4.5"/><path d="M8.5 7.5h3" stroke="var(--icon-primary, #2563eb)"/><path d="M15 15.5h1.5" stroke="var(--icon-primary, #2563eb)"/>',
+		analytics: '<path d="M3.5 19.5h17"/><path d="M6 19.5v-5h3v5"/><path d="M11 19.5v-9h3v9"/><path d="M16 19.5V5h3v14.5" stroke="var(--icon-primary, #2563eb)"/>',
+		settings: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><rect x="7" y="5" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="var(--icon-primary, #2563eb)"/><rect x="14" y="10" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="currentColor"/><rect x="8.5" y="15" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="var(--icon-primary, #2563eb)"/>',
+	};
+
 	const ICONS = {
 		home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
 		cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.6l2.4 12.2a1.5 1.5 0 0 0 1.5 1.2h8.9a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/>',
@@ -68,7 +81,6 @@ frappe.provide("beeone.ui");
 		gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
 		link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
 		lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-		hexagon: '<path d="M12 2.5 20.5 7.4v9.2L12 21.5l-8.5-4.9V7.4Z"/><path d="M12 8.5v7M8.5 10.5 12 12.5l3.5-2"/>',
 		menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
 		layout: '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11"/>',
 		minus: '<path d="M5 12h14"/>',
@@ -80,9 +92,15 @@ frappe.provide("beeone.ui");
 
 	beeone.ui.inject_icons = function () {
 		if (document.getElementById("bo-icons")) return;
+		const brand = (window.frappe && frappe.boot && frappe.boot.beeone_brand) || {};
 		let s = '<svg id="bo-icons" xmlns="http://www.w3.org/2000/svg" style="display:none">';
 		Object.keys(ICONS).forEach((k) => {
 			s += `<symbol id="bo-i-${k}" viewBox="0 0 24 24">${ICONS[k]}</symbol>`;
+		});
+		// section icons: the ones an app adds with the hook beeone_icons, then the brand set (it wins on a clash)
+		const sharp = 'fill="none" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter"';
+		Object.entries(Object.assign({}, brand.icons || {}, BRAND_ICONS)).forEach(([k, v]) => {
+			s += `<symbol id="bo-i-${k}" viewBox="0 0 24 24" ${sharp}>${v}</symbol>`;
 		});
 		document.body.insertAdjacentHTML("afterbegin", s + "</svg>");
 	};

@@ -462,9 +462,12 @@ frappe.Application = class Application {
 		)}`;
 	}
 	set_favicon() {
-		var link = $('link[type="image/x-icon"]').remove().attr("href");
-		$('<link rel="shortcut icon" href="' + link + '" type="image/x-icon">').appendTo("head");
-		$('<link rel="icon" href="' + link + '" type="image/x-icon">').appendTo("head");
+		const old = $('link[rel="icon"], link[rel="shortcut icon"]');
+		const link = old.attr("href");
+		const type = old.attr("type") || "image/svg+xml";
+		old.remove();
+		$('<link rel="shortcut icon" href="' + link + '" type="' + type + '">').appendTo("head");
+		$('<link rel="icon" href="' + link + '" type="' + type + '">').appendTo("head");
 	}
 	trigger_primary_action() {
 		// to trigger change event on active input before triggering primary action
