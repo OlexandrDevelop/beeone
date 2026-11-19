@@ -85,21 +85,121 @@ export const list_view_virtualization = {
 		return Math.max(this.data.length, Number.isFinite(this.total_count) ? this.total_count : this.data.length);
 	},
 
+	// Random-access page cache (10 000+ rows): rows are fetched by page number for the range that is on
+	// screen — the scroll position maps straight to row indexes, so a jump to the middle loads only the pages
+	// there, not everything before it. Pages load in parallel (at most VIRTUAL_PARALLEL), nearest to the
+	// viewport first; a page that arrives re-renders only the row window (never a full list refresh). Rows not
+	// loaded yet are drawn as placeholders of the same height, so the scrollbar and the layout never jump.
 	maybe_load_more_virtual_rows() {
-		if (this.virtual_load_inflight || this.data.length >= this.get_virtual_total_rows()) return;
-		const $container = this.$result.parent(".result-container");
-		if (!$container.length) return;
-		const viewport = $container.innerHeight() || window.innerHeight;
-		const loaded_height = this.get_virtual_spacer_height(0, this.data.length);
-		if (($container.scrollTop() || 0) + viewport * 2 < loaded_height) return;
+		const state = this.virtualization_state;
+		if (state.start < 0 || state.end < 0) return;
+		const size = this.get_virtual_fetch_page_size();
+		const total = this.get_virtual_total_rows();
+		if (!total) return;
+		// the window plus one viewport ahead/behind, so a normal wheel scroll finds its rows ready
+		const span = state.end - state.start;
+		const from = Math.max(0, state.start - span);
+		const to = Math.min(total, state.end + span);
+		const centre = Math.floor((state.start + state.end) / 2 / size);
+		const wanted = [];
+		for (let page = Math.floor(from / size); page * size < to; page++) {
+			if (!this.virtual_page_loaded(page, size, total)) wanted.push(page);
+		}
+		wanted.sort((a, b) => Math.abs(a - centre) - Math.abs(b - centre));
+		this.virtual_pages().queue = wanted;
+		this.pump_virtual_pages();
+	},
 
-		this.virtual_load_inflight = true;
-		this.start = this.data.length;
-		this.page_length = this.virtual_page_size || 100;
-		this.refresh().finally(() => {
-			this.virtual_load_inflight = false;
-			this.maybe_load_more_virtual_rows();
-		});
+	get_virtual_fetch_page_size() {
+		return this.virtual_fetch_page_size || 200;
+	},
+
+	virtual_pages() {
+		const key = this.get_virtual_query_key();
+		if (!this._virtual_pages || this._virtual_pages.key !== key) {
+			// a new query (filters, sort): pages in flight belong to the old one and are dropped on arrival
+			this._virtual_pages = { key, loading: new Set(), queue: [] };
+		}
+		return this._virtual_pages;
+	},
+
+	virtual_page_loaded(page, size, total) {
+		const first = page * size;
+		const last = Math.min(first + size, total) - 1;
+		return first > last || (this.data[first] !== undefined && this.data[last] !== undefined);
+	},
+
+	pump_virtual_pages() {
+		const pages = this.virtual_pages();
+		const VIRTUAL_PARALLEL = 4;
+		while (pages.loading.size < VIRTUAL_PARALLEL && pages.queue.length) {
+			const page = pages.queue.shift();
+			if (pages.loading.has(page)) continue;
+			this.fetch_virtual_page(page, pages);
+		}
+	},
+
+	fetch_virtual_page(page, pages) {
+		const size = this.get_virtual_fetch_page_size();
+		const args = this.get_args();
+		args.start = page * size;
+		args.page_length = size;
+		pages.loading.add(page);
+		// frappe.call gives a jQuery promise (no .finally): wrap it into a native one
+		Promise.resolve(frappe.call({ method: this.method, args }))
+			.then((r) => {
+				if (this._virtual_pages !== pages) return; // the query changed meanwhile
+				let data = r.message || {};
+				Object.assign(frappe.boot.user_info, data.user_info);
+				delete data.user_info;
+				data = Array.isArray(data) ? data : frappe.utils.dict(data.keys, data.values);
+				data.forEach((row, i) => {
+					this.data[args.start + i] = row;
+				});
+				const state = this.virtualization_state;
+				if (args.start < state.end && args.start + size > state.start) {
+					this.render_virtual_rows(true);
+				}
+			})
+			.finally(() => {
+				pages.loading.delete(page);
+				if (this._virtual_pages === pages) this.maybe_load_more_virtual_rows();
+			});
+	},
+
+	get_virtual_row_html(index) {
+		const doc = this.data[index];
+		if (!doc) return this.get_virtual_placeholder_html();
+		doc._idx = index;
+		return this.get_list_row_html(doc, { virtual: true });
+	},
+
+	/** Move the row window from [prev_start, prev_end) to [start, end) in place; false = do a full render. */
+	shift_virtual_rows(start, end, prev_start, prev_end, total_rows) {
+		const rows = this.$result.find('.list-row-container[data-virtual-row="1"]').toArray();
+		const top = this.$result.find(".list-virtual-spacer-top")[0];
+		const bottom = this.$result.find(".list-virtual-spacer-bottom")[0];
+		if (!top || !bottom || rows.length !== prev_end - prev_start) return false;
+		const drop_top = Math.max(0, start - prev_start);
+		const drop_bottom = Math.max(0, prev_end - end);
+		const kept = rows.slice(drop_top, rows.length - drop_bottom);
+		if (!kept.length) return false;
+		rows.slice(0, drop_top).forEach((el) => el.remove());
+		rows.slice(rows.length - drop_bottom).forEach((el) => el.remove());
+		let html = "";
+		for (let i = start; i < prev_start; i++) html += this.get_virtual_row_html(i);
+		if (html) kept[0].insertAdjacentHTML("beforebegin", html);
+		html = "";
+		for (let i = prev_end; i < end; i++) html += this.get_virtual_row_html(i);
+		if (html) kept[kept.length - 1].insertAdjacentHTML("afterend", html);
+		top.style.height = this.get_virtual_spacer_height(0, start) + "px";
+		bottom.style.height = this.get_virtual_spacer_height(end, total_rows) + "px";
+		return true;
+	},
+
+	get_virtual_placeholder_html() {
+		const height = this.get_virtual_row_height();
+		return `<div class="list-row-container list-row-placeholder" data-virtual-row="1" style="height:${height}px"><div class="level list-row"><div class="level-left"><span class="list-row-skeleton"></span></div></div></div>`;
 	},
 
 	teardown_virtualization_scroll_handler() {
@@ -315,7 +415,9 @@ export const list_view_virtualization = {
 	},
 
 	measure_virtual_row_height(start) {
-		const $rows = this.$result.find('.list-row-container[data-virtual-row="1"]');
+		const $rows = this.$result.find(
+			'.list-row-container[data-virtual-row="1"]:not(.list-row-placeholder)'
+		);
 		if (!$rows.length) {
 			return false;
 		}
@@ -392,7 +494,6 @@ export const list_view_virtualization = {
 		}
 
 		const total_rows = this.get_virtual_total_rows();
-		const loaded_rows = this.data.length;
 		if (!total_rows) {
 			$container.find(".list-virtual-spacer").remove();
 			this.$result.find('.list-row-container[data-virtual-row="1"]').remove();
@@ -420,6 +521,27 @@ export const list_view_virtualization = {
 			return;
 		}
 
+		// Step 2b (desktop, the usual wheel scroll): the new window overlaps the old one — keep the rows that
+		// stay, drop the ones that left and build only the rows that came in (a 600 px wheel step is ~13 rows,
+		// not the whole 60-row window), then resize the two spacers. No full teardown, no re-measure.
+		const prev_start = this.virtualization_state.start;
+		const prev_end = this.virtualization_state.end;
+		if (
+			!force &&
+			scroll_top_override === null &&
+			!this.uses_accumulated_row_heights() &&
+			prev_start >= 0 &&
+			start < prev_end &&
+			end > prev_start &&
+			this.shift_virtual_rows(start, end, prev_start, prev_end, total_rows)
+		) {
+			this.virtualization_state.start = start;
+			this.virtualization_state.end = end;
+			this.finalize_virtual_rows();
+			this.maybe_load_more_virtual_rows();
+			return;
+		}
+
 		this.virtualization_state.start = start;
 		this.virtualization_state.end = end;
 
@@ -430,22 +552,16 @@ export const list_view_virtualization = {
 		// Steps 4–6: spacers + rows + spacers, built as one string and
 		// inserted once — this runs on every window shift while scrolling
 		const top_spacer_height = this.get_virtual_spacer_height(0, start);
-		let window_html = "";
-		if (top_spacer_height > 0) {
-			window_html += `<div class="list-virtual-spacer" style="height:${top_spacer_height}px"></div>`;
-		}
-		const render_end = Math.min(end, loaded_rows);
+		// both spacers are always present (height 0 allowed): the incremental shift resizes them in place
+		let window_html = `<div class="list-virtual-spacer list-virtual-spacer-top" style="height:${top_spacer_height}px"></div>`;
+		const render_end = end;
 		for (let i = start; i < render_end; i++) {
-			const doc = this.data[i];
-			doc._idx = i;
-			window_html += this.get_list_row_html(doc, { virtual: true });
+			window_html += this.get_virtual_row_html(i);
 		}
 		// Include the not-yet-fetched range in the spacer as well. The scrollbar
 		// represents the complete filtered result, while rows are fetched lazily.
 		const bottom_spacer_height = this.get_virtual_spacer_height(render_end, total_rows);
-		if (bottom_spacer_height > 0) {
-			window_html += `<div class="list-virtual-spacer" style="height:${bottom_spacer_height}px"></div>`;
-		}
+		window_html += `<div class="list-virtual-spacer list-virtual-spacer-bottom" style="height:${bottom_spacer_height}px"></div>`;
 		this.$result.append(window_html);
 
 		// the teardown in render_list() clamped scrollTop to 0; the spacers

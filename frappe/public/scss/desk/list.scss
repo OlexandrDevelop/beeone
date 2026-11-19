@@ -918,3 +918,28 @@ input.list-header-checkbox {
 		max-width: 105px;
 	}
 }
+
+// virtual list: a row whose page is still loading (list_view_virtualization.js)
+.list-row-placeholder {
+	pointer-events: none;
+	.list-row {
+		height: 100%;
+		border-bottom: 1px solid var(--border-color);
+	}
+	.list-row-skeleton {
+		display: block;
+		width: 40vw;
+		max-width: 480px;
+		height: 10px;
+		margin-left: var(--padding-md);
+		border-radius: var(--border-radius-sm);
+		background: var(--gray-200);
+		animation: list-row-skeleton-pulse 1.2s ease-in-out infinite;
+	}
+}
+
+@keyframes list-row-skeleton-pulse {
+	50% {
+		opacity: 0.45;
+	}
+}

@@ -37,7 +37,8 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			this.process_document_refreshes.bind(this),
 			this.is_large_table ? 15000 : 2000
 		);
-		this.count_upper_bound = 1001;
+		// exact count: the virtual list sizes its scrollbar by it (a capped 1001 made a 20 000-row list end at row 1000)
+		this.count_upper_bound = this.is_large_table ? 1001 : 0;
 		this._element_factory = new ElementFactory(this.doctype);
 		this.column_max_widths = {};
 		this.max_number_of_avatars = 3;
