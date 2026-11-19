@@ -55,8 +55,7 @@ frappe.provide("beeone.form");
 		const meta = frappe.get_meta(frm.doctype);
 		if (!meta || meta.istable || meta.issingle) return false;
 		if (!ui() || !ui().icon || !ui().menu) return false;
-		if (frm.page.current_view_name === "print" || frm.hidden) return false;
-		return !(frm.layout && frm.layout.tabs && frm.layout.tabs.length);
+		return !(frm.page.current_view_name === "print" || frm.hidden);
 	};
 
 	F.perm = (frm) => (frm.perm && frm.perm[0]) || {};
@@ -69,12 +68,48 @@ frappe.provide("beeone.form");
 
 	// A spec of a DocType without a hand-written one: catalogs follow their Section Breaks, documents get the
 	// head fields, then the rest up to 9 fields in "Main", everything else in "Additional".
+	// A DocType with Tab Breaks: every tab becomes a group of the template (its label; the fields before the first tab
+	// go to "Main"), the tables of all tabs go to the table card, so a tabbed form gets the same layout as the others.
+	F.tab_groups = function (meta) {
+		const groups = [{ key: "main", label: "Main", fields: [] }];
+		let cur = groups[0];
+		meta.fields.forEach((df) => {
+			if (df.fieldtype === "Tab Break") {
+				// a tab named «Main» continues the main group
+				if (cur.key === "main" && /^(main|основне|головне)$/i.test(String(df.label || "").trim())) return;
+				if (cur.fields.length || groups.length > 1 || cur.key !== "main") {
+					// a tab named «Additional» is the template's «more» group (unnamed fields join it, no second one)
+					const more = !df.label || /^(additional|more|extra|додатков)/i.test(String(df.label).trim());
+					cur = { key: more ? "more" : "t" + groups.length, label: df.label || "Additional fields", fields: [] };
+					groups.push(cur);
+				} else if (df.label) {
+					cur.label = df.label;
+				}
+			} else if (!SKIP.includes(df.fieldtype) && df.fieldtype !== "Table" && df.fieldname !== "comment") {
+				cur.fields.push(df.fieldname);
+			}
+		});
+		return groups.filter((g) => g.fields.length);
+	};
+
 	F.auto_spec = function (doctype) {
 		const meta = frappe.get_meta(doctype);
 		const fields = meta.fields.filter((df) => !SKIP.includes(df.fieldtype));
 		const tables = fields.filter((df) => df.fieldtype === "Table").map((df) => ({ field: df.fieldname, label: df.label }));
 		const plain = fields.filter((df) => df.fieldtype !== "Table");
 		const has = (n) => plain.some((df) => df.fieldname === n);
+		if (meta.fields.some((df) => df.fieldtype === "Tab Break")) {
+			const totals = meta.is_submittable
+				? F.AUTO.totals.filter(has).map((n, i) => [n, plain.find((df) => df.fieldname === n).label, i === 0]).filter((t) => t[0] !== "amount")
+				: [];
+			return {
+				kind: meta.is_submittable ? "document" : "catalog",
+				head: meta.is_submittable ? F.AUTO.head.filter(has) : plain.slice(0, 2).map((df) => df.fieldname),
+				groups: F.tab_groups(meta),
+				tables,
+				totals,
+			};
+		}
 		if (!meta.is_submittable) {
 			const groups = [{ key: "main", label: "Main", fields: [] }];
 			let cur = groups[0];
@@ -212,6 +247,8 @@ frappe.provide("beeone.form");
 		$page.prepend($body);
 		// everything the spec places has moved; the Frappe sections are empty shells now
 		sections.forEach((s) => s.wrapper && $(s.wrapper).addClass("bf-gone"));
+		// the Frappe tab bar of a tabbed DocType: its tabs are the groups of the template now
+		$(frm.layout.wrapper).find(".form-tabs-list").addClass("bf-gone");
 		if (spec.comment && frm.fields_dict[spec.comment]) $(frm.fields_dict[spec.comment].$wrapper).addClass("bf-gone");
 
 		$main.on("click", ".bf-tab", function () {
