@@ -493,10 +493,12 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			const get_df = frappe.meta.get_docfield.bind(null, this.doctype);
 
 			// 1st column: title_field or name
-			if (this.meta.title_field) {
+			// a title_field that is not a field of the DocType (e.g. "name") falls back to the ID column
+			const title_df = this.meta.title_field && get_df(this.meta.title_field);
+			if (title_df) {
 				this.columns.push({
 					type: "Subject",
-					df: get_df(this.meta.title_field),
+					df: title_df,
 				});
 			} else {
 				this.columns.push({
