@@ -227,10 +227,11 @@ html[data-theme="dark"] body.bo-shell {
 
 body.bo-shell {
 	--bo-desk: #eef0f4;
-	--bo-rail: #f4f6fa;
-	--bo-rail-text: #3b4559;
-	--bo-rail-active: #0f172a;
-	--bo-rail-hover: rgb(15 23 42 / 0.08);
+	/* a dark rail in the light theme too: a pale one merged with the white windows */
+	--bo-rail: #1f2533;
+	--bo-rail-text: #c3cad8;
+	--bo-rail-active: #fff;
+	--bo-rail-hover: rgb(255 255 255 / 0.1);
 	--bo-shadow-win: 0 18px 40px -12px rgb(16 24 40 / 0.28);
 	--bo-shadow-win-idle: 0 4px 12px -4px rgb(16 24 40 / 0.14);
 	--bo-r-field: 6px;

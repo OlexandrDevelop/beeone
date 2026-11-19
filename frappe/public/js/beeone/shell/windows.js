@@ -21,6 +21,7 @@ export const wins = {
 	active: null,
 	cascade: 0,
 	desktop_hidden: null, // keys hidden by "show desktop"
+	maximized: false, // the desk works maximized: one window maximized = all of them, a new one opens maximized too
 	syncing: false,
 };
 
@@ -268,8 +269,8 @@ export function create(route, opts = {}) {
 		key,
 		route,
 		kind,
-		state: opts.state || "normal",
-		prev: opts.prev || null,
+		state: opts.state === "minimized" ? "minimized" : wins.maximized ? "maximized" : opts.state || "normal",
+		prev: opts.state === "minimized" && wins.maximized ? "maximized" : opts.prev || null,
 		x: opts.x != null ? opts.x : 24 + step,
 		y: opts.y != null ? opts.y : 20 + step,
 		w: opts.w || Math.min(size[0], dw),
@@ -674,7 +675,17 @@ export function toggle_max(key) {
 	const win = wins.map.get(key);
 	if (!win || compact()) return;
 	const from = geometry(win);
-	win.state = win.state === "maximized" ? "normal" : "maximized";
+	// a desk mode, not a window state: the windows behind change at once, without animation; a minimized one comes back
+	// in the mode of the desk
+	wins.maximized = win.state !== "maximized";
+	wins.map.forEach((w) => {
+		if (w.state === "minimized") w.prev = wins.maximized ? "maximized" : null;
+		else if (w !== win) {
+			w.state = wins.maximized ? "maximized" : "normal";
+			place(w);
+		}
+	});
+	win.state = wins.maximized ? "maximized" : "normal";
 	const to = geometry(win);
 	place(win);
 	paint_state();
@@ -941,6 +952,17 @@ export function restore(layout, readable) {
 		create(w.route, { ...w, parked: true });
 	});
 	wins.z = [...order.filter((k) => wins.map.has(k)), ...wins.z.filter((k) => !order.includes(k))];
+	// the desk mode is not stored: one maximized window in the layout means the desk was maximized
+	wins.maximized = items.some((w) => w.state === "maximized" || w.prev === "maximized");
+	if (wins.maximized) {
+		wins.map.forEach((w) => {
+			if (w.state === "minimized") w.prev = "maximized";
+			else if (w.state !== "maximized") {
+				w.state = "maximized";
+				place(w);
+			}
+		});
+	}
 	paint_state();
 	return layout.active && wins.map.has(layout.active) ? wins.map.get(layout.active) : null;
 }

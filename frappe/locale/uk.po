@@ -36159,3 +36159,5323 @@ msgstr "Вибір для поля «{0}»: клацніть елемент аб
 #: frappe/public/js/beeone/shell/windows.js
 msgid "Hierarchy"
 msgstr "Ієрархія"
+
+#: frappe/public/js/beeone
+msgid "Save changes?"
+msgstr "Зберегти зміни?"
+
+#: frappe/public/js/beeone
+msgid "Don't save"
+msgstr "Не зберігати"
+
+#: frappe/public/js/beeone
+msgid "\"{0}\" has changes. If you close it without saving, the changes will be lost."
+msgstr "«{0}» має незбережені зміни. Якщо закрити без збереження, зміни буде втрачено."
+
+#: frappe/public/js/beeone
+msgid "No {0} created"
+msgstr "{0}: ще немає записів"
+
+#: frappe/public/js/beeone
+msgid "Create your first {0} to get started."
+msgstr "Створіть перший запис «{0}», щоб почати."
+
+msgid " Search..."
+msgstr "Пошук..."
+
+msgid "\"{0}\" does not match any field. Map it in the Preview step, otherwise it will be ignored."
+msgstr "«{0}» не відповідає жодному полю. Зіставте його на кроці перегляду, інакше його буде проігноровано."
+
+msgid "\"{0}\" is not a valid date. Use {1}"
+msgstr "«{0}» не є коректною датою. Використовуйте {1}"
+
+msgid "\"{0}\" is not a valid datetime. Use {1}"
+msgstr "«{0}» не є коректними датою і часом. Використовуйте {1}"
+
+msgid "\"{0}\" is not a valid number, or could mean two numbers. Write it like {1}"
+msgstr "«{0}» не є коректним числом або може означати два числа. Запишіть його так: {1}"
+
+msgid "\"{0}\" is not a valid {1} — {2}"
+msgstr "«{0}» не є коректним значенням {1} — {2}"
+
+msgid "\"{0}\" is not valid — {1}"
+msgstr "«{0}» некоректне — {1}"
+
+msgid "\"{0}\" is not valid. Use duration format: d h m s"
+msgstr "«{0}» некоректне. Використовуйте формат тривалості: d h m s"
+
+msgid "+{0} more"
+msgstr "+ще {0}"
+
+msgid "-"
+msgstr "-"
+
+msgid ".csv, .xlsx"
+msgstr ".csv, .xlsx"
+
+msgid ".csv, .xlsx up to {0} MB"
+msgstr ".csv, .xlsx до {0} МБ"
+
+msgid ".print-format p { margin: 0; }"
+msgstr ".print-format p { margin: 0; }"
+
+msgid "0 means this row references a base item: non-empty fields override it, empty fields mean no opinion. 1 means a full item the layer added, rendered as it stands."
+msgstr "0 означає, що рядок посилається на базовий елемент: непорожні поля перевизначають його, порожні поля означають відсутність змін. 1 означає повний елемент, доданий шаром, який відображається як є."
+
+msgid "1 node"
+msgstr "1 вузол"
+
+msgid "1 of N"
+msgstr "1 з N"
+
+msgid "1 row"
+msgstr "1 рядок"
+
+msgid "1 warning found."
+msgstr "Знайдено 1 попередження."
+
+msgid "<b>{0}</b> has been customized on this site since the upgrade. Restoring replaces that customization with the pre-upgrade layout."
+msgstr "<b>{0}</b> налаштовано на цьому сайті після оновлення. Відновлення замінить це налаштування макетом до оновлення."
+
+msgid "<b>{0}</b> is shipped by its app. Saving this layout keeps your arrangement, and the app's later changes to this page's layout will stop showing up here. Its roles, icon and visibility keep following the app either way, and <b>Reset to Standard</b> undoes this."
+msgstr "<b>{0}</b> постачається разом із застосунком. Запис цього макета збереже ваше розташування, а подальші зміни макета цієї сторінки в застосунку тут більше не з'являтимуться. Ролі, піктограма та видимість у будь-якому разі залишаються за застосунком, а <b>Скинути до стандартного</b> скасовує це."
+
+msgid "<div class=\"section-head import-log-title\">Import Log</div>"
+msgstr "<div class=\"section-head import-log-title\">Журнал завантаження</div>"
+
+msgid "@jane"
+msgstr "@jane"
+
+msgid "A Single (Settings) doctype."
+msgstr "Тип документа «Один» (Налаштування)."
+
+msgid "A custom settings map already exists for {0}."
+msgstr "Власну карту налаштувань для {0} уже створено."
+
+msgid "A customization for {0} already exists for this layer."
+msgstr "Налаштування для {0} у цьому шарі вже існує."
+
+msgid "A layout saved on {0} could not be read and was skipped."
+msgstr "Макет, записаний у {0}, не вдалося прочитати, його пропущено."
+
+msgid "A layout with this name already exists"
+msgstr "Макет з такою назвою вже існує"
+
+msgid "A new area to place fields in"
+msgstr "Нова область для розміщення полів"
+
+msgid "A person you deal with, at a customer, supplier or anywhere else."
+msgstr "Особа, з якою ви працюєте, у покупця, постачальника чи деінде."
+
+msgid "A postal address of a customer, supplier, company or contact."
+msgstr "Поштова адреса покупця, постачальника, організації або контакту."
+
+msgid "A private workspace is yours alone. Only you can see it."
+msgstr "Приватний робочий простір належить лише вам. Інші його не бачать."
+
+msgid "A shared workspace needs a module other than {0}."
+msgstr "Спільному робочому простору потрібен модуль, відмінний від {0}."
+
+msgid "A sidebar needs at least one entry that leads somewhere. Put one back, or use Reset to drop this arrangement."
+msgstr "Бічна панель потребує принаймні одного пункту, що кудись веде. Поверніть один або скористайтеся скиданням, щоб відмовитися від цього розташування."
+
+msgid "A sidebar's name is part of its desk URL, so it cannot contain {0}."
+msgstr "Назва бічної панелі входить до URL робочого столу, тому вона не може містити {0}."
+
+msgid "A site's overrides on a standard (app-shipped) workspace. Site-owned and standard-only: there is no user layer, deliberately -- a private workspace is already yours to edit directly, and a public one is the site's. The merge is split on purpose. Roles, icon, visibility and sequence are a true diff, so an app's later changes to them keep flowing through. Content is a snapshot, so customizing the layout freezes it against app updates: workspace content is nested editor blocks where headings, paragraphs and spacers carry no key at all, and a delta cannot be written against unkeyed prose. Do not \"fix\" this into one or the other; `reset_workspace_customization` is the escape hatch."
+msgstr "Перевизначення сайтом стандартного (постачається із застосунком) робочого простору. Лише для сайту та лише для стандартних: користувацького шару немає навмисно — приватний робочий простір ви й так редагуєте напряму, а публічний належить сайту. Об'єднання навмисно розділене. Ролі, піктограма, видимість і послідовність зберігаються як справжня різниця, тому пізніші зміни застосунку в них продовжують діяти. Вміст — це знімок, тож налаштування макета фіксує його щодо оновлень застосунку: вміст робочого простору — це вкладені блоки редактора, де заголовки, абзаци та розділювачі взагалі не мають ключа, і різницю до тексту без ключів записати неможливо. Не «виправляйте» це в один чи інший бік; запасний вихід — `reset_workspace_customization`."
+
+msgid "A snippet named {0} already exists for {1}."
+msgstr "Фрагмент із назвою {0} для {1} уже існує."
+
+msgid "A standard Kanban Board cannot be private"
+msgstr "Стандартна дошка Канбан не може бути приватною"
+
+msgid "A standard Kanban Board cannot be renamed"
+msgstr "Стандартну дошку Канбан не можна перейменувати"
+
+msgid "A standard Kanban Board must use Kanban v2"
+msgstr "Стандартна дошка Канбан має використовувати Kanban v2"
+
+msgid "A standard list layout cannot belong to a user"
+msgstr "Стандартний макет списку не може належати користувачеві"
+
+msgid "A standard settings map already exists for {0} in {1}."
+msgstr "Стандартна карта налаштувань для {0} у {1} уже існує."
+
+msgid "A standard sidebar needs a module or an app to be written to."
+msgstr "Для запису стандартної бічної панелі потрібен модуль або застосунок."
+
+msgid "A standard workspace belongs to the module that ships it."
+msgstr "Стандартний робочий простір належить модулю, який його постачає."
+
+msgid "A standard workspace is shipped by the app; changes are saved as customizations."
+msgstr "Стандартний робочий простір постачається із застосунком; зміни записуються як налаштування."
+
+msgid "A standard workspace stays in the module that ships it."
+msgstr "Стандартний робочий простір залишається в модулі, який його постачає."
+
+msgid "A user preview on a link (rest the pointer on it)"
+msgstr "Попередній перегляд користувача на посиланні (наведіть на нього вказівник)"
+
+msgid "A value from a linked document"
+msgstr "Значення зі зв'язаного документа"
+
+msgid "Access"
+msgstr "Доступ"
+
+msgid "Access added."
+msgstr "Доступ додано."
+
+msgid "Action failed."
+msgstr "Дія не вдалася."
+
+msgid "Add Filter"
+msgstr "Додати відбір"
+
+msgid "Add More"
+msgstr "Додати ще"
+
+msgid "Add Page"
+msgstr "Додати сторінку"
+
+msgid "Add Permission"
+msgstr "Додати дозвіл"
+
+msgid "Add Permission for {0}"
+msgstr "Додати дозвіл для {0}"
+
+msgid "Add Report"
+msgstr "Додати звіт"
+
+msgid "Add Section"
+msgstr "Додати розділ"
+
+msgid "Add Series"
+msgstr "Додати серію"
+
+msgid "Add To Folder"
+msgstr "Додати до папки"
+
+msgid "Add User"
+msgstr "Додати користувача"
+
+msgid "Add User Permission"
+msgstr "Додати дозвіл користувача"
+
+msgid "Add User to {0}"
+msgstr "Додати користувача до {0}"
+
+msgid "Add Workspace"
+msgstr "Додати робочий простір"
+
+msgid "Add a link to your own private workspaces in the user menu."
+msgstr "Додати у меню користувача посилання на ваші приватні робочі простори."
+
+msgid "Add a section"
+msgstr "Додати розділ"
+
+msgid "Add a section to the canvas to see it here."
+msgstr "Додайте розділ на полотно, щоб побачити його тут."
+
+msgid "Add card"
+msgstr "Додати картку"
+
+msgid "Add column..."
+msgstr "Додати колонку..."
+
+msgid "Add field..."
+msgstr "Додати поле..."
+
+msgid "Add new attachments"
+msgstr "Додати нові вкладення"
+
+msgid "Add role"
+msgstr "Додати роль"
+
+msgid "Add to the Sidebar"
+msgstr "Додати на бічну панель"
+
+msgid "Add to the dock"
+msgstr "Додати на док"
+
+msgctxt "Primary action in tree view"
+msgid "Add {0}"
+msgstr "Додати {0}"
+
+msgid "Add {0} Access to {1}"
+msgstr "Додати доступ {0} до {1}"
+
+msgid "Add {0} to a module"
+msgstr "Додати {0} до модуля"
+
+msgid "Added Roles"
+msgstr "Додані ролі"
+
+msgid "Added Widgets"
+msgstr "Додані віджети"
+
+msgid "Added to global search"
+msgstr "Додано до глобального пошуку"
+
+msgid "Added {0} to {1}"
+msgstr "{0} додано до {1}"
+
+msgid "Alert dismissed"
+msgstr "Сповіщення закрито"
+
+msgid "Align center"
+msgstr "По центру"
+
+msgid "Align left"
+msgstr "По лівому краю"
+
+msgid "Align right"
+msgstr "По правому краю"
+
+msgid "All ({0})"
+msgstr "Усі ({0})"
+
+msgid "All DocTypes"
+msgstr "Усі типи документів"
+
+msgid "All apps"
+msgstr "Усі застосунки"
+
+msgid "All available columns added."
+msgstr "Усі доступні колонки додано."
+
+msgid "All set! Opening your workspace"
+msgstr "Усе готово! Відкриваємо ваш робочий простір"
+
+msgid "Allow bulk actions"
+msgstr "Дозволити групові дії"
+
+msgid "Allow notifications"
+msgstr "Дозволити сповіщення"
+
+msgid "Allow switching between list, kanban, report, and other views from the toolbar"
+msgstr "Дозволити перемикання між списком, канбаном, звітом та іншими поданнями на панелі інструментів"
+
+msgid "Allowed: {0}"
+msgstr "Дозволено: {0}"
+
+msgid "Allows the user to amend a cancelled document into a new copy."
+msgstr "Дозволяє користувачу виправити скасований документ, створивши нову копію."
+
+msgid "Allows the user to cancel submitted documents."
+msgstr "Дозволяє користувачу скасовувати проведення проведених документів."
+
+msgid "Allows the user to export document data from the system."
+msgstr "Дозволяє користувачу вивантажувати дані документів із системи."
+
+msgid "Allows the user to print or download the document as a PDF."
+msgstr "Дозволяє користувачу друкувати документ або завантажувати його як PDF."
+
+msgid "Allows the user to search and select records in other forms. This does not allow the user to view the record itself."
+msgstr "Дозволяє користувачу шукати й вибирати записи в інших формах. Переглядати сам запис це не дозволяє."
+
+msgid "Allows the user to send emails linked to the document."
+msgstr "Дозволяє користувачу надсилати електронні листи, пов'язані з документом."
+
+msgid "Allows the user to share document access with other users who may not have access to the document themselves."
+msgstr "Дозволяє користувачу ділитися доступом до документа з іншими користувачами, які самі можуть не мати до нього доступу."
+
+msgid "Allows the user to submit documents."
+msgstr "Дозволяє користувачу проводити документи."
+
+msgid "Allows the user to use import documents into the system."
+msgstr "Дозволяє користувачу завантажувати документи в систему."
+
+msgid "Allows the user to view the value of a masked field in the document."
+msgstr "Дозволяє користувачу бачити значення замаскованого поля в документі."
+
+msgid "Almost done"
+msgstr "Майже готово"
+
+msgid "Already imported row {0}"
+msgstr "Рядок {0} уже завантажено"
+
+msgid "An edit to a shipped row in {0} cannot be carried by a customization."
+msgstr "Зміну поставленого рядка в {0} не можна передати налаштуванням."
+
+msgid "An error occurred while updating your session defaults."
+msgstr "Під час оновлення параметрів вашого сеансу сталася помилка."
+
+msgid "Animate the first bar above"
+msgstr "Анімувати першу смугу вище"
+
+msgid "Another {0} in this workspace is already labelled {1}. Labels are used to tell widgets apart when the workspace is saved, so the two would overwrite each other. Please pick a different label."
+msgstr "Інший елемент {0} у цьому робочому просторі вже має мітку {1}. Мітки розрізняють віджети під час запису робочого простору, тому ці два перезапишуть один одного. Виберіть іншу мітку."
+
+msgid "App {0} is not installed, so a standard dock cannot be written to it."
+msgstr "Застосунок {0} не встановлено, тому стандартний док не можна в нього записати."
+
+msgid "App {0} is not installed, so a standard sidebar cannot be written to it."
+msgstr "Застосунок {0} не встановлено, тому стандартну бічну панель не можна в нього записати."
+
+msgid "App-shipped roles whose access is revoked on this site."
+msgstr "Ролі, що постачаються із застосунками, доступ яких на цьому сайті відкликано."
+
+msgid "Appearance"
+msgstr "Вигляд"
+
+msgid "Applied"
+msgstr "Застосовано"
+
+msgid "Applies to DocType"
+msgstr "Застосовується до типу документа"
+
+msgid "Applying…"
+msgstr "Застосування…"
+
+msgid "Apps shows the hook-driven apps screen. Desktop Icons shows the arrangeable desktop icon grid instead."
+msgstr "«Застосунки» показує екран застосунків, кероване хуками. «Піктограми робочого столу» показує сітку піктограм робочого столу, яку можна впорядковувати."
+
+msgid "Archive of the previous navigation. Nothing reads it at runtime; it is kept as the migration's source so the conversion to module sidebars can be run again."
+msgstr "Архів попередньої навігації. Під час роботи його ніхто не читає; він зберігається як джерело міграції, щоб перетворення на бічні панелі модулів можна було виконати знову."
+
+msgid "Arrange"
+msgstr "Впорядкувати"
+
+msgid "Arranging"
+msgstr "Впорядкування"
+
+msgid "Ascending"
+msgstr "За зростанням"
+
+msgid "Async items (loading state)"
+msgstr "Асинхронні елементи (стан завантаження)"
+
+msgid "Attach Image field for card thumbnail."
+msgstr "Поле «Прикріпити зображення» для мініатюри картки."
+
+msgid "Attach Image field shown as a thumbnail before the card title."
+msgstr "Поле «Прикріпити зображення», що показується мініатюрою перед заголовком картки."
+
+msgid "Attach an import file to validate rows and mappings."
+msgstr "Прикріпіть файл завантаження, щоб перевірити рядки та зіставлення."
+
+msgid "Attach document print"
+msgstr "Прикріпити друковану форму документа"
+
+msgid "Attach files"
+msgstr "Прикріпити файли"
+
+msgid "Auto-generated thumbnail of this format. Use the 'Generate Preview' button to (re)generate."
+msgstr "Автоматично створена мініатюра цього формату. Скористайтеся кнопкою «Створити перегляд», щоб (пере)створити її."
+
+msgid "Autoname: {0}"
+msgstr "Автоназва: {0}"
+
+msgid "Autosave failed"
+msgstr "Автозбереження не вдалося"
+
+msgid "Available to all users"
+msgstr "Доступно всім користувачам"
+
+msgctxt "Go to previous slide"
+msgid "Back"
+msgstr "Назад"
+
+msgid "Back to the builder"
+msgstr "Назад до конструктора"
+
+msgid "Background"
+msgstr "Тло"
+
+msgid "Background Job Activity"
+msgstr "Активність фонових завдань"
+
+msgid "Background Task"
+msgstr "Фонове завдання"
+
+msgid "Background color"
+msgstr "Колір тла"
+
+msgid "Balance"
+msgstr "Залишок"
+
+msgid "Barcode or QR code from a field or static value"
+msgstr "Штрихкод або QR-код із поля чи фіксованого значення"
+
+msgid "Barcode that is not a QR code"
+msgstr "Штрихкод, що не є QR-кодом"
+
+msgid "Barcode value must be text under 2000 characters"
+msgstr "Значення штрихкоду має бути текстом до 2000 символів"
+
+msgid "Based on"
+msgstr "На підставі"
+
+msgid "Basic (active + completed states)"
+msgstr "Базовий (активний + завершені стани)"
+
+msgid "Basic (hover, or focus with Tab)"
+msgstr "Базовий (наведення або фокус через Tab)"
+
+msgid "Basic (icon + title + description)"
+msgstr "Базовий (піктограма + заголовок + опис)"
+
+msgid "Basic (label + hint)"
+msgstr "Базовий (мітка + підказка)"
+
+msgid "Basic actions"
+msgstr "Базові дії"
+
+msgid "Blank means the site layer, which applies to everyone and is overridden by each user's own arrangement."
+msgstr "Порожнє значення означає шар сайту, який діє для всіх і перевизначається власним розташуванням кожного користувача."
+
+msgid "Blockquote"
+msgstr "Цитата"
+
+msgid "Blocks"
+msgstr "Блоки"
+
+msgid "Board Name"
+msgstr "Назва дошки"
+
+msgid "Board Settings"
+msgstr "Налаштування дошки"
+
+msgid "Board name is required"
+msgstr "Потрібна назва дошки"
+
+msgid "Board settings saved"
+msgstr "Налаштування дошки записано"
+
+msgid "Border"
+msgstr "Межа"
+
+msgid "Border color"
+msgstr "Колір межі"
+
+msgid "Borders"
+msgstr "Межі"
+
+msgid "Both"
+msgstr "Обидва"
+
+msgid "Breadcrumb"
+msgstr "Навігаційний ланцюжок"
+
+msgid "Bring every entry back onto the dock."
+msgstr "Повернути всі пункти на док."
+
+msgid "Builder is visual. HTML is hand-written."
+msgstr "Конструктор — візуальний. HTML пишеться вручну."
+
+msgid "Bullet list"
+msgstr "Маркований список"
+
+msgid "Camera access needs a secure (HTTPS) connection and a browser with camera support."
+msgstr "Доступ до камери потребує безпечного з'єднання (HTTPS) і браузера з підтримкою камери."
+
+msgid "Camera permission was denied. Allow camera access in your browser settings and try again."
+msgstr "У доступі до камери відмовлено. Дозвольте доступ до камери в налаштуваннях браузера та спробуйте знову."
+
+msgid "Can only unlink an Address or a Contact"
+msgstr "Можна відв'язати лише адресу або контакт"
+
+msgid "Can't check this condition"
+msgstr "Не вдається перевірити цю умову"
+
+msgid "Cannot edit filters for standard Web Forms"
+msgstr "Не можна редагувати відбори стандартних веб-форм"
+
+msgid "Cannot fetch image from {0}: {1}"
+msgstr "Не вдалося отримати зображення з {0}: {1}"
+
+msgid "Cannot generate PDF for more than {0} documents at a time"
+msgstr "Не можна створити PDF більш ніж для {0} документів за раз"
+
+msgid "Canvas"
+msgstr "Полотно"
+
+msgid "Card Fields"
+msgstr "Поля картки"
+
+msgid "Card and Preview Fields"
+msgstr "Поля картки та перегляду"
+
+msgid "Card title…"
+msgstr "Заголовок картки…"
+
+msgid "Cell padding"
+msgstr "Відступ у комірці"
+
+msgid "Change Language"
+msgstr "Змінити мову"
+
+msgid "Change Time Zone"
+msgstr "Змінити часовий пояс"
+
+msgid "Change print settings"
+msgstr "Змінити параметри друку"
+
+msgid "Checking import file for issues..."
+msgstr "Перевірка файлу завантаження на проблеми..."
+
+msgid "Child table rows laid out with your own template"
+msgstr "Рядки табличної частини, розташовані за вашим власним шаблоном"
+
+msgid "Choose a starting point for your print format."
+msgstr "Виберіть відправну точку для вашої друкованої форми."
+
+msgid "Choose whether forms should be displayed in compact or full width."
+msgstr "Виберіть, чи форми відображати в компактній чи повній ширині."
+
+msgid "Chromium"
+msgstr "Chromium"
+
+msgid "Chromium renderer unavailable"
+msgstr "Рендерер Chromium недоступний"
+
+msgid "Chromium unavailable: this format uses a Typst block."
+msgstr "Chromium недоступний: ця форма використовує блок Typst."
+
+msgid "Circular parent reference for {0}"
+msgstr "Циклічне посилання на батьківський елемент для {0}"
+
+msgid "Classic Format Data"
+msgstr "Дані класичного формату"
+
+msgid "Clear Customizations"
+msgstr "Очистити налаштування"
+
+msgid "Clear selection"
+msgstr "Скасувати вибір"
+
+msgid "Clear the filters to see all records."
+msgstr "Приберіть відбори, щоб побачити всі записи."
+
+msgid "Click Customize to add your first widget."
+msgstr "Натисніть «Налаштувати», щоб додати перший віджет."
+
+msgid "Click below to login."
+msgstr "Натисніть нижче, щоб увійти."
+
+msgid "Click below to reset your password."
+msgstr "Натисніть нижче, щоб скинути пароль."
+
+msgid "Click on the {0} menu to edit"
+msgstr "Натисніть на меню {0}, щоб редагувати"
+
+msgid "Click to navigate"
+msgstr "Натисніть, щоб перейти"
+
+msgid "Code block"
+msgstr "Блок коду"
+
+msgid "Collapse all"
+msgstr "Згорнути все"
+
+msgid "Collapse sidebar"
+msgstr "Згорнути бічну панель"
+
+msgid "Colon after labels"
+msgstr "Двокрапка після міток"
+
+msgid "Colour"
+msgstr "Колір"
+
+msgid "Colours that are not hex codes: {0}"
+msgstr "Кольори, що не є hex-кодами: {0}"
+
+msgid "Column Field"
+msgstr "Поле колонки"
+
+msgid "Column name is required"
+msgstr "Потрібна назва колонки"
+
+msgid "Column settings"
+msgstr "Налаштування колонки"
+
+msgid "Column warnings"
+msgstr "Попередження колонок"
+
+msgid "Columns matched"
+msgstr "Колонки зіставлено"
+
+msgid "Compact (narrow layouts)"
+msgstr "Компактний (вузькі макети)"
+
+msgid "Complete Onboarding"
+msgstr "Завершити введення в роботу"
+
+msgid "Complete registration"
+msgstr "Завершити реєстрацію"
+
+msgid "Complete the earlier steps before continuing."
+msgstr "Завершіть попередні кроки, перш ніж продовжити."
+
+msgid "Component Explorer"
+msgstr "Оглядач компонентів"
+
+msgid "Condition based field"
+msgstr "Поле за умовою"
+
+msgid "Configure conditional naming rules for {0}. Rules are applied in priority order."
+msgstr "Налаштуйте правила умовного іменування для {0}. Правила застосовуються за порядком пріоритету."
+
+msgid "Configure fields"
+msgstr "Налаштувати поля"
+
+msgid "Configure fields to show when searching for {0} globally. Open global search via {1}."
+msgstr "Налаштуйте поля, що показуються під час глобального пошуку {0}. Відкрити глобальний пошук можна через {1}."
+
+msgid "Configure form view behaviour."
+msgstr "Налаштуйте поведінку форми."
+
+msgid "Configure list view behaviour."
+msgstr "Налаштуйте поведінку списку."
+
+msgid "Configure naming series options for {0}. You can choose a series when creating a document."
+msgstr "Налаштуйте параметри серій іменування для {0}. Серію можна вибрати під час створення документа."
+
+msgid "Configure print formats for {0}. You can choose a format when printing or emailing a document."
+msgstr "Налаштуйте друковані форми для {0}. Форму можна вибрати під час друку або надсилання документа поштою."
+
+msgid "Configure report view behaviour."
+msgstr "Налаштуйте поведінку подання звіту."
+
+msgid "Configure your email settings."
+msgstr "Налаштуйте параметри електронної пошти."
+
+msgid "Content must be a JSON object"
+msgstr "Вміст має бути об'єктом JSON"
+
+msgid "Content must be valid JSON"
+msgstr "Вміст має бути коректним JSON"
+
+msgctxt "Go to next slide"
+msgid "Continue"
+msgstr "Далі"
+
+msgid "Control who can access {0}, by role."
+msgstr "Керуйте за ролями, хто може отримати доступ до {0}."
+
+msgid "Control who can see this workspace and how it appears."
+msgstr "Керуйте, хто може бачити цей робочий простір і як він виглядає."
+
+msgid "Convert to new builder"
+msgstr "Перетворити на новий конструктор"
+
+msgid "Converted from the old Print Format Builder"
+msgstr "Перетворено зі старого конструктора друкованих форм"
+
+msgid "Copy"
+msgstr "Копіювати"
+
+msgid "Copy file URL to clipboard"
+msgstr "Копіювати URL файлу в буфер обміну"
+
+msgid "Copy this board to change its setup"
+msgstr "Скопіюйте цю дошку, щоб змінити її налаштування"
+
+msgid "Could not convert this print format"
+msgstr "Не вдалося перетворити цю друковану форму"
+
+msgid "Could not load groups."
+msgstr "Не вдалося завантажити групи."
+
+msgid "Could not load import file"
+msgstr "Не вдалося завантажити файл завантаження"
+
+msgid "Could not load the dock. Please try again."
+msgstr "Не вдалося завантажити док. Спробуйте ще раз."
+
+msgid "Could not load the sidebar. Please try again."
+msgstr "Не вдалося завантажити бічну панель. Спробуйте ще раз."
+
+msgid "Could not load this document"
+msgstr "Не вдалося завантажити цей документ"
+
+msgid "Could not load this image"
+msgstr "Не вдалося завантажити це зображення"
+
+msgid "Could not load this section. Please refresh the page."
+msgstr "Не вдалося завантажити цей розділ. Оновіть сторінку."
+
+msgid "Could not load this tab."
+msgstr "Не вдалося завантажити цю вкладку."
+
+msgid "Could not move {0}"
+msgstr "Не вдалося перемістити {0}"
+
+msgid "Could not move {0} cards"
+msgstr "Не вдалося перемістити картки: {0}"
+
+msgid "Could not open Settings. Please refresh the page."
+msgstr "Не вдалося відкрити налаштування. Оновіть сторінку."
+
+msgid "Could not open the dock manager. Please refresh the page."
+msgstr "Не вдалося відкрити керування доком. Оновіть сторінку."
+
+msgid "Could not open the sidebar editor. Please refresh the page."
+msgstr "Не вдалося відкрити редактор бічної панелі. Оновіть сторінку."
+
+msgid "Could not render the preview"
+msgstr "Не вдалося відобразити попередній перегляд"
+
+msgid "Could not start the camera."
+msgstr "Не вдалося запустити камеру."
+
+msgid "Could not update"
+msgstr "Не вдалося оновити"
+
+msgid "Could not write {0} to {1}. Left unchanged."
+msgstr "Не вдалося записати {0} до {1}. Залишено без змін."
+
+msgid "Could not write {0}'s dock to it. Left unchanged."
+msgstr "Не вдалося записати до нього док {0}. Залишено без змін."
+
+msgid "Couldn't load options"
+msgstr "Не вдалося завантажити варіанти"
+
+msgid "Couldn't render this letter head for the previewed document"
+msgstr "Не вдалося відобразити цей фірмовий бланк для документа попереднього перегляду"
+
+msgid "Couldn't render this template for the previewed document"
+msgstr "Не вдалося відобразити цей шаблон для документа попереднього перегляду"
+
+msgid "Create Board"
+msgstr "Створити дошку"
+
+msgid "Create Folder"
+msgstr "Створити папку"
+
+msgid "Create Layout"
+msgstr "Створити макет"
+
+msgid "Create New User"
+msgstr "Створити нового користувача"
+
+msgctxt "Description of a tree view shortcut"
+msgid "Create a new document"
+msgstr "Створити новий документ"
+
+msgid "Create a notification to alert users about {0} events."
+msgstr "Створіть сповіщення, щоб інформувати користувачів про події {0}."
+
+msgid "Create a print format to customize how {0} prints."
+msgstr "Створіть друковану форму, щоб налаштувати друк {0}."
+
+msgid "Create a template to reuse when emailing {0}."
+msgstr "Створіть шаблон для повторного використання під час надсилання {0} поштою."
+
+msgid "Create a workflow to control the states {0} moves through."
+msgstr "Створіть бізнес-процес, щоб керувати станами, через які проходить {0}."
+
+msgid "Create a {0} document first to preview this print format."
+msgstr "Спочатку створіть документ {0}, щоб переглянути цю друковану форму."
+
+msgid "Create a {0} to finish this step."
+msgstr "Створіть {0}, щоб завершити цей крок."
+
+msgid "Create copy"
+msgstr "Створити копію"
+
+msgid "Create layout"
+msgstr "Створити макет"
+
+msgid "Create your account"
+msgstr "Створіть обліковий запис"
+
+msgid "Created {0}"
+msgstr "Створено {0}"
+
+msgid "Creation"
+msgstr "Створення"
+
+msgid "Creator's Access"
+msgstr "Доступ автора"
+
+msgid "Current value"
+msgstr "Поточне значення"
+
+msgid "Current version"
+msgstr "Поточна версія"
+
+msgid "Currently hidden"
+msgstr "Наразі приховано"
+
+msgid "Currently visible"
+msgstr "Наразі видно"
+
+msgid "Custom Block"
+msgstr "Власний блок"
+
+msgid "Custom CSS in the Style box"
+msgstr "Власний CSS у полі «Стиль»"
+
+msgid "Custom CSS on fields: {0}"
+msgstr "Власний CSS у полях: {0}"
+
+msgid "Custom HTML format"
+msgstr "Власний формат HTML"
+
+msgid "Custom Module Renamed"
+msgstr "Власний модуль перейменовано"
+
+msgid "Custom Sidebar"
+msgstr "Власна бічна панель"
+
+msgid "Custom Table"
+msgstr "Власна таблиця"
+
+msgid "Custom Workspace"
+msgstr "Власний робочий простір"
+
+msgid "Custom hint text"
+msgstr "Власний текст підказки"
+
+msgid "Custom icon"
+msgstr "Власна піктограма"
+
+msgid "Custom icon + footer"
+msgstr "Власна піктограма + підвал"
+
+msgid "Customized since"
+msgstr "Налаштовано з"
+
+msgid "Data Import Skipped Row"
+msgstr "Пропущений рядок завантаження даних"
+
+msgid "Data Import Value Mapping"
+msgstr "Зіставлення значень завантаження даних"
+
+msgid "Date format"
+msgstr "Формат дати"
+
+msgid "Decrease"
+msgstr "Зменшити"
+
+msgid "Decrease indent"
+msgstr "Зменшити відступ"
+
+msgid "Default Layout"
+msgstr "Макет за замовчуванням"
+
+msgid "Default removed"
+msgstr "Значення за замовчуванням видалено"
+
+msgid "Default template: {0}"
+msgstr "Шаблон за замовчуванням: {0}"
+
+msgid "Default updated"
+msgstr "Значення за замовчуванням оновлено"
+
+msgid "Delay"
+msgstr "Затримка"
+
+msgid "Delete layout <strong>{0}</strong>?"
+msgstr "Видалити макет <strong>{0}</strong>?"
+
+msgid "Delete naming rule {0}?"
+msgstr "Видалити правило іменування {0}?"
+
+msgid "Delete series {0}?"
+msgstr "Видалити серію {0}?"
+
+msgid "Delete snippet"
+msgstr "Видалити фрагмент"
+
+msgid "Delete the <b>{0}</b> workspace? This cannot be undone."
+msgstr "Видалити робочий простір <b>{0}</b>? Цю дію неможливо скасувати."
+
+msgid "Delete the snippet '{0}'?"
+msgstr "Видалити фрагмент «{0}»?"
+
+msgid "Delete this user permission?"
+msgstr "Видалити цей дозвіл користувача?"
+
+msgid "Delete this version"
+msgstr "Видалити цю версію"
+
+msgid "Deleted {0} records from {1} doctype"
+msgstr "Видалено записів ({0}) із типу документа {1}"
+
+msgid "Deleting..."
+msgstr "Видалення..."
+
+msgid "Depends on: {0}"
+msgstr "Залежить від: {0}"
+
+msgid "Deprecated"
+msgstr "Застаріле"
+
+msgid "Deprecated, removed in version 17"
+msgstr "Застаріле, буде вилучено у версії 17"
+
+msgid "Deprecated, removed in version 17. Renders with the v16 stylesheet; new blocks and styling need Chromium or Typst."
+msgstr "Застаріле, буде вилучено у версії 17. Відображається за таблицею стилів v16; нові блоки та стилі потребують Chromium або Typst."
+
+msgid "Descending"
+msgstr "За спаданням"
+
+msgid "Desk"
+msgstr "Робочий стіл"
+
+msgid "Desktop Icons"
+msgstr "Піктограми робочого столу"
+
+msgid "Desktop Page"
+msgstr "Сторінка робочого столу"
+
+msgid "Direction"
+msgstr "Напрямок"
+
+msgid "Disable"
+msgstr "Вимкнути"
+
+msgid "Disable all notification and alert sounds across the application."
+msgstr "Вимкнути всі звуки сповіщень і попереджень у всьому застосунку."
+
+msgid "Disabled options (a page-size picker)"
+msgstr "Вимкнені варіанти (вибір розміру сторінки)"
+
+msgid "Discard the draft and go back to this"
+msgstr "Відхилити чернетку й повернутися до цього"
+
+msgid "Discard your unapplied changes and go back to what this format prints?"
+msgstr "Відхилити незастосовані зміни й повернутися до того, що друкує цей формат?"
+
+msgid "Discarding…"
+msgstr "Відхилення…"
+
+msgid "Dismissible"
+msgstr "Можна закрити"
+
+msgid "Display a sidebar in forms with attachments, preview image, tags, and other details."
+msgstr "Показувати у формах бічну панель із вкладеннями, зображенням перегляду, тегами та іншими відомостями."
+
+msgid "Display exact timestamps instead of relative time in the activity timeline."
+msgstr "Показувати в стрічці активності точний час замість відносного."
+
+msgid "Display the filter and group-by sidebar in list views."
+msgstr "Показувати в списках бічну панель відбору та групування."
+
+msgid "Display the search bar in the navigation area for quick access."
+msgstr "Показувати рядок пошуку в області навігації для швидкого доступу."
+
+msgid "Doc Status Reset"
+msgstr "Скидання статусу документа"
+
+msgid "DocType Settings"
+msgstr "Налаштування типу документа"
+
+msgid "DocType Settings Map"
+msgstr "Карта налаштувань типу документа"
+
+msgid "DocType Settings Map Item"
+msgstr "Елемент карти налаштувань типу документа"
+
+msgid "DocType {0} not found"
+msgstr "Тип документа {0} не знайдено"
+
+msgid "DocTypes this role can access."
+msgstr "Типи документів, до яких ця роль має доступ."
+
+msgid "Dock"
+msgstr "Док"
+
+msgid "Dock Item"
+msgstr "Елемент дока"
+
+msgid "Dock Items"
+msgstr "Елементи дока"
+
+msgid "Dock updated"
+msgstr "Док оновлено"
+
+msgid "Dock updated for everyone"
+msgstr "Док оновлено для всіх"
+
+msgid "Document Permissions"
+msgstr "Дозволи документа"
+
+msgid "Documentation"
+msgstr "Документація"
+
+msgid "Don't panic. Run this command and reload the page:"
+msgstr "Без паніки. Виконайте цю команду та перезавантажте сторінку:"
+
+msgid "Done: {0}"
+msgstr "Готово: {0}"
+
+msgid "Download Failed Rows"
+msgstr "Вивантажити рядки з помилками"
+
+msgid "Download Skipped Rows"
+msgstr "Вивантажити пропущені рядки"
+
+msgid "Draft Data"
+msgstr "Дані чернетки"
+
+msgid "Draft data must be an object"
+msgstr "Дані чернетки мають бути об'єктом"
+
+msgid "Draft discarded"
+msgstr "Чернетку відхилено"
+
+msgid "Drag a CSV or Excel file here, or click to browse"
+msgstr "Перетягніть сюди файл CSV або Excel чи натисніть, щоб вибрати"
+
+msgid "Drag into the layout, or click to insert"
+msgstr "Перетягніть у макет або натисніть, щоб вставити"
+
+msgid "Drag to change corner radius"
+msgstr "Перетягніть, щоб змінити радіус кутів"
+
+msgid "Drag to change {0} {1}"
+msgstr "Перетягніть, щоб змінити {0} {1}"
+
+msgid "Drag to reorder, and under a section to put an entry in it. The eye takes an entry off the sidebar; the pencil renames it."
+msgstr "Перетягуйте, щоб змінити порядок, а під розділ — щоб помістити пункт у нього. Око прибирає пункт із бічної панелі; олівець перейменовує його."
+
+msgid "Drag to reorder, and under a section to put an entry in it. The eye takes an entry off the sidebar; the pencil renames one and says how a section draws."
+msgstr "Перетягуйте, щоб змінити порядок, а під розділ — щоб помістити пункт у нього. Око прибирає пункт із бічної панелі; олівець перейменовує його й задає, як відображається розділ."
+
+msgid "Drag to reorder. The eye takes an entry off the dock."
+msgstr "Перетягуйте, щоб змінити порядок. Око прибирає пункт із дока."
+
+msgid "Drag to resize"
+msgstr "Перетягніть, щоб змінити розмір"
+
+msgid "Draw it as a row with its entries nested under it, rather than as a heading over them."
+msgstr "Відображати як рядок із вкладеними пунктами, а не як заголовок над ними."
+
+msgid "Drop fields here"
+msgstr "Перетягніть поля сюди"
+
+msgid "Drop the site's arrangement of this sidebar and every person's own, so what you save here is what shows."
+msgstr "Відмовитися від розташування цієї бічної панелі на сайті та від власних розташувань усіх користувачів, щоб показувалося те, що ви запишете тут."
+
+msgid "Drop this arrangement and go back to {0}."
+msgstr "Відмовитися від цього розташування й повернутися до {0}."
+
+msgid "Drops every person's own arrangement of this rail as well as the site's, so everybody is back on what the app ships."
+msgstr "Відкидає власні розташування цієї панелі в усіх користувачів, а також розташування сайту, тож усі повертаються до того, що постачає застосунок."
+
+msgid "Duplicate ID {0} in rows {1}"
+msgstr "Дублікат ідентифікатора {0} у рядках {1}"
+
+msgid "Duplicate Kanban Board"
+msgstr "Дублювати дошку Канбан"
+
+msgid "Duplicate Label"
+msgstr "Дублікат мітки"
+
+msgid "Duplicate {0} labels: {1}. Labels are used to tell widgets apart when a workspace is saved, so each {0} needs a unique label."
+msgstr "Дублікати міток {0}: {1}. Мітки розрізняють віджети під час запису робочого простору, тому кожен {0} потребує унікальної мітки."
+
+msgid "Dynamic Filter Error"
+msgstr "Помилка динамічного відбору"
+
+msgid "Each row maps a field on a Single (Settings) doctype to surface for this doctype."
+msgstr "Кожен рядок зіставляє поле типу документа «Один» (Налаштування), яке виводиться для цього типу документа."
+
+msgid "Edit Layout"
+msgstr "Редагувати макет"
+
+msgid "Edit Letter Head HTML"
+msgstr "Редагувати HTML фірмового бланка"
+
+msgid "Edit Series"
+msgstr "Редагувати серію"
+
+msgid "Edit Typst"
+msgstr "Редагувати Typst"
+
+msgid "Edit in the visual builder."
+msgstr "Редагувати у візуальному конструкторі."
+
+msgid "Edit layout"
+msgstr "Редагувати макет"
+
+msgid "Edited"
+msgstr "Відредаговано"
+
+msgid "Email Templates"
+msgstr "Шаблони листів"
+
+msgid "Empty State Message"
+msgstr "Повідомлення порожнього стану"
+
+msgid "Empty Typst block"
+msgstr "Порожній блок Typst"
+
+msgid "Empty canvas. Drag and drop fields to build from scratch."
+msgstr "Полотно порожнє. Перетягуйте поля, щоб створити з нуля."
+
+msgid "Empty text"
+msgstr "Порожній текст"
+
+msgid "Enable checkboxes to select multiple records and perform bulk operations."
+msgstr "Увімкніть прапорці, щоб вибирати кілька записів і виконувати групові операції."
+
+msgid "Enable developer mode to change whether a dock is standard -- it is backed by a file in its app."
+msgstr "Увімкніть режим розробника, щоб змінити, чи док є стандартним — він зберігається у файлі свого застосунку."
+
+msgid "Enable developer mode to change whether a sidebar is standard -- it is backed by a file in its app."
+msgstr "Увімкніть режим розробника, щоб змінити, чи бічна панель є стандартною — вона зберігається у файлі свого застосунку."
+
+msgid "Enable developer mode to create a standard Print Format Snippet"
+msgstr "Увімкніть режим розробника, щоб створити стандартний фрагмент друкованої форми"
+
+msgid "Enable this option to include the field in the data import template"
+msgstr "Увімкніть, щоб включити поле до шаблону завантаження даних"
+
+msgid "Enter expressions that will be evaluated when the card is displayed. For example:"
+msgstr "Введіть вирази, які обчислюватимуться під час відображення картки. Наприклад:"
+
+msgid "Enter this code to complete your login."
+msgstr "Введіть цей код, щоб завершити вхід."
+
+msgid "Entries"
+msgstr "Записи"
+
+msgid "Everyone is back on the dock this app ships"
+msgstr "Усі знову на доці, який постачає цей застосунок"
+
+msgid "Exit full screen"
+msgstr "Вийти з повноекранного режиму"
+
+msgid "Expand all"
+msgstr "Розгорнути все"
+
+msgid "Expand sidebar"
+msgstr "Розгорнути бічну панель"
+
+msgid "Expand/Collapse"
+msgstr "Розгорнути/згорнути"
+
+msgid "Expected an unsaved Print Format document"
+msgstr "Очікувався незаписаний документ друкованої форми"
+
+msgid "Export this snippet to its module so it ships with the app. Requires developer mode."
+msgstr "Вивантажте цей фрагмент у його модуль, щоб він постачався із застосунком. Потребує режиму розробника."
+
+msgid "Export to app"
+msgstr "Вивантажити в застосунок"
+
+msgid "Exported to the app"
+msgstr "Вивантажено в застосунок"
+
+msgid "Exported to the module and shipped with its app"
+msgstr "Вивантажено в модуль і постачається разом із його застосунком"
+
+msgid "Failed ({0})"
+msgstr "Помилок: {0}"
+
+msgid "Failed Scheduled Jobs"
+msgstr "Невдалі заплановані завдання"
+
+msgid "Failed to add access."
+msgstr "Не вдалося додати доступ."
+
+msgid "Failed to add user."
+msgstr "Не вдалося додати користувача."
+
+msgid "Failed to create user."
+msgstr "Не вдалося створити користувача."
+
+msgid "Failed to load Kanban board"
+msgstr "Не вдалося завантажити дошку Канбан"
+
+msgid "Failed to load data."
+msgstr "Не вдалося завантажити дані."
+
+msgid "Failed to load import file"
+msgstr "Не вдалося завантажити файл завантаження"
+
+msgid "Failed to load settings"
+msgstr "Не вдалося завантажити налаштування"
+
+msgid "Failed to load the import wizard bundle."
+msgstr "Не вдалося завантажити пакет майстра завантаження."
+
+msgid "Failed to load the import wizard. Please hard-refresh and try again."
+msgstr "Не вдалося завантажити майстер завантаження. Оновіть сторінку повністю та спробуйте знову."
+
+msgid "Failed to remove permission."
+msgstr "Не вдалося видалити дозвіл."
+
+msgid "Failed to render template: {0}"
+msgstr "Не вдалося відобразити шаблон: {0}"
+
+msgid "Failed to save"
+msgstr "Не вдалося записати"
+
+msgid "Failed to save permission."
+msgstr "Не вдалося записати дозвіл."
+
+msgid "Fallback themes"
+msgstr "Резервні теми"
+
+msgid "Fast card"
+msgstr "Швидка картка"
+
+msgid "Fetching latest status..."
+msgstr "Отримання останнього стану..."
+
+msgid "Field Template block"
+msgstr "Блок шаблону поля"
+
+msgid "Field \\u201c{0}\\u201d no longer exists on {1}"
+msgstr "Поля «{0}» більше немає в {1}"
+
+msgid "Field borders"
+msgstr "Межі полів"
+
+msgid "Field label"
+msgstr "Мітка поля"
+
+msgid "Field of the board's reference doctype to show on the card."
+msgstr "Поле еталонного типу документа дошки, що показується на картці."
+
+msgid "Field saved as snippet"
+msgstr "Поле записано як фрагмент"
+
+msgid "Field shown as the card title: ID or a text field."
+msgstr "Поле, що показується як заголовок картки: ідентифікатор або текстове поле."
+
+msgid "Fieldname on the Settings DocType to surface for this doctype."
+msgstr "Назва поля в типі документа «Налаштування», яке виводиться для цього типу документа."
+
+msgid "Fields shown in the card hover preview, in order. Icon and Label behave the same as Card Fields. Leave empty to use the doctype's preview fields, then card fields."
+msgstr "Поля, що показуються у перегляді при наведенні на картку, за порядком. Піктограма та мітка працюють так само, як у полях картки. Залиште порожнім, щоб використати поля перегляду типу документа, а потім поля картки."
+
+msgid "Fields shown on cards and in the hover preview."
+msgstr "Поля, що показуються на картках і в перегляді при наведенні."
+
+msgid "Fields shown on each card, in order. Set an Icon to show it on the card (label on hover); leave Icon empty to show the Label text. Leave the table empty to auto-pick."
+msgstr "Поля, що показуються на кожній картці, за порядком. Задайте піктограму, щоб показати її на картці (мітка — при наведенні); залиште піктограму порожньою, щоб показати текст мітки. Залиште таблицю порожньою для автовибору."
+
+msgid "Fields the board can group cards by (swimlanes). New boards are pre-filled with the doctype's Select fields (except the column field). Add Link fields to offer more groupings; leave empty to hide the Group button."
+msgstr "Поля, за якими дошка може групувати картки (доріжки). Нові дошки заповнюються полями вибору типу документа (крім поля колонки). Додайте поля зв'язку, щоб запропонувати більше групувань; залиште порожнім, щоб приховати кнопку «Групувати»."
+
+msgid "Fields the board can group cards into swimlanes by."
+msgstr "Поля, за якими дошка може групувати картки за доріжками."
+
+msgid "File upload"
+msgstr "Завантаження файлу"
+
+msgid "Filter Name, Reference Document Type and Module are required for a standard list layout"
+msgstr "Для стандартного макета списку потрібні назва відбору, тип еталонного документа та модуль"
+
+msgid "Filter import log"
+msgstr "Відбір журналу завантаження"
+
+msgid "Filter nodes"
+msgstr "Відбір вузлів"
+
+msgid "Filters & Sorting"
+msgstr "Відбір і сортування"
+
+msgid "Filters applied"
+msgstr "Відбір застосовано"
+
+msgid "Finish {0} to finish this step."
+msgstr "Завершіть {0}, щоб завершити цей крок."
+
+msgid "Finishing up..."
+msgstr "Завершення..."
+
+msgid "Fix issues"
+msgstr "Виправити проблеми"
+
+msgid "Fix issues summary"
+msgstr "Підсумок проблем"
+
+msgid "Fixed text like a title or a note"
+msgstr "Фіксований текст, як-от заголовок або примітка"
+
+msgid "Floating"
+msgstr "Плаваючий"
+
+msgid "Follows a promise"
+msgstr "Слідує за обіцянкою"
+
+msgid "Font size"
+msgstr "Розмір шрифту"
+
+msgid "Footer Date"
+msgstr "Дата в нижньому колонтитулі"
+
+msgid "For everyone"
+msgstr "Для всіх"
+
+msgid "For {0}"
+msgstr "Для {0}"
+
+msgid "Receive a copy of every email you send in your inbox."
+msgstr "Отримувати копію кожного надісланого листа у вхідні."
+
+msgid "Recent activity"
+msgstr "Остання активність"
+
+msgid "Records you add will appear here."
+msgstr "Додані вами записи з’являться тут."
+
+msgid "Refresh to see changes"
+msgstr "Оновіть, щоб побачити зміни"
+
+msgid "Related Reports"
+msgstr "Пов’язані звіти"
+
+msgid "Reload Tree"
+msgstr "Оновити дерево"
+
+msgid "Remove Default"
+msgstr "Прибрати значення за замовчуванням"
+
+msgid "Remove Permission"
+msgstr "Прибрати дозвіл"
+
+msgid "Remove formatting"
+msgstr "Прибрати форматування"
+
+msgid "Remove selected"
+msgstr "Прибрати вибране"
+
+msgid "Remove this role's access to {0}?"
+msgstr "Прибрати доступ цієї ролі до {0}?"
+
+msgid "Remove this role's permission on {0}?"
+msgstr "Прибрати дозвіл цієї ролі на {0}?"
+
+msgid "Remove {0} from this role?"
+msgstr "Прибрати {0} з цієї ролі?"
+
+msgid "Removed Roles"
+msgstr "Прибрані ролі"
+
+msgid "Removed from global search"
+msgstr "Видалено з глобального пошуку"
+
+msgid "Rename Entry"
+msgstr "Перейменувати запис"
+
+msgid "Renderer unavailable"
+msgstr "Засіб відображення недоступний"
+
+msgid "Replace your current draft with {0}? Nothing prints differently until you Save & Apply."
+msgstr "Замінити поточну чернетку на {0}? Друк не зміниться, доки ви не натиснете «Записати та застосувати»."
+
+msgid "Reply-To Addresses still include {0}. Change it to {1} as well?"
+msgstr "Адреси для відповіді все ще містять {0}. Змінити їх також на {1}?"
+
+msgid "Report Settings"
+msgstr "Налаштування звіту"
+
+msgid "Reporting & Sharing"
+msgstr "Звітність і спільний доступ"
+
+msgid "Reports this role can access."
+msgstr "Звіти, доступні цій ролі."
+
+msgid "Request read receipts for outgoing emails"
+msgstr "Запитувати підтвердження прочитання для вихідних листів"
+
+msgid "Reset <b>{0}</b> to the standard, app-shipped version? This removes all site customizations."
+msgstr "Скинути <b>{0}</b> до стандартної версії із застосунку? Усі налаштування сайту буде видалено."
+
+msgid "Reset all"
+msgstr "Скинути все"
+
+msgid "Reset for everyone"
+msgstr "Скинути для всіх"
+
+msgid "Reset node"
+msgstr "Скинути вузол"
+
+msgid "Reset password"
+msgstr "Скинути пароль"
+
+msgid "Reset to Standard"
+msgstr "Скинути до стандартного"
+
+msgid "Reset {0} permissions to their default? This removes all customizations."
+msgstr "Скинути дозволи {0} до значень за замовчуванням? Усі налаштування буде видалено."
+
+msgid "Resizing preview..."
+msgstr "Зміна розміру попереднього перегляду..."
+
+msgid "Restore Workspace"
+msgstr "Відновити робочий простір"
+
+msgid "Restore again"
+msgstr "Відновити ще раз"
+
+msgid "Restore classic layout"
+msgstr "Відновити класичний макет"
+
+msgid "Restore the pre-upgrade layout of <b>{0}</b>? The layout becomes a site customization, so later layout changes from the app will not show until it is reset to standard."
+msgstr "Відновити макет <b>{0}</b> до оновлення? Макет стане налаштуванням сайту, тому подальші зміни макета із застосунку не буде видно, доки його не скинуто до стандартного."
+
+msgid "Restore this version"
+msgstr "Відновити цю версію"
+
+msgid "Restore this version as your draft"
+msgstr "Відновити цю версію як вашу чернетку"
+
+msgid "Restored with limits"
+msgstr "Відновлено з обмеженнями"
+
+msgid "Restoring…"
+msgstr "Відновлення…"
+
+msgid "Restrict specific users to specific {0} records."
+msgstr "Обмежити окремих користувачів окремими записами {0}."
+
+msgid "Reuse email templates when emailing {0}."
+msgstr "Використовувати шаблони листів під час надсилання {0}."
+
+msgid "Review pending imports"
+msgstr "Переглянути завантаження, що очікують"
+
+msgid "Revisiting a finished flow (factual completion)"
+msgstr "Повернення до завершеного процесу (фактичне завершення)"
+
+msgid "Right-click here"
+msgstr "Клацніть тут правою кнопкою миші"
+
+msgid "Right-click this task card"
+msgstr "Клацніть правою кнопкою миші на цій картці завдання"
+
+msgid "Role Managed by Role Profile"
+msgstr "Роль керується профілем ролей"
+
+msgid "Role Profiles that include this role."
+msgstr "Профілі ролей, що містять цю роль."
+
+msgid "Roles granted access on top of the app-shipped roles."
+msgstr "Ролі з доступом на додачу до ролей зі складу застосунку."
+
+msgid "Root records can't be deleted"
+msgstr "Кореневі записи не можна видаляти"
+
+msgid "Root records can't be renamed"
+msgstr "Кореневі записи не можна перейменовувати"
+
+msgid "Route Signature"
+msgstr "Підпис маршруту"
+
+msgid "Row #{0}"
+msgstr "Рядок №{0}"
+
+msgid "Row #{0}: a dock entry opens a Sidebar, a Workspace or a web address, not a {1}."
+msgstr "Рядок №{0}: елемент панелі відкриває бічну панель, робочий простір або вебадресу, а не {1}."
+
+msgid "Row #{0}: an entry on this dock needs an icon and a title of its own."
+msgstr "Рядок №{0}: елемент цієї панелі потребує власного значка й заголовка."
+
+msgid "Row Data"
+msgstr "Дані рядка"
+
+msgid "Row Numbers"
+msgstr "Номери рядків"
+
+msgid "Row errors"
+msgstr "Помилки рядків"
+
+msgid "Row validation failed"
+msgstr "Не пройдено перевірку рядка"
+
+msgid "Row {0} failed"
+msgstr "Рядок {0} не вдалося обробити"
+
+msgid "Rows"
+msgstr "Рядки"
+
+msgid "Rows checked"
+msgstr "Перевірено рядків"
+
+msgid "Rows skipped"
+msgstr "Пропущено рядків"
+
+msgid "Run 3-step progress"
+msgstr "Запустити 3-кроковий прогрес"
+
+msgid "Same as what prints"
+msgstr "Так само, як у друку"
+
+msgid "Same id updates in place"
+msgstr "Той самий ідентифікатор оновлює запис на місці"
+
+msgid "Save & Apply"
+msgstr "Записати та застосувати"
+
+msgid "Save & Apply Print Format"
+msgstr "Записати та застосувати формат друку"
+
+msgid "Save Field as Snippet"
+msgstr "Записати поле як фрагмент"
+
+msgid "Save Filters"
+msgstr "Записати відбори"
+
+msgid "Save Layout"
+msgstr "Записати макет"
+
+msgid "Save Section as Snippet"
+msgstr "Записати секцію як фрагмент"
+
+msgid "Save a named version"
+msgstr "Записати іменовану версію"
+
+msgid "Save as snippet"
+msgstr "Записати як фрагмент"
+
+msgid "Save failed"
+msgstr "Не вдалося записати"
+
+msgid "Save the role first to view this information."
+msgstr "Спочатку запишіть роль, щоб переглянути цю інформацію."
+
+msgid "Save version"
+msgstr "Записати версію"
+
+msgid "Save your changes before importing."
+msgstr "Запишіть зміни перед завантаженням."
+
+msgid "Saved Reports"
+msgstr "Збережені звіти"
+
+msgid "Saved Snippets"
+msgstr "Збережені фрагменти"
+
+msgid "Saved versions"
+msgstr "Записані версії"
+
+msgid "Saving your language and region"
+msgstr "Запис вашої мови та регіону"
+
+msgid "Saving…"
+msgstr "Запис…"
+
+msgid "Schedule Send"
+msgstr "Запланувати надсилання"
+
+msgid "Schedule email"
+msgstr "Запланувати лист"
+
+msgid "Scheduled Jobs"
+msgstr "Заплановані завдання"
+
+msgid "Search by label or field name"
+msgstr "Пошук за заголовком або назвою поля"
+
+msgid "Secondary"
+msgstr "Додатковий"
+
+msgid "Section background, padding, radius or custom CSS"
+msgstr "Тло секції, відступи, радіус або власний CSS"
+
+msgid "Section saved as snippet"
+msgstr "Секцію записано як фрагмент"
+
+msgid "Sections hold the columns and fields of your document."
+msgstr "Секції містять колонки та поля вашого документа."
+
+msgid "See warning icons on nodes below or check the Warnings section."
+msgstr "Значки попередження дивіться на вузлах нижче або в розділі «Попередження»."
+
+msgid "Select Options"
+msgstr "Вибрати варіанти"
+
+msgid "Select a Document Type to upload a file or Google Sheet."
+msgstr "Виберіть тип документа, щоб завантажити файл або Google Таблицю."
+
+msgid "Select a field"
+msgstr "Виберіть поле"
+
+msgid "Select a link field"
+msgstr "Виберіть поле-посилання"
+
+msgid "Select at least one field"
+msgstr "Виберіть принаймні одне поле"
+
+msgid "Select attachments"
+msgstr "Виберіть вкладення"
+
+msgid "Select date format"
+msgstr "Виберіть формат дати"
+
+msgid "Select field whose options become the board columns."
+msgstr "Виберіть поле, варіанти якого стануть колонками дошки."
+
+msgid "Select format"
+msgstr "Виберіть формат"
+
+msgid "Select or Link field of the board's reference doctype to group cards by (swimlanes)."
+msgstr "Виберіть поле типу «Вибір» або «Посилання» довідкового типу документа дошки для групування карток (доріжки)."
+
+msgid "Select table…"
+msgstr "Виберіть таблицю…"
+
+msgid "Selected row, descriptions and links"
+msgstr "Вибраний рядок, описи та посилання"
+
+msgid "Selection"
+msgstr "Вибір"
+
+msgid "Send automatic notifications for events on any {0}."
+msgstr "Надсилати автоматичні сповіщення про події в будь-якому {0}."
+
+msgid "Send me a copy of outgoing emails"
+msgstr "Надсилати мені копію вихідних листів"
+
+msgid "Send notifications for email threads"
+msgstr "Надсилати сповіщення про гілки листування"
+
+msgid "Send raw ESC/POS commands to a label or thermal printer."
+msgstr "Надсилати команди ESC/POS на принтер етикеток або термопринтер."
+
+msgid "Send read receipt"
+msgstr "Надіслати підтвердження прочитання"
+
+msgid "Series added"
+msgstr "Серію додано"
+
+msgid "Series already exists"
+msgstr "Серія вже існує"
+
+msgid "Series removed"
+msgstr "Серію вилучено"
+
+msgid "Series updated"
+msgstr "Серію оновлено"
+
+msgid "Set <strong>{0}</strong> = <em>?</em> to auto complete"
+msgstr "Вкажіть <strong>{0}</strong> = <em>?</em> для автозаповнення"
+
+msgid "Set as Primary"
+msgstr "Зробити основним"
+
+msgid "Set as default"
+msgstr "Зробити типовим"
+
+msgid "Set default values for the current session. Values set here will be autofilled in forms and reports."
+msgstr "Задайте значення за замовчуванням для поточного сеансу. Задані тут значення автоматично підставлятимуться у форми та звіти."
+
+msgid "Set dynamic filter values as Python expressions."
+msgstr "Задайте значення динамічних відборів як вирази Python."
+
+msgid "Set this to decide which position a layout appears in the dropdown"
+msgstr "Визначає, на якій позиції макет з’являється у випадному списку"
+
+msgid "Set up your authenticator app"
+msgstr "Налаштуйте застосунок автентифікації"
+
+msgid "Set {0} in {1} to finish this step."
+msgstr "Вкажіть {0} у {1}, щоб завершити цей крок."
+
+msgid "Set {0}…"
+msgstr "Задати {0}…"
+
+msgid "Setting Field"
+msgstr "Поле налаштування"
+
+msgid "Setting things up"
+msgstr "Налаштування"
+
+msgid "Setting up your apps"
+msgstr "Налаштування ваших застосунків"
+
+msgid "Settings DocType"
+msgstr "Тип документа налаштувань"
+
+msgid "Settings from Single doctypes applied to a doctype, with one standard and one custom record shown in DocType Settings → General."
+msgstr "Налаштування з одиночних типів документів, застосовані до типу документа; один стандартний і один власний запис показано в «Налаштування типу документа» → «Загальні»."
+
+msgid "Settings from across the system that apply to {0}."
+msgstr "Налаштування з усієї системи, що стосуються {0}."
+
+msgid "Setup a multi-step workflow for {0}."
+msgstr "Налаштуйте багатокроковий процес для {0}."
+
+msgid "Shapes"
+msgstr "Фігури"
+
+msgid "Share usage data to help us improve"
+msgstr "Надсилати дані про використання, щоб допомогти нам покращувати продукт"
+
+msgid "Ship as files in an app, tracked in git."
+msgstr "Постачається файлами в застосунку, відстежується в git."
+
+msgid "Ship as files in an app, tracked in git. Developer mode only; duplicate to edit."
+msgstr "Постачається файлами в застосунку, відстежується в git. Лише в режимі розробника; щоб редагувати, дублюйте."
+
+msgid "Ship this off by default"
+msgstr "Типово вимкнено"
+
+msgid "Ship with the app"
+msgstr "Постачати із застосунком"
+
+msgid "Shortcut"
+msgstr "Ярлик"
+
+msgid "Show Assigned To"
+msgstr "Показувати поле «Призначено»"
+
+msgid "Show Colon After Field Labels"
+msgstr "Показувати двокрапку після заголовків полів"
+
+msgid "Show My Space"
+msgstr "Показувати мій простір"
+
+msgid "Show Tags on Cards"
+msgstr "Показувати теги на картках"
+
+msgid "Show a colon after field labels (e.g. \"Name:\"), matching the older print style."
+msgstr "Показувати двокрапку після заголовків полів (напр., «Назва:») як у старому стилі друку."
+
+msgid "Show a summary dashboard with charts and statistics, where available, at the top of forms."
+msgstr "Показувати зверху форм зведену панель із діаграмами та статистикою, якщо вона доступна."
+
+msgid "Show absolute datetime in timeline"
+msgstr "Показувати в хронології абсолютну дату й час"
+
+msgid "Show all (including disabled)"
+msgstr "Показати все (включно з вимкненими)"
+
+msgid "Show column when"
+msgstr "Показувати колонку, коли"
+
+msgid "Show custom icon"
+msgstr "Показувати власний значок"
+
+msgid "Show dashboard"
+msgstr "Показувати панель"
+
+msgid "Show desktop and in-app notifications for activity on your account."
+msgstr "Показувати сповіщення на робочому столі й у застосунку про активність вашого облікового запису."
+
+msgid "Show document tags on cards (left of footer date), using the standard colored tag style."
+msgstr "Показувати теги документа на картках (ліворуч від дати внизу) у стандартному кольоровому стилі."
+
+msgid "Show label"
+msgstr "Показувати заголовок"
+
+msgid "Show navigation buttons"
+msgstr "Показувати кнопки навігації"
+
+msgid "Show navigation buttons to view the previous and next record in the form toolbar."
+msgstr "Показувати на панелі інструментів форми кнопки переходу до попереднього й наступного запису."
+
+msgid "Show row when"
+msgstr "Показувати рядок, коли"
+
+msgid "Show search bar"
+msgstr "Показувати рядок пошуку"
+
+msgid "Show the activity timeline with comments, emails, and version history."
+msgstr "Показувати хронологію активності з коментарями, листами та історією версій."
+
+msgid "Show the assignee stack and Assign control on cards and in the hover preview."
+msgstr "Показувати виконавців і елемент «Призначити» на картках і в попередньому перегляді при наведенні."
+
+msgid "Show timeline"
+msgstr "Показувати хронологію"
+
+msgid "Show title"
+msgstr "Показувати назву"
+
+msgid "Show view switcher"
+msgstr "Показувати перемикач подання"
+
+msgid "Show with Undo"
+msgstr "Показати з можливістю скасування"
+
+msgid "Show with description"
+msgstr "Показувати з описом"
+
+msgid "Showing all {0} rows"
+msgstr "Показано всі рядки: {0}"
+
+msgid "Showing first {0} rows of {1}"
+msgstr "Показано перші {0} рядків із {1}"
+
+msgid "Showing {0}"
+msgstr "Показано {0}"
+
+msgid "Showing {0} of {1}"
+msgstr "Показано {0} із {1}"
+
+msgid "Showing {0} of {1} columns."
+msgstr "Показано {0} із {1} колонок."
+
+msgid "Showing {0} of {1} rows and {2} of {3} columns."
+msgstr "Показано {0} із {1} рядків і {2} із {3} колонок."
+
+msgid "Showing {0} of {1} rows."
+msgstr "Показано {0} із {1} рядків."
+
+msgid "Shown as the field label, or as the icon tooltip when an icon is set. Auto-filled from the field; edit to override."
+msgstr "Відображається як заголовок поля або як підказка значка, якщо задано значок. Заповнюється автоматично з поля; змініть, щоб перевизначити."
+
+msgid "Shown as the group option's name. Auto-filled from the field; edit to override."
+msgstr "Відображається як назва варіанта групи. Заповнюється автоматично з поля; змініть, щоб перевизначити."
+
+msgid "Shown only when: {0}"
+msgstr "Показується лише коли: {0}"
+
+msgid "Sidebar Item"
+msgstr "Елемент бічної панелі"
+
+msgid "Sidebar Menu"
+msgstr "Меню бічної панелі"
+
+msgid "Sidebar Moved"
+msgstr "Бічну панель переміщено"
+
+msgid "Sidebar Position"
+msgstr "Розташування бічної панелі"
+
+msgid "Sidebar intent for a module, at either of the two layers a site has. `user` is what tells them apart: blank is the site layer, curated by a Workspace Manager and applying to everyone; a user's name is that person's own arrangement, which is applied on top and wins. The `Custom *` prefix elsewhere in this repo means site-owned override of app-shipped content, and this doctype knowingly overloads it: with the layers structurally identical there is nothing to gain from a second doctype, and `user` makes the layer unambiguous at a glance. Do not \"fix\" this by splitting it."
+msgstr "Задум бічної панелі модуля на одному з двох рівнів сайту. Їх розрізняє `user`: порожнє значення — рівень сайту, яким керує менеджер робочих просторів і який діє для всіх; ім’я користувача — власне налаштування цієї особи, яке накладається зверху й має пріоритет. Префікс `Custom *` в іншому місці цього репозиторію означає власне перевизначення вмісту із застосунку на рівні сайту, і цей тип документа свідомо перевантажує його: за структурно однакових рівнів другий тип документа нічого не дає, а `user` робить рівень очевидним з першого погляду. Не «виправляйте» це розділенням."
+
+msgid "Sidebar is no longer shipped with {0}"
+msgstr "Бічну панель більше не постачає {0}"
+
+msgid "Sidebar reset for everyone"
+msgstr "Бічну панель скинуто для всіх"
+
+msgid "Sidebar reset to the site's"
+msgstr "Бічну панель скинуто до налаштувань сайту"
+
+msgid "Sidebar saved to its app"
+msgstr "Бічну панель записано в застосунок"
+
+msgid "Sidebar updated"
+msgstr "Бічну панель оновлено"
+
+msgid "Sidebar updated for everyone"
+msgstr "Бічну панель оновлено для всіх"
+
+msgid "Sides"
+msgstr "Сторони"
+
+msgid "Sizes"
+msgstr "Розміри"
+
+msgid "Sizes, with icons (sm is the default)"
+msgstr "Розміри зі значками (sm — типовий)"
+
+msgid "Skip Row"
+msgstr "Пропустити рядок"
+
+msgid "Skip every row that has one of these values. Skipped rows are not imported."
+msgstr "Пропускати кожен рядок, що містить одне з цих значень. Пропущені рядки не завантажуються."
+
+msgid "Skipped Rows"
+msgstr "Пропущені рядки"
+
+msgid "Skipped row {0}"
+msgstr "Пропущено рядок {0}"
+
+msgid "Slow"
+msgstr "Повільно"
+
+msgid "Snippet Type"
+msgstr "Тип фрагмента"
+
+msgid "Snippet name"
+msgstr "Назва фрагмента"
+
+msgid "Some cards were saved in another column"
+msgstr "Деякі картки записано в іншу колонку"
+
+msgid "Some columns have invalid values. Map them to valid values below, or skip the rows that have them. Affected columns: {0}."
+msgstr "Деякі колонки містять некоректні значення. Зіставте їх з коректними значеннями нижче або пропустіть рядки з ними. Колонки: {0}."
+
+msgid "Some settings tabs may not load. Please refresh the page."
+msgstr "Деякі вкладки налаштувань можуть не завантажитися. Оновіть сторінку."
+
+msgid "Someone who can log in to your site."
+msgstr "Хто може входити на ваш сайт."
+
+msgid "Space Between"
+msgstr "Рівномірно між"
+
+msgid "Space Evenly"
+msgstr "Рівномірно з відступами"
+
+msgid "Spacing"
+msgstr "Відступи"
+
+msgid "Spacing (mm)"
+msgstr "Відступи (мм)"
+
+msgid "Split across pages"
+msgstr "Розбивати між сторінками"
+
+msgid "Split view"
+msgstr "Розділений вигляд"
+
+msgid "Split view in reports"
+msgstr "Розділений вигляд у звітах"
+
+msgid "Sr. No"
+msgstr "№ з/п"
+
+msgid "Standard DocType Settings Map can only be changed in Developer Mode."
+msgstr "Стандартну карту налаштувань типу документа можна змінювати лише в режимі розробника."
+
+msgid "Standard Kanban Boards can only be changed in developer mode"
+msgstr "Стандартні дошки Канбан можна змінювати лише в режимі розробника"
+
+msgid "Standard Kanban Boards can only be deleted in developer mode"
+msgstr "Стандартні дошки Канбан можна видаляти лише в режимі розробника"
+
+msgid "Standard Report"
+msgstr "Стандартний звіт"
+
+msgid "Standard list layout {0} already exists with a similar name"
+msgstr "Стандартний макет списку {0} із подібною назвою вже існує"
+
+msgid "Standard list layouts can only be changed in developer mode"
+msgstr "Стандартні макети списків можна змінювати лише в режимі розробника"
+
+msgid "Standard list layouts can only be deleted in developer mode"
+msgstr "Стандартні макети списків можна видаляти лише в режимі розробника"
+
+msgid "Standard maps are shipped with an app and can only be changed in Developer Mode. Leave unchecked for user-created (custom) maps."
+msgstr "Стандартні карти постачаються із застосунком і можуть змінюватися лише в режимі розробника. Не позначайте для користувацьких (власних) карт."
+
+msgid "Standard print formats can only be converted in developer mode"
+msgstr "Стандартні формати друку можна перетворювати лише в режимі розробника"
+
+msgid "Standard print formats can only be restored in developer mode"
+msgstr "Стандартні формати друку можна відновлювати лише в режимі розробника"
+
+msgid "Standard workspaces can't be edited directly. Your changes are saved as a customization."
+msgstr "Стандартні робочі простори не можна редагувати безпосередньо. Ваші зміни записуються як налаштування."
+
+msgid "Standard workspaces cannot be deleted. Reset to standard instead."
+msgstr "Стандартні робочі простори не можна видаляти. Натомість скиньте їх до стандартних."
+
+msgid "Start Closed"
+msgstr "Початково згорнуто"
+
+msgid "Start blank"
+msgstr "Почати з порожнього"
+
+msgid "Start from default"
+msgstr "Почати зі стандартного"
+
+msgid "Start the import before opening the Import step."
+msgstr "Почніть завантаження, перш ніж відкривати крок «Завантаження»."
+
+msgid "Start with"
+msgstr "Починається з"
+
+msgid "Start with # to search by tag"
+msgstr "Почніть із #, щоб шукати за тегом"
+
+msgid "Started by"
+msgstr "Розпочав"
+
+msgid "Started on"
+msgstr "Розпочато"
+
+msgid "Starting from the default layout instead."
+msgstr "Натомість починаємо зі стандартного макета."
+
+msgid "Starting import..."
+msgstr "Початок завантаження..."
+
+msgid "Static value"
+msgstr "Статичне значення"
+
+msgid "Step {0} of {1}"
+msgstr "Крок {0} із {1}"
+
+msgid "Stop shipping this sidebar with {0}? Its document and its exported file are both removed, and the module goes back to the sidebar generated from its contents."
+msgstr "Припинити постачання цієї бічної панелі із {0}? Її документ і експортований файл буде видалено, а модуль повернеться до бічної панелі, створеної з його вмісту."
+
+msgid "Stop shipping {0} with its app? Its exported file and this document are removed, and {1} goes back to the sidebar computed from its contents."
+msgstr "Припинити постачання {0} із застосунком? Його експортований файл і цей документ буде видалено, а {1} повернеться до бічної панелі, обчисленої з його вмісту."
+
+msgid "Strength:"
+msgstr "Надійність:"
+
+msgid "Strikethrough"
+msgstr "Закреслений"
+
+msgid "Striped"
+msgstr "Смугастий"
+
+msgid "Styled"
+msgstr "Стилізований"
+
+msgid "Submenus"
+msgstr "Підменю"
+
+msgid "Submit a {0} to finish this step."
+msgstr "Проведіть {0}, щоб завершити цей крок."
+
+msgid "Submit it to finish this step."
+msgstr "Проведіть його, щоб завершити цей крок."
+
+msgid "Submitting..."
+msgstr "Проведення..."
+
+msgid "Subscript"
+msgstr "Нижній індекс"
+
+msgid "Success ({0})"
+msgstr "Успішно ({0})"
+
+msgid "Successfully inserted {0}"
+msgstr "Успішно вставлено {0}"
+
+msgid "Successfully inserted {0} and updated {1} out of {2} records."
+msgstr "Успішно вставлено {0} і оновлено {1} із {2} записів."
+
+msgid "Superscript"
+msgstr "Верхній індекс"
+
+msgid "Swimlanes"
+msgstr "Доріжки"
+
+msgid "Swimlanes (Group By)"
+msgstr "Доріжки (групування)"
+
+msgid "Switch between light, dark, or system theme."
+msgstr "Перемикайте світлу, темну або системну тему."
+
+msgid "Switched back to Chromium: {0}"
+msgstr "Повернено Chromium: {0}"
+
+msgid "Switched to {0}"
+msgstr "Перемкнено на {0}"
+
+msgid "Switching you to the new navigation…"
+msgstr "Перемикаємо вас на нову навігацію…"
+
+msgid "System default"
+msgstr "Системний за замовчуванням"
+
+msgid "Table column conditions"
+msgstr "Умови колонок таблиці"
+
+msgid "Table styling"
+msgstr "Стилізація таблиці"
+
+msgid "Table title"
+msgstr "Заголовок таблиці"
+
+msgid "Task list"
+msgstr "Список завдань"
+
+msgid "Text color"
+msgstr "Колір тексту"
+
+msgid "Text direction"
+msgstr "Напрямок тексту"
+
+msgid "Text style"
+msgstr "Стиль тексту"
+
+msgid "The <strong>Doc Status</strong> for all states has been reset to <strong>0</strong> because <strong>{0}</strong> is not submittable"
+msgstr "<strong>Статус документа</strong> для всіх станів скинуто до <strong>0</strong>, бо <strong>{0}</strong> не можна проводити"
+
+msgid "The <strong>Doc Status</strong> for all states has been reset to <strong>Draft</strong> because <strong>{0}</strong> is not submittable"
+msgstr "<strong>Статус документа</strong> для всіх станів скинуто до <strong>Чернетка</strong>, бо <strong>{0}</strong> не можна проводити"
+
+msgid "The Administrator account may be compromised. Change the Administrator password immediately."
+msgstr "Обліковий запис адміністратора може бути скомпрометовано. Негайно змініть пароль адміністратора."
+
+msgid "The DocType these settings apply to."
+msgstr "Тип документа, до якого застосовуються ці налаштування."
+
+msgid "The Typst block could not render its template: {0}"
+msgstr "Блок Typst не зміг відобразити свій шаблон: {0}"
+
+msgid "The Typst block in {0} does not compile: {1}"
+msgstr "Блок Typst у {0} не компілюється: {1}"
+
+msgid "The Typst block in {0} has a template error: {1}"
+msgstr "Блок Typst у {0} містить помилку шаблону: {1}"
+
+msgid "The Typst renderer cannot embed this image: {0}"
+msgstr "Засіб відображення Typst не може вбудувати це зображення: {0}"
+
+msgid "The app this one mounts on, for a companion app -- one with no rail of its own, whose entries live on a host's. Blank on every ordinary dock. An **app name** rather than a Link to a `Dock`: every consumer wants a string, and a pin aimed at a record would be a pin aimed at one of that app's three layers, which means nothing. App-layer only: `depends_on` hides it elsewhere and `validate` blanks it, because hiding a field does not stop an API write."
+msgstr "Застосунок, до якого приєднується цей, для супутнього застосунку — без власної панелі, чиї елементи розміщено на панелі господаря. Порожнє на кожній звичайній панелі. Це **назва застосунку**, а не посилання на `Dock`: кожному споживачу потрібен рядок, а прив’язка до запису вказувала б на один із трьох рівнів того застосунку, що не має сенсу. Лише на рівні застосунку: `depends_on` приховує його в інших місцях, а `validate` очищає, бо приховування поля не зупиняє запис через API."
+
+msgid "The app this sidebar is placed in. Derived from the module when there is one -- a module sits in exactly one app. Author-set when there is not: an app-rooted sidebar has no module to derive it from, and this is then the only thing that says which app ships the file."
+msgstr "Застосунок, у якому розміщено цю бічну панель. Походить від модуля, якщо він є, — модуль розміщений рівно в одному застосунку. Задається автором, якщо модуля немає: бічна панель, прив’язана до застосунку, не має модуля, з якого можна його вивести, і тоді це єдине, що вказує, який застосунок постачає файл."
+
+msgid "The app whose dock lists this module. A custom module may leave it empty and stand on its own."
+msgstr "Застосунок, на панелі якого показано цей модуль. Власний модуль може не мати його й існувати самостійно."
+
+msgid "The app whose dock this layer arranges. Required: a dock belongs to an app, and a layer that named none would be one arrangement spanning every rail. An `Autocomplete` over installed apps rather than a Link, because there is no `App` doctype -- the house spelling, shared with `Sidebar.app` and `Desktop Icon.app`."
+msgstr "Застосунок, панель якого впорядковує цей рівень. Обов’язкове: панель належить застосунку, а рівень без застосунку був би одним розташуванням для всіх рейок. Це `Autocomplete` за встановленими застосунками, а не посилання, бо немає типу документа `App` — усталене написання, спільне із `Sidebar.app` і `Desktop Icon.app`."
+
+msgid "The block {0} points at a {1} this version of the app no longer ships."
+msgstr "Блок {0} вказує на {1}, який ця версія застосунку більше не постачає."
+
+msgid "The card was saved in another column"
+msgstr "Картку записано в іншу колонку"
+
+msgid "The change to {0} cannot be carried by a customization."
+msgstr "Зміну {0} не можна передати через налаштування."
+
+msgid "The classic builder can no longer create formats"
+msgstr "Класичний конструктор більше не може створювати формати"
+
+msgid "The classic builder will be removed in version 17."
+msgstr "Класичний конструктор буде видалено у версії 17."
+
+msgid "The classic builder will be removed in version 17. Convert this format to the new builder to keep editing it."
+msgstr "Класичний конструктор буде видалено у версії 17. Перетворіть цей формат у новий конструктор, щоб і далі його редагувати."
+
+msgid "The colour {0} is not one the desk offers and was skipped."
+msgstr "Колір {0} не пропонується на робочому столі й пропущений."
+
+msgid "The dock as this arrangement leaves it."
+msgstr "Панель у тому вигляді, в якому її залишає це розташування."
+
+msgid "The field cards are grouped into columns by, and the column list."
+msgstr "Поле, за яким картки групуються в колонки, і список колонок."
+
+msgid "The latest changes could not be saved and will be lost if you leave."
+msgstr "Останні зміни не вдалося записати, і їх буде втрачено, якщо ви підете."
+
+msgid "The latest changes to this letter head are not saved."
+msgstr "Останні зміни цього бланка не записано."
+
+msgid "The latest changes to this print format are not saved."
+msgstr "Останні зміни цього формату друку не записано."
+
+msgid "The latest changes to {0} could not be saved."
+msgstr "Останні зміни {0} не вдалося записати."
+
+msgid "The layout of {0} will be rewritten for the new builder. The original layout is kept as a backup you can restore from the Print Format form. Continue?"
+msgstr "Макет {0} буде переписано для нового конструктора. Оригінальний макет зберігається як резервна копія, з якої можна відновити у формі формату друку. Продовжити?"
+
+msgid "The link expires in 1 minute."
+msgstr "Посилання діє 1 хвилину."
+
+msgid "The link expires in {0} minutes."
+msgstr "Посилання діє {0} хв."
+
+msgid "The link {0} was added to a shipped card and cannot be carried by a customization."
+msgstr "Посилання {0} додано до картки зі складу застосунку, і його не можна передати через налаштування."
+
+msgid "The module this sidebar belongs to. Neither required nor unique: one module may own several sidebars, and which of them answers for the module itself is decided by the name -- the one called after the module -- rather than by a column here. May also be blank, which means the sidebar belongs to its app rather than to any one of the app's modules; such a sidebar is exported to the app's own folder and says which app in `app`."
+msgstr "Модуль, до якого належить ця бічна панель. Не обов’язковий і не унікальний: один модуль може мати кілька бічних панелей, а яка з них відповідає за сам модуль, визначає назва — та, що названа за модулем, — а не стовпець тут. Може бути порожнім: тоді бічна панель належить застосунку, а не якомусь його модулю; таку бічну панель експортують у власну теку застосунку, а застосунок указано в `app`."
+
+msgid "The module this workspace belongs to. Decides which module's dock entry and sidebar it appears under."
+msgstr "Модуль, до якого належить цей робочий простір. Визначає, під елементом панелі та бічною панеллю якого модуля він з’являється."
+
+msgid "The next generated name continues after this number."
+msgstr "Наступна згенерована назва продовжить після цього номера."
+
+msgid "The ordered entries this layer has an opinion about. Row order is the arrangement; an entry this layer never names keeps its incoming order and follows the ones it does, which is how a newly installed app's modules still reach someone who has already arranged their dock."
+msgstr "Упорядковані елементи, щодо яких цей рівень має думку. Порядок рядків — це розташування; елемент, якого цей рівень не називає, зберігає вхідний порядок і йде після названих, тому модулі щойно встановленого застосунку все одно доходять до того, хто вже впорядкував свою панель."
+
+msgid "The person whose own arrangement this is. Blank means the app's own dock or the site's arrangement of it, told apart by `standard`."
+msgstr "Особа, чиє це власне розташування. Порожнє означає панель самого застосунку або розташування сайту, що розрізняються за `standard`."
+
+msgid "The record this entry opens, in the doctype `link_type` names. A `Sidebar` target need not exist as a document: most modules have a computed base and no `Sidebar` row at all, so a row of that kind names a shell rather than referencing one, which is why link validation on a `Dock` is a deliberate no-op."
+msgstr "Запис, який відкриває цей елемент, у типі документа, названому `link_type`. Ціль `Sidebar` не мусить існувати як документ: більшість модулів мають обчислену основу й жодного рядка `Sidebar`, тому рядок такого виду називає оболонку, а не посилається на неї; тому перевірка посилань у `Dock` свідомо нічого не робить."
+
+msgid "The sidebar as this arrangement leaves it."
+msgstr "Бічна панель у тому вигляді, в якому її залишає це розташування."
+
+msgid "The site's editor.js block layout for this workspace, shown verbatim. Once set, the app's later changes to this workspace's layout stop reaching the site; roles, icon and visibility keep updating. Managed by the workspace editor."
+msgstr "Макет блоків editor.js сайту для цього робочого простору, показаний дослівно. Після встановлення подальші зміни макета цього робочого простору із застосунку не доходять до сайту; ролі, значок і видимість і далі оновлюються. Керується редактором робочих просторів."
+
+msgid "The title of a standard workspace is managed by the app."
+msgstr "Назвою стандартного робочого простору керує застосунок."
+
+msgid "The workspace list may not load. Please refresh the page."
+msgstr "Список робочих просторів може не завантажитися. Оновіть сторінку."
+
+msgid "The workspace's place in the sidebar is not restored."
+msgstr "Місце робочого простору в бічній панелі не відновлено."
+
+msgid "Theme and layout preferences."
+msgstr "Налаштування теми та макета."
+
+msgid "Themes"
+msgstr "Теми"
+
+msgid "There is already a section called {0}."
+msgstr "Секція з назвою {0} уже є."
+
+msgid "There is nothing else you need to do."
+msgstr "Більше нічого робити не потрібно."
+
+msgid "There is nothing to export for {0}. Put some entries on its dock first."
+msgstr "Для {0} нічого вивантажувати. Спочатку додайте елементи на його панель."
+
+msgid "These announcements will appear inside an alert below the Navbar."
+msgstr "Ці оголошення з’являтимуться у сповіщенні під навігаційною панеллю."
+
+msgid "These fields no longer exist in the DocType and were removed from the layout: {0}"
+msgstr "Цих полів більше немає в типі документа, і їх видалено з макета: {0}"
+
+msgid "These set how dates, numbers and money look across the app."
+msgstr "Визначають, як виглядатимуть дати, числа та гроші в застосунку."
+
+msgid "This DocType is deprecated and may be removed in a future release"
+msgstr "Цей тип документа застарів і може бути видалений у майбутньому випуску"
+
+msgid "This app has nothing to arrange"
+msgstr "У цього застосунку нічого впорядковувати"
+
+msgid "This can take a minute. Please keep this page open."
+msgstr "Це може тривати хвилину. Не закривайте цю сторінку."
+
+msgid "This can't be saved with a Typst block: {0}"
+msgstr "Це не можна записати з блоком Typst: {0}"
+
+msgid "This chart couldn't load"
+msgstr "Не вдалося завантажити цю діаграму"
+
+msgid "This doctype isn't named by a series."
+msgstr "Цей тип документа не названо серією."
+
+msgid "This document is a draft and cannot be printed."
+msgstr "Цей документ є чернеткою і його не можна друкувати."
+
+msgid "This document is cancelled and cannot be printed."
+msgstr "Цей документ скасовано, і його не можна друкувати."
+
+msgid "This document type has no fields to print."
+msgstr "Цей тип документа не має полів для друку."
+
+msgid "This drops the dock arrangement of every person on this site for {0}, and the site's own, back to what the app ships. It cannot be undone."
+msgstr "Це скидає розташування панелі кожної особи на цьому сайті для {0}, а також власне розташування сайту до того, що постачає застосунок. Скасувати неможливо."
+
+msgid "This feature is deprecated and may be removed in a future release"
+msgstr "Ця функція застаріла і може бути видалена в майбутньому випуску"
+
+msgid "This format can no longer render through Typst: {0}"
+msgstr "Цей формат більше не можна відображати через Typst: {0}"
+
+msgid "This format cannot use the Typst renderer: {0}"
+msgstr "Цей формат не може використовувати засіб відображення Typst: {0}"
+
+msgid "This format still has a classic layout. Convert it to the new builder first."
+msgstr "Цей формат досі має класичний макет. Спершу перетворіть його в новий конструктор."
+
+msgid "This format uses a Typst block, so its PDF Renderer must be Typst."
+msgstr "Цей формат використовує блок Typst, тому його засобом відображення PDF має бути Typst."
+
+msgid "This format uses a Typst block, which only the Typst renderer can print. Set the PDF Renderer to Typst or remove the block."
+msgstr "Цей формат використовує блок Typst, який може друкувати лише засіб відображення Typst. Виберіть для засобу відображення PDF значення Typst або видаліть блок."
+
+msgid "This import is complete. There are no pending warnings or mapping issues."
+msgstr "Завантаження завершено. Немає попереджень чи проблем зіставлення, що очікують."
+
+msgid "This invitation expires in 1 day."
+msgstr "Це запрошення діє 1 день."
+
+msgid "This invitation expires in {0} days."
+msgstr "Це запрошення діє {0} дн."
+
+msgid "This invitation has expired"
+msgstr "Термін дії цього запрошення завершився"
+
+msgid "This is an archive of the previous navigation. Customize the module's sidebar instead."
+msgstr "Це архів попередньої навігації. Натомість налаштуйте бічну панель модуля."
+
+msgid "This label is already used by another {0} in this workspace."
+msgstr "Цю мітку вже використовує інший {0} у цьому робочому просторі."
+
+msgid "This module has nothing to arrange"
+msgstr "У цього модуля нічого впорядковувати"
+
+msgid "This module is the linked entity's default home — where it opens when nothing else decides — even when another app defines it. A sidebar that already lists the entity still holds you, so this settles cold entry rather than overriding where you are. Flag what you mean to own: a claim is declarative, so set it on the entities your app is about rather than only where you expect the default to disagree with you. Only an app-shipped sidebar may claim."
+msgstr "Цей модуль є типовим домом пов’язаної сутності — там, де вона відкривається, коли нічого іншого не визначено, — навіть якщо її визначає інший застосунок. Бічна панель, що вже містить сутність, усе одно утримує вас, тож це визначає лише «холодний» вхід, а не перевизначає, де ви перебуваєте. Позначайте те, чим хочете володіти: заява декларативна, тому задавайте її для сутностей, про які ваш застосунок, а не лише там, де очікуєте розбіжності зі значенням за замовчуванням. Заявляти може лише бічна панель із застосунку."
+
+msgid "This restores the classic layout backup and discards the converted layout. Continue?"
+msgstr "Це відновить резервну копію класичного макета й відкине перетворений макет. Продовжити?"
+
+msgid "This role does not have access to any pages."
+msgstr "Ця роль не має доступу до жодних сторінок."
+
+msgid "This role does not have access to any reports."
+msgstr "Ця роль не має доступу до жодних звітів."
+
+msgid "This role does not have access to any workspaces."
+msgstr "Ця роль не має доступу до жодних робочих просторів."
+
+msgid "This row *is* the entry, rather than an opinion about one a lower layer holds. Stored rather than inferred from the row carrying a body: under partial opinions a reference may carry an icon and no title, so body-presence stops telling the two apart -- and a reference to a row the app has since deleted would resurrect as a label-less button."
+msgstr "Цей рядок *є* елементом, а не думкою про елемент, що його містить нижчий рівень. Зберігається, а не виводиться з наявності тіла в рядку: за часткових думок посилання може мати значок без заголовка, тож наявність тіла більше не розрізняє їх, а посилання на рядок, який застосунок згодом видалив, воскресло б як кнопка без мітки."
+
+msgid "This row has fewer cells than the header — check for missing commas or columns"
+msgstr "У цьому рядку менше комірок, ніж у заголовку — перевірте, чи немає пропущених ком або колонок"
+
+msgid "This row has more cells than the header — check for extra commas or columns"
+msgstr "У цьому рядку більше комірок, ніж у заголовку — перевірте, чи немає зайвих ком або колонок"
+
+msgid "This sidebar is customized on this site, and that arrangement is applied on top of what you save here."
+msgstr "Ця бічна панель налаштована на цьому сайті, і це розташування застосовується поверх того, що ви записуєте тут."
+
+msgid "This site is in developer mode, so edits to standard workspaces belong to the app's JSON and there is nothing to restore."
+msgstr "Цей сайт у режимі розробника, тому зміни стандартних робочих просторів належать JSON застосунку, і відновлювати нічого."
+
+msgid "This site is in read-only mode - it is undergoing maintenance or being updated."
+msgstr "Цей сайт у режимі лише читання — виконується обслуговування або оновлення."
+
+msgid "This site needs a migration"
+msgstr "Цьому сайту потрібна міграція"
+
+msgid "This version does not belong to {0}"
+msgstr "Ця версія не належить {0}"
+
+msgid "This workspace is hidden from other users. You can see it because you're a Workspace Manager."
+msgstr "Цей робочий простір приховано від інших користувачів. Ви його бачите, бо ви менеджер робочих просторів."
+
+msgid "This workspace isn't in any app's sidebar, so it can only be found through search. Ask a Workspace Manager to add it to an app."
+msgstr "Цього робочого простору немає в бічній панелі жодного застосунку, тому його можна знайти лише через пошук. Попросіть менеджера робочих просторів додати його до застосунку."
+
+msgid "This workspace isn't in any module's sidebar yet, so there's no way to navigate to it. Pick the module it belongs to."
+msgstr "Цього робочого простору ще немає в бічній панелі жодного модуля, тож перейти до нього неможливо. Виберіть модуль, якому він належить."
+
+msgid "Time:"
+msgstr "Час:"
+
+msgid "Timing (quick preview: shorter delays)"
+msgstr "Часові параметри (швидкий перегляд: коротші затримки)"
+
+msgid "To a group of users"
+msgstr "Групі користувачів"
+
+msgid "To everyone"
+msgstr "Усім"
+
+msgid "Toggle Flash"
+msgstr "Перемкнути спалах"
+
+msgid "Total rows"
+msgstr "Усього рядків"
+
+msgid "Transparent"
+msgstr "Прозорий"
+
+msgid "Tree Parent Overrides"
+msgstr "Перевизначення батька дерева"
+
+msgid "Tree Preview"
+msgstr "Попередній перегляд дерева"
+
+msgid "Tree preview of {0} nodes"
+msgstr "Попередній перегляд дерева з {0} вузлів"
+
+msgid "Try a different search."
+msgstr "Спробуйте інший пошуковий запит."
+
+msgid "Try a different word."
+msgstr "Спробуйте інше слово."
+
+msgid "Try it"
+msgstr "Спробувати"
+
+msgid "Try the new navigation"
+msgstr "Спробуйте нову навігацію"
+
+msgid "Type something..."
+msgstr "Введіть щось..."
+
+msgid "Type text, / for a field"
+msgstr "Введіть текст, / — для поля"
+
+msgid "Types"
+msgstr "Типи"
+
+msgid "Types (same options, four looks)"
+msgstr "Типи (ті самі варіанти, чотири вигляди)"
+
+msgid "Typography"
+msgstr "Типографіка"
+
+msgid "Typst"
+msgstr "Typst"
+
+msgid "Typst (fast)"
+msgstr "Typst (швидкий)"
+
+msgid "Typst Markup"
+msgstr "Розмітка Typst"
+
+msgid "Typst block requires the Typst renderer"
+msgstr "Блок Typst потребує засобу відображення Typst"
+
+msgid "Typst block — content appears in the PDF"
+msgstr "Блок Typst — вміст потрапляє в PDF"
+
+msgid "Typst cannot render:"
+msgstr "Typst не може відобразити:"
+
+msgid "Typst renderer unavailable"
+msgstr "Засіб відображення Typst недоступний"
+
+msgid "Underline"
+msgstr "Підкреслений"
+
+msgid "Undo Skip"
+msgstr "Скасувати пропуск"
+
+msgid "Undo Skip Duplicates"
+msgstr "Скасувати пропуск дублікатів"
+
+msgid "Undo skip"
+msgstr "Скасувати пропуск"
+
+msgid "Unlink {0}"
+msgstr "Від’єднати {0}"
+
+msgid "Unlink {0} {1} from {2}?"
+msgstr "Від’єднати {0} {1} від {2}?"
+
+msgid "Unmark as Standard"
+msgstr "Зняти позначку стандартного"
+
+msgid "Unsafe html gets stripped"
+msgstr "Небезпечний HTML вилучається"
+
+msgid "Unsaved changes"
+msgstr "Незаписані зміни"
+
+msgid "Unset as Primary"
+msgstr "Зняти позначку основного"
+
+msgid "Untitled section"
+msgstr "Секція без назви"
+
+msgid "Untitled {0}"
+msgstr "{0} без назви"
+
+msgid "Upcoming events"
+msgstr "Найближчі події"
+
+msgid "Updated {0}"
+msgstr "Оновлено {0}"
+
+msgid "Updating global search"
+msgstr "Оновлення глобального пошуку"
+
+msgid "Upload Failed"
+msgstr "Не вдалося вивантажити файл"
+
+msgid "Upload Photo"
+msgstr "Завантажити фото"
+
+msgid "Upload an image or use a URL"
+msgstr "Завантажте зображення або вкажіть URL"
+
+msgid "Upsert"
+msgstr "Upsert"
+
+msgid "Use 'Download Failed Rows' on the Failed metric, fix the errors and import again."
+msgstr "Скористайтеся «Завантажити рядки з помилками» на показнику «Помилки», виправте помилки й завантажте знову."
+
+msgid "Use 'Download Skipped Rows' on the Skipped metric to export the skipped rows."
+msgstr "Скористайтеся «Завантажити пропущені рядки» на показнику «Пропущено», щоб вивантажити пропущені рядки."
+
+msgid "Use HTML editor"
+msgstr "Використовувати редактор HTML"
+
+msgid "Use Kanban v2 (New Experience)"
+msgstr "Використовувати Канбан v2 (новий інтерфейс)"
+
+msgid "Use POST for a Cloud Settings action."
+msgstr "Для дії Cloud Settings використовуйте POST."
+
+msgid "Use template"
+msgstr "Використати шаблон"
+
+msgid "Use {0} for values from the document."
+msgstr "Використовуйте {0} для значень із документа."
+
+msgid "User Workspaces"
+msgstr "Робочі простори користувачів"
+
+msgid "User added."
+msgstr "Користувача додано."
+
+msgid "User created."
+msgstr "Користувача створено."
+
+msgid "User permission added"
+msgstr "Дозвіл користувача додано"
+
+msgid "Users who have this role."
+msgstr "Користувачі з цією роллю."
+
+msgid "Users with any of these roles can see this workspace"
+msgstr "Користувачі з будь-якою з цих ролей бачать цей робочий простір"
+
+msgid "Value Based On field is required to create a dashboard chart"
+msgstr "Для створення діаграми панелі потрібне поле «Значення на основі»"
+
+msgid "Value Color"
+msgstr "Колір значення"
+
+msgid "Value Mappings"
+msgstr "Зіставлення значень"
+
+msgid "Value from"
+msgstr "Значення з"
+
+msgid "Value in File"
+msgstr "Значення у файлі"
+
+msgid "Value text"
+msgstr "Текст значення"
+
+msgid "Variants"
+msgstr "Варіанти"
+
+msgid "Version History"
+msgstr "Історія версій"
+
+msgid "Version deleted"
+msgstr "Версію видалено"
+
+msgid "Version history"
+msgstr "Історія версій"
+
+msgid "Version name"
+msgstr "Назва версії"
+
+msgid "Version restored"
+msgstr "Версію відновлено"
+
+msgid "Version saved"
+msgstr "Версію записано"
+
+msgid "Vertical"
+msgstr "Вертикально"
+
+msgid "Vertical (in a flex row)"
+msgstr "Вертикально (у гнучкому рядку)"
+
+msgid "Vertical (subtle, underline, and right-attached browser-tab)"
+msgstr "Вертикально (ледь помітно, підкреслення та вкладка браузера праворуч)"
+
+msgid "Vertical whitespace"
+msgstr "Вертикальний відступ"
+
+msgid "Vertical, with icons"
+msgstr "Вертикально, зі значками"
+
+msgid "Video"
+msgstr "Відео"
+
+msgid "Visibility conditions"
+msgstr "Умови видимості"
+
+msgid "Visible"
+msgstr "Видимий"
+
+msgid "We couldn't finish setting things up"
+msgstr "Не вдалося завершити налаштування"
+
+msgid "We couldn't finish setting up your apps"
+msgstr "Не вдалося завершити налаштування ваших застосунків"
+
+msgid "We couldn't save your language and region"
+msgstr "Не вдалося записати вашу мову та регіон"
+
+msgid "We do not allow editing of this document."
+msgstr "Редагування цього документа заборонено."
+
+msgid "WeasyPrint"
+msgstr "WeasyPrint"
+
+msgid "WeasyPrint cannot render this format: {0}. Switch the PDF Renderer to Chrome."
+msgstr "WeasyPrint не може відобразити цей формат: {0}. Перемкніть засіб відображення PDF на Chrome."
+
+msgid "WeasyPrint cannot render:"
+msgstr "WeasyPrint не може відобразити:"
+
+msgid "WeasyPrint cannot render: {0}"
+msgstr "WeasyPrint не може відобразити: {0}"
+
+msgid "WeasyPrint is deprecated and cannot be selected for a new format. Use Chrome instead."
+msgstr "WeasyPrint застарів, і його не можна вибрати для нового формату. Використовуйте Chrome."
+
+msgid "WeasyPrint is deprecated and will be removed in version 17. Switch this format to Chrome."
+msgstr "WeasyPrint застарів і буде видалений у версії 17. Перемкніть цей формат на Chrome."
+
+msgid "WeasyPrint renderer unavailable"
+msgstr "Засіб відображення WeasyPrint недоступний"
+
+msgid "Web address"
+msgstr "Вебадреса"
+
+msgid "Welcome to the Portal"
+msgstr "Ласкаво просимо до порталу"
+
+msgid "What it opens"
+msgstr "Що відкриває"
+
+msgid "What kind of thing this entry opens. Spelled the way `Sidebar Item` spells it, so `frappe.ui.sidebar_item.get_route(row)` takes the two page kinds unchanged. `Sidebar` is a value here because a module entry is an entry like any other: it opens the shell, which is the one destination that is not a page."
+msgstr "Що саме відкриває цей елемент. Записується так, як це робить `Sidebar Item`, тож `frappe.ui.sidebar_item.get_route(row)` приймає обидва види сторінок без змін. `Sidebar` тут є значенням, бо елемент модуля — такий самий елемент, як і будь-який: він відкриває оболонку, єдине призначення, що не є сторінкою."
+
+msgid "What prints now"
+msgstr "Що друкується зараз"
+
+msgid "What the rail draws this entry with. Required when the row *adds* an entry, because nothing below it holds one; optional when it references an entry a lower layer already has, where blank means inherit and filled is an override."
+msgstr "Чим панель малює цей елемент. Обов’язкове, коли рядок *додає* елемент, бо нижче його немає; необов’язкове, коли посилається на елемент, який уже має нижчий рівень: порожнє означає успадкувати, заповнене — перевизначення."
+
+msgid "What this sidebar is called, on screen and as its record name (`autoname: field:title`). Defaults to the module's name, and the default is stored -- so a module's own sidebar keeps the name it has always had, and a second sidebar under that module is told apart by being called something else. `unique` on top of that adds one thing the primary key does not: it refuses a second sidebar claiming the title of a row whose name has drifted away from it -- a legacy row, or one written straight to the table."
+msgstr "Як називається ця бічна панель на екрані та як запис (`autoname: field:title`). За замовчуванням — назва модуля, і це значення зберігається, тому власна бічна панель модуля зберігає назву, яку мала завжди, а другу бічну панель модуля відрізняє інша назва. `unique` додає те, чого не дає первинний ключ: забороняє другій бічній панелі претендувати на заголовок рядка, ім’я якого відійшло від нього, — застарілого або записаного прямо в таблицю."
+
+msgid "When active, this map is used for its doctype. An active custom map overrides the standard one."
+msgstr "Коли активна, ця карта використовується для свого типу документа. Активна власна карта перевизначає стандартну."
+
+msgid "Where a web address entry goes. A URL row has no shell and is gated by nothing."
+msgstr "Куди веде елемент вебадреси. Рядок URL не має оболонки й нічим не обмежується."
+
+msgid "Which module's sidebar this workspace appears in"
+msgstr "У бічній панелі якого модуля відображається цей робочий простір"
+
+msgid "Which timestamp to show in the card footer."
+msgstr "Яку позначку часу показувати внизу картки."
+
+msgid "Who can see this workspace"
+msgstr "Хто може бачити цей робочий простір"
+
+msgid "Widget Color"
+msgstr "Колір віджета"
+
+msgid "Width (px)"
+msgstr "Ширина (px)"
+
+msgid "Width in pixels"
+msgstr "Ширина в пікселях"
+
+msgid "With a create action"
+msgstr "З дією створення"
+
+msgid "With action"
+msgstr "З дією"
+
+msgid "With click handlers"
+msgstr "З обробниками кліків"
+
+msgid "With description"
+msgstr "З описом"
+
+msgid "With icon"
+msgstr "З піктограмою"
+
+msgid "With image"
+msgstr "із зображенням"
+
+msgid "With indicator"
+msgstr "З індикатором"
+
+msgid "Workflow State '{0}' has Document Status {1}, but DocType '{2}' is not submittable. Only Document Status 0 (Draft) is allowed for non-submittable DocTypes."
+msgstr "Стан процесу «{0}» має статус документа {1}, але тип документа «{2}» не проводиться. Для типів документів без проведення дозволений лише статус документа 0 (Чернетка)."
+
+msgid "Working draft · not applied yet"
+msgstr "Робоча чернетка · ще не застосована"
+
+msgid "Working..."
+msgstr "Виконується..."
+
+msgid "Workspace reset to standard"
+msgstr "Робочий простір скинуто до стандартного"
+
+msgid "Workspace updated"
+msgstr "Робочий простір оновлено"
+
+msgid "Workspace {0} deleted"
+msgstr "Робочий простір {0} видалено"
+
+msgid "Workspaces this role can access."
+msgstr "Робочі простори, доступні цій ролі."
+
+msgid "Workspaces this site edited before the upgrade, as recorded in their version history. Restoring writes the edit as a customization, so the workspace shows it again at its usual address."
+msgstr "Робочі простори, які цей сайт змінив до оновлення, за записами в історії версій. Відновлення записує зміну як налаштування, тож робочий простір знову показує її за звичною адресою."
+
+msgid "Workspaces whose sidebars were merged to build this one. Read by the module-split tool."
+msgstr "Робочі простори, бічні панелі яких об'єднано для створення цього. Читається інструментом розділення модулів."
+
+msgid "Write Typst here. Use {0} for values from the document. Check the PDF preview to see the result."
+msgstr "Напишіть тут Typst. Використовуйте {0} для значень із документа. Результат дивіться в попередньому перегляді PDF."
+
+msgid "Write the format by hand in HTML and Jinja."
+msgstr "Напишіть формат вручну в HTML та Jinja."
+
+msgid "Write the text to print"
+msgstr "Введіть текст для друку"
+
+msgid "Write {0} into {1} so the app ships it?"
+msgstr "Записати {0} у {1}, щоб застосунок постачав це?"
+
+msgid "You already have the maximum number of bulk PDF exports in progress. Please wait for one to finish."
+msgstr "У вас уже виконується максимальна кількість масових вивантажень у PDF. Дочекайтеся завершення одного з них."
+
+msgid "You are impersonating {0}."
+msgstr "Ви діете від імені {0}."
+
+msgid "You are not allowed to assign layouts to other users"
+msgstr "Вам не дозволено призначати макети іншим користувачам"
+
+msgid "You are not allowed to create or edit global layouts"
+msgstr "Вам не дозволено створювати чи змінювати загальні макети"
+
+msgid "You are not allowed to delete global layouts"
+msgstr "Вам не дозволено видаляти загальні макети"
+
+msgid "You are not allowed to delete this layout"
+msgstr "Вам не дозволено видаляти цей макет"
+
+msgid "You are not allowed to see this onboarding step"
+msgstr "Вам не дозволено бачити цей крок введення в роботу"
+
+msgid "You are not allowed to update global layouts"
+msgstr "Вам не дозволено змінювати загальні макети"
+
+msgid "You are not allowed to update this layout"
+msgstr "Вам не дозволено змінювати цей макет"
+
+msgid "You are not allowed to update this onboarding step"
+msgstr "Вам не дозволено змінювати цей крок введення в роботу"
+
+msgid "You are not permitted to access {0}."
+msgstr "У вас немає прав доступу до {0}."
+
+msgid "You are not permitted to change Print Settings"
+msgstr "У вас немає прав змінювати налаштування друку"
+
+msgid "You are not permitted to print one of the selected documents"
+msgstr "У вас немає прав на друк одного з вибраних документів"
+
+msgid "You can also drag column borders directly in the list view to resize"
+msgstr "Ширину колонок також можна змінити, перетягнувши їхні межі прямо у списку"
+
+msgid "You can continue other work while this runs. Progress updates will appear here."
+msgstr "Ви можете продовжити іншу роботу, поки це виконується. Хід виконання буде показано тут."
+
+msgid "You can only create a private workspace for yourself."
+msgstr "Приватний робочий простір можна створити лише для себе."
+
+msgid "You don't have permission to view this."
+msgstr "У вас немає прав на перегляд."
+
+msgid "You have 1 pending {0} import with a file attached."
+msgstr "У вас 1 незавершене завантаження {0} із приєднаним файлом."
+
+msgid "You have no new notifications"
+msgstr "Нових сповіщень немає"
+
+msgid "You have {0} pending {1} imports with files attached."
+msgstr "У вас {0} незавершених завантажень {1} із приєднаними файлами."
+
+msgid "You need the Workspace Manager role to create a workspace others can see."
+msgstr "Щоб створити робочий простір, видимий іншим, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to delete this workspace."
+msgstr "Щоб видалити цей робочий простір, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to make a workspace public."
+msgstr "Щоб зробити робочий простір загальним, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to manage this workspace."
+msgstr "Щоб керувати цим робочим простором, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to move this workspace."
+msgstr "Щоб перемістити цей робочий простір, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to restore workspace edits."
+msgstr "Щоб відновити зміни робочих просторів, потрібна роль Менеджер робочих просторів."
+
+msgid "You need the Workspace Manager role to see pre-upgrade workspace edits."
+msgstr "Щоб бачити зміни робочих просторів до оновлення, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to change the dock for everyone."
+msgstr "Щоб змінити панель запуску для всіх, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to change this for everyone."
+msgstr "Щоб змінити це для всіх, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to reset a workspace."
+msgstr "Щоб скинути робочий простір, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to reset the dock for everyone."
+msgstr "Щоб скинути панель запуску для всіх, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to reset this for everyone."
+msgstr "Щоб скинути це для всіх, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to see the dock's site layer."
+msgstr "Щоб бачити шар сайту панелі запуску, потрібна роль Менеджер робочих просторів."
+
+msgid "You need to be Workspace Manager to see the sidebar's site layer."
+msgstr "Щоб бачити шар сайту бічної панелі, потрібна роль Менеджер робочих просторів."
+
+msgid "You will receive a copy of this email"
+msgstr "Ви отримаєте копію цього листа"
+
+msgid "You will receive a copy of this email and a read receipt"
+msgstr "Ви отримаєте копію цього листа та підтвердження прочитання"
+
+msgid "You will receive a read receipt"
+msgstr "Ви отримаєте підтвердження прочитання"
+
+msgid "You'll use these details to sign in."
+msgstr "Ці дані знадобляться для входу."
+
+msgid "You're all set."
+msgstr "Усе готово."
+
+msgid "You're invited to join {0}"
+msgstr "Вас запрошено приєднатися до {0}"
+
+msgid "YouTube video player"
+msgstr "Відеопрогравач YouTube"
+
+msgid "Your Layouts"
+msgstr "Ваші макети"
+
+msgid "Your icons and their layout stay just as they are, and you can switch back anytime from Desktop Settings."
+msgstr "Ваші піктограми та їх розташування залишаться без змін, а повернутися можна будь-коли в налаштуваннях робочого столу."
+
+msgid "Your invitation has been cancelled"
+msgstr "Ваше запрошення скасовано"
+
+msgid "Your invitation to join {0} is no longer valid. Ask your team to send a new invitation if you'd still like to join."
+msgstr "Ваше запрошення приєднатися до {0} більше недійсне. Попросіть команду надіслати нове запрошення, якщо все ще хочете приєднатися."
+
+msgid "Your invitation to join {0} was cancelled by the site administrator. If this was a mistake, reach out to your team to request a new invitation."
+msgstr "Ваше запрошення приєднатися до {0} скасував адміністратор сайту. Якщо це помилка, зверніться до команди, щоб отримати нове запрошення."
+
+msgid "Your session has expired due to inactivity. Please log in again to continue."
+msgstr "Ваш сеанс завершено через неактивність. Увійдіть знову, щоб продовжити."
+
+msgid "Your verification code"
+msgstr "Ваш код підтвердження"
+
+msgid "Zoom"
+msgstr "Масштаб"
+
+msgid "app ships this off"
+msgstr "застосунок постачає це"
+
+msgid "applied the builder draft"
+msgstr "застосовано чернетку конструктора"
+
+msgid "auto"
+msgstr "авто"
+
+msgctxt "Custom Workspace"
+msgid "blue"
+msgstr "Синій"
+
+msgid "card"
+msgstr "картка"
+
+msgid "chart"
+msgstr "діаграма"
+
+msgid "custom block"
+msgstr "користувацький блок"
+
+msgid "e.g. doc.apply_discount"
+msgstr "напр. doc.apply_discount"
+
+msgid "e.g. row.qty > 0"
+msgstr "напр. row.qty > 0"
+
+msgid "e.g. {0}"
+msgstr "напр. {0}"
+
+msgid "edited {0} by {1}"
+msgstr "змінено {0}, користувач {1}"
+
+msgid "its app"
+msgstr "його застосунок"
+
+msgid "none"
+msgstr "немає"
+
+msgid "number card"
+msgstr "числова картка"
+
+msgid "onboarding"
+msgstr "введення в роботу"
+
+msgid "or image URL"
+msgstr "або URL зображення"
+
+msgid "quick list"
+msgstr "швидкий список"
+
+msgid "row {0}"
+msgstr "рядок {0}"
+
+msgid "rows {0}"
+msgstr "рядки {0}"
+
+msgid "saved version {0}"
+msgstr "записана версія {0}"
+
+msgid "setup_wizard_text"
+msgstr "Майстер початкового налаштування допоможе швидко підготувати систему до роботи."
+
+msgid "shortcut"
+msgstr "ярлик"
+
+msgid "the app"
+msgstr "застосунок"
+
+msgid "the sidebar generated from this module's contents"
+msgstr "бічна панель, згенерована із вмісту цього модуля"
+
+msgid "the site's"
+msgstr "сайту"
+
+msgid "unlinked"
+msgstr "роз'єднано"
+
+msgid "what the apps ship"
+msgstr "що постачають застосунки"
+
+msgid "widget"
+msgstr "віджет"
+
+msgid "wkhtmltopdf is deprecated and will be removed in version 17. Chrome is the supported renderer."
+msgstr "wkhtmltopdf застарів і буде вилучений у версії 17. Підтримуваний рушій відтворення — Chrome."
+
+msgid "wkhtmltopdf is deprecated and will be removed in version 17. Switch this format to Chrome."
+msgstr "wkhtmltopdf застарів і буде вилучений у версії 17. Перемкніть цей формат на Chrome."
+
+msgid "{0} (Copy)"
+msgstr "{0} (копія)"
+
+msgid "{0} (New Builder)"
+msgstr "{0} (новий конструктор)"
+
+msgid "{0} (detected)"
+msgstr "{0} (виявлено)"
+
+msgid "{0} Permission for {1}"
+msgstr "Право {0} для {1}"
+
+msgid "{0} already answers to the URL {1}, and two shells cannot share one."
+msgstr "{0} уже відповідає URL {1}, а два вікна не можуть мати один URL."
+
+msgid "{0} and {1} more"
+msgstr "{0} і ще {1}"
+
+msgid "{0} belongs to its app and can only be edited in developer mode. Customize the sidebar instead to change it for this site."
+msgstr "{0} належить своєму застосунку й редагується лише в режимі розробника. Щоб змінити його для цього сайту, налаштуйте бічну панель."
+
+msgid "{0} block"
+msgstr "{0} блок"
+
+msgid "{0} blocks"
+msgstr "Блоків: {0}"
+
+msgid "{0} documents become searchable for everyone in this site"
+msgstr "{0} документів стануть доступними для пошуку всім на цьому сайті"
+
+msgid "{0} fields"
+msgstr "Полів: {0}"
+
+msgid "{0} has changed since you opened it. Refresh to get the latest version."
+msgstr "{0} змінено після того, як ви його відкрили. Оновіть, щоб отримати актуальну версію."
+
+msgid "{0} has children but Is Group is 0 — parent must be a group node"
+msgstr "{0} має підлеглі елементи, але «Є групою» дорівнює 0 — батьківський елемент має бути групою"
+
+msgid "{0} has invited you to join {1}."
+msgstr "{0} запрошує вас приєднатися до {1}."
+
+msgid "{0} has no classic layout to restore"
+msgstr "У {0} немає класичного макета для відновлення"
+
+msgid "{0} is a custom HTML format and cannot be edited in the builder."
+msgstr "{0} — це користувацький HTML-формат, його не можна редагувати в конструкторі."
+
+msgid "{0} is a shipped {1} edited in place; the app's version is shown."
+msgstr "{0} — це поставлений {1}, змінений на місці; показано версію із застосунку."
+
+msgid "{0} is a standard format and cannot be changed. A copy with this name will open in the new builder."
+msgstr "{0} — це стандартний формат, його не можна змінювати. Копія з цією назвою відкриється в новому конструкторі."
+
+msgid "{0} is already on the sidebar"
+msgstr "{0} уже є на бічній панелі"
+
+msgid "{0} is an archive of the previous navigation and can no longer be edited. Customize the module's sidebar instead."
+msgstr "{0} — це архів попередньої навігації, його більше не можна редагувати. Натомість налаштуйте бічну панель модуля."
+
+msgid "{0} is another module's name, and a sidebar's title is what the desk calls it by."
+msgstr "{0} — це назва іншого модуля, а заголовок бічної панелі — це те, як її називає робочий стіл."
+
+msgid "{0} is back to standard"
+msgstr "{0} повернуто до стандартного"
+
+msgid "{0} is empty — click to add"
+msgstr "{0} порожньо — натисніть, щоб додати"
+
+msgid "{0} is no longer a sidebar of {1}. Reopen the one you meant to arrange."
+msgstr "{0} більше не є бічною панеллю {1}. Відкрийте ще раз ту, яку ви хотіли впорядкувати."
+
+msgid "{0} is no longer standard; its exported file has been removed."
+msgstr "{0} більше не є стандартним; його експортований файл видалено."
+
+msgid "{0} is not a classic print format"
+msgstr "{0} не є класичним форматом друку"
+
+msgid "{0} is not a module you can assign a workspace to."
+msgstr "{0} — не модуль, якому можна призначити робочий простір."
+
+msgid "{0} is not a module."
+msgstr "{0} не є модулем."
+
+msgid "{0} is not a standard workspace."
+msgstr "{0} не є стандартним робочим простором."
+
+msgid "{0} is not a valid condition: {1}"
+msgstr "{0} — недійсна умова: {1}"
+
+msgid "{0} is not an app on this site."
+msgstr "{0} — не застосунок на цьому сайті."
+
+msgid "{0} is now standard and exported to {1}."
+msgstr "{0} тепер стандартний і експортований до {1}."
+
+msgid "{0} is rendered from an HTML file and cannot be converted"
+msgstr "{0} відтворюється з HTML-файлу, його не можна перетворити"
+
+msgid "{0} is rendered from an HTML file and cannot be edited in the builder."
+msgstr "{0} відтворюється з HTML-файлу, його не можна редагувати в конструкторі."
+
+msgid "{0} is rendered from an HTML file, so this format starts from the standard layout"
+msgstr "{0} відтворюється з HTML-файлу, тому цей формат починається зі стандартного макета"
+
+msgid "{0} is the default print format for {1}. Disabling it will remove it as the default. Do you want to continue?"
+msgstr "{0} — формат друку за замовчуванням для {1}. Якщо його вимкнути, він перестане бути форматом за замовчуванням. Продовжити?"
+
+msgid "{0} items"
+msgstr "Елементів: {0}"
+
+msgid "{0} missing"
+msgstr "Не вистачає: {0}"
+
+msgid "{0} more not shown"
+msgstr "Ще {0} не показано"
+
+msgid "{0} moved under {1}"
+msgstr "{0} переміщено до {1}"
+
+msgid "{0} must be a hex color code like #1a5fb4"
+msgstr "{0} має бути шістнадцятковим кодом кольору, наприклад #1a5fb4"
+
+msgid "{0} must be text"
+msgstr "{0} має бути текстом"
+
+msgid "{0} now has no rail; its exported dock has been removed."
+msgstr "У {0} тепер немає бічної смуги; її експортовану панель запуску видалено."
+
+msgid "{0} of 120 files"
+msgstr "{0} із 120 файлів"
+
+msgid "{0} of this app's modules are on no tier at all"
+msgstr "Модулів цього застосунку без жодного рівня: {0}"
+
+msgid "{0} of {1} cards could not be moved"
+msgstr "Не вдалося перемістити карток: {0} із {1}"
+
+msgid "{0} of {1} done · {2} skipped"
+msgstr "Виконано {0} із {1} · пропущено {2}"
+
+msgid "{0} of {1} steps done"
+msgstr "Виконано кроків: {0} із {1}"
+
+msgid "{0} role changes"
+msgstr "Змін ролей: {0}"
+
+msgid "{0} rows"
+msgstr "Рядків: {0}"
+
+msgid "{0} saved section(s) already exist by name and were not imported"
+msgstr "Збережених розділів, які вже існують за назвою й не були завантажені: {0}"
+
+msgid "{0} selected"
+msgstr "Вибрано: {0}"
+
+msgid "{0} ships no dock yet. Export one to the app first."
+msgstr "{0} ще не постачає панель запуску. Спершу вивантажте її в застосунок."
+
+msgid "{0} unlinked"
+msgstr "{0} роз'єднано"
+
+msgid "{0} warnings found."
+msgstr "Знайдено попереджень: {0}."
+
+msgid "{0} was hidden, and is back on the sidebar"
+msgstr "{0} було приховано, тепер знову на бічній панелі"
+
+msgid "{0} workspace(s) have no module, so nothing can navigate to them. Give each one a module below."
+msgstr "Робочих просторів без модуля: {0}, тому до них не можна перейти. Вкажіть для кожного модуль нижче."
+
+msgid "{0} workspace(s) in this module, which this site owns."
+msgstr "Робочих просторів у цьому модулі: {0}; його веде цей сайт."
+
+msgid "{0} workspace(s) in this module, which {1} ships."
+msgstr "Робочих просторів у цьому модулі: {0}; його постачає {1}."
+
+msgid "{0} workspace(s) name the module {1}, which doesn't exist on this site — nothing can navigate to them. Give each one a module below."
+msgstr "Робочих просторів з модулем {1}, якого немає на цьому сайті: {0}, тому до них не можна перейти. Вкажіть для кожного модуль нижче."
+
+msgid "{0}'s dock belongs to its app and can only be authored in developer mode. Arrange the dock instead to change it for this site."
+msgstr "Панель запуску {0} належить своєму застосунку й редагується лише в режимі розробника. Щоб змінити її для цього сайту, впорядкуйте панель запуску."
+
+msgid "{0}'s dock is now standard and exported to the app."
+msgstr "Панель запуску {0} тепер стандартна й експортована в застосунок."
+
+msgid "{0}'s roles come from the Role Profile {1}. Edit that to change this."
+msgstr "Ролі {0} походять із профілю ролей {1}. Змініть його, щоб змінити це."
+
+msgid "{0}: pre-upgrade edits restored"
+msgstr "{0}: зміни до оновлення відновлено"
+
+msgid "{0}: {1} did not match any results."
+msgstr "{0}: {1} не збігається з жодним результатом."
+
+msgid "{0}: {1} is not a valid field on {2}"
+msgstr "{0}: {1} — недійсне поле в {2}"
+
+msgid "1 window"
+msgstr "1 вікно"
+
+msgid "A colour must be written as #rrggbb, got {0}"
+msgstr "Колір слід записати як #rrggbb, отримано {0}"
+
+msgid "A format rule needs a column"
+msgstr "Правилу форматування потрібна колонка"
+
+msgid "A format rule needs a style"
+msgstr "Правилу форматування потрібен стиль"
+
+msgid "A key is twice in one write to {0}"
+msgstr "Ключ повторюється в одному записі до {0}"
+
+msgid "A missing account side is allowed only for off-balance accounts"
+msgstr "Відсутня сторона рахунку допускається лише для позабалансових рахунків"
+
+msgid "A short wizard collects what you need to start real work"
+msgstr "Короткий майстер збирає те, що потрібно для початку справжньої роботи"
+
+msgid "A variant can be saved only for yourself"
+msgstr "Варіант можна зберегти лише для себе"
+
+msgid "Accent: cobalt"
+msgstr "Акцент: кобальт"
+
+msgid "Accent: teal"
+msgstr "Акцент: бірюзовий"
+
+msgid "Account {0} can define at most three subaccounts"
+msgstr "Рахунок {0} може мати не більше трьох субрахунків"
+
+msgid "Account {0} does not define subaccount {1}"
+msgstr "Рахунок {0} не визначає субрахунок {1}"
+
+msgid "Account {0} is a group and cannot be posted"
+msgstr "Рахунок {0} є групою, за ним не можна проводити"
+
+msgid "Add the command to favorites or remove it"
+msgstr "Додайте команду до обраного або вилучіть її"
+
+msgid "Add to favorites"
+msgstr "Додати до обраного"
+
+msgid "Add widget"
+msgstr "Додати віджет"
+
+msgid "Added to favorites"
+msgstr "Додано до обраного"
+
+msgid "Amount and quantity cannot both be zero"
+msgstr "Сума й кількість не можуть бути одночасно нульовими"
+
+msgid "Amount {0} is not a number"
+msgstr "Сума {0} не є числом"
+
+msgid "An accounting entry needs at least one account"
+msgstr "Бухгалтерський запис потребує щонайменше одного рахунку"
+
+msgid "Another user changes the same data. Try again."
+msgstr "Інший користувач змінює ті самі дані. Спробуйте ще раз."
+
+msgid "App {0} has no demo data generator. Apps with one: {1}"
+msgstr "Застосунок {0} не має генератора демонстраційних даних. Застосунки з ним: {1}"
+
+msgid "Balance-sheet and off-balance accounts cannot be combined"
+msgstr "Балансові й позабалансові рахунки не можна поєднувати"
+
+msgid "Basis Documents"
+msgstr "Документи-підстави"
+
+msgid "Cannot change status from {0} to {1}"
+msgstr "Не можна змінити статус із {0} на {1}"
+
+msgid "Cannot delete predefined {0} {1}"
+msgstr "Не можна видалити предвизначений елемент {0} {1}"
+
+msgid "Cannot edit locked period"
+msgstr "Не можна змінювати закритий період"
+
+msgid "Catalog {0}: DocType {1} does not exist"
+msgstr "Довідник {0}: тип документа {1} не існує"
+
+msgid "Catalog {0}: DocType {1} must be a regular DocType"
+msgstr "Довідник {0}: тип документа {1} має бути звичайним типом документа"
+
+msgid "Catalog {0}: DocType {1} must have is_group field for groups support"
+msgstr "Довідник {0}: тип документа {1} повинен мати поле is_group для підтримки груп"
+
+msgid "Catalog {0}: Owner Hierarchy Field is required when Has Owner Hierarchy is checked"
+msgstr "Довідник {0}: Поле ієрархії власника обов'язкове, якщо встановлено «Має ієрархію власника»"
+
+msgid "Catalog {0}: {1} refers to field {2}, which does not exist in DocType {3}"
+msgstr "Довідник {0}: {1} посилається на поле {2}, якого немає в типі документа {3}"
+
+msgid "Catalogs"
+msgstr "Довідники"
+
+msgid "Characteristic Chart {0}: DocType {1} does not exist"
+msgstr "План видів характеристик {0}: тип документа {1} не існує"
+
+msgid "Characteristic Chart {0}: DocType {1} must be a regular DocType"
+msgstr "План видів характеристик {0}: тип документа {1} має бути звичайним типом документа"
+
+msgid "Characteristic Chart {0}: Predefined Field {1} does not exist in DocType {2}"
+msgstr "План видів характеристик {0}: предвизначене поле {1} не існує в типі документа {2}"
+
+msgid "Characteristic Chart {0}: Value Types Field {1} must be a Table field of {2}"
+msgstr "План видів характеристик {0}: поле типів значень {1} має бути полем-таблицею типу {2}"
+
+msgid "Chart of Accounts {0}: Parent Account Field must link to {1}"
+msgstr "План рахунків {0}: Поле батьківського рахунку має посилатися на {1}"
+
+msgid "Chart of Accounts {0}: Subconto Is Dynamic Field must be Check"
+msgstr "План рахунків {0}: Поле «Субконто динамічне» має бути прапорцем"
+
+msgid "Chart of Accounts {0}: Subconto Reference DocType Field must link to DocType"
+msgstr "План рахунків {0}: Поле типу документа-довідника субконто має посилатися на тип документа"
+
+msgid "Chart of Accounts {0}: Subconto Table Field has no child DocType"
+msgstr "План рахунків {0}: Поле таблиці субконто не має підлеглого типу документа"
+
+msgid "Chart of Accounts {0}: Subconto Table Field must be a Table field"
+msgstr "План рахунків {0}: Поле таблиці субконто має бути полем-таблицею"
+
+msgid "Chart of Accounts {0}: Subconto Table Field must point to a child DocType"
+msgstr "План рахунків {0}: Поле таблиці субконто має вказувати на підлеглий тип документа"
+
+msgid "Chart of Accounts {0}: Subconto Turnover Only Field must be Check"
+msgstr "План рахунків {0}: Поле «Субконто лише за оборотами» має бути прапорцем"
+
+msgid "Chart of Accounts {0}: Subconto Type DocType {1} does not exist"
+msgstr "План рахунків {0}: тип документа виду субконто {1} не існує"
+
+msgid "Chart of Accounts {0}: Subconto Type Field must be Data or Link"
+msgstr "План рахунків {0}: Поле виду субконто має бути типу Дані або Посилання"
+
+msgid "Chart of Accounts {0}: Subconto Type Field must link to {1}"
+msgstr "План рахунків {0}: Поле виду субконто має посилатися на {1}"
+
+msgid "Chart of Accounts {0}: account DocType must be a regular DocType"
+msgstr "План рахунків {0}: тип документа рахунку має бути звичайним типом документа"
+
+msgid "Chart of Accounts {0}: account DocType {1} does not exist"
+msgstr "План рахунків {0}: тип документа рахунку {1} не існує"
+
+msgid "Chart of Accounts {0}: {1} field {2} must name a field in DocType {3}"
+msgstr "План рахунків {0}: поле {2} у {1} має вказувати на поле типу документа {3}"
+
+msgid "Chart of Accounts {0}: {1} has an incompatible field type"
+msgstr "План рахунків {0}: поле {1} має несумісний тип"
+
+msgid "Code Field"
+msgstr "Поле коду"
+
+msgid "Column {0} of {1} must be NOT NULL to partition the table"
+msgstr "Колонка {0} таблиці {1} має бути NOT NULL, щоб розбити таблицю на секції"
+
+msgid "Command {0} is not registered for {1}"
+msgstr "Команду {0} не зареєстровано для {1}"
+
+msgid "Control Negative row {0}"
+msgstr "Контроль від'ємних залишків, рядок {0}"
+
+msgid "Could not load data"
+msgstr "Не вдалося завантажити дані"
+
+msgid "Country, time zone and currency of the site"
+msgstr "Країна, часовий пояс і валюта сайту"
+
+msgid "Create on basis"
+msgstr "Ввести на підставі"
+
+msgid "Currency Accounting Field"
+msgstr "Поле валютного обліку"
+
+msgid "Decide later"
+msgstr "Вирішити пізніше"
+
+msgid "Demo data"
+msgstr "Демонстраційні дані"
+
+msgid "Demo data already exists. Use --reset to delete it and create it again."
+msgstr "Демонстраційні дані вже існують. Використайте --reset, щоб видалити їх і створити знову."
+
+msgid "Demo data failed"
+msgstr "Помилка демонстраційних даних"
+
+msgid "Demo data is already loaded"
+msgstr "Демонстраційні дані вже завантажено"
+
+msgid "Demo data is being processed"
+msgstr "Демонстраційні дані обробляються"
+
+msgid "Demo data is being processed. Wait a few minutes."
+msgstr "Демонстраційні дані обробляються. Зачекайте кілька хвилин."
+
+msgid "Demo data is loaded"
+msgstr "Демонстраційні дані завантажено"
+
+msgid "Demo data is loading"
+msgstr "Демонстраційні дані завантажуються"
+
+msgid "Demo data is not yet supported on this database"
+msgstr "Демонстраційні дані поки не підтримуються в цій базі даних"
+
+msgid "Demo data is ready"
+msgstr "Демонстраційні дані готові"
+
+msgid "Demo data removed"
+msgstr "Демонстраційні дані видалено"
+
+msgid "Demo data self-check failed: {0}"
+msgstr "Самоперевірка демонстраційних даних не пройшла: {0}"
+
+msgid "Derived Documents"
+msgstr "Похідні документи"
+
+msgid "Dimensions"
+msgstr "Виміри"
+
+msgid "Document Movements {0}: Register {1} does not exist"
+msgstr "Рухи документа {0}: регістр {1} не існує"
+
+msgid "Document Movements {0}: Register {1} is listed twice"
+msgstr "Рухи документа {0}: регістр {1} указано двічі"
+
+msgid "Document Movements: DocType {0} does not exist"
+msgstr "Рухи документа: тип документа {0} не існує"
+
+msgid "Document Movements: {0} is a child table and cannot write registers"
+msgstr "Рухи документа: {0} є табличною частиною і не може записувати регістри"
+
+msgid "Document type {0} does not write register {1}"
+msgstr "Тип документа {0} не записує регістр {1}"
+
+msgid "Document type {0} has sequence parts: use rebuild_entries"
+msgstr "Тип документа {0} має частини послідовності: використовуйте rebuild_entries"
+
+msgid "Document type {0} is in sequence {1} but cannot be reposted"
+msgstr "Тип документа {0} входить до послідовності {1}, але не може бути перепроведений"
+
+msgid "Document type {0} is in sequence {1} but cannot repost a part"
+msgstr "Тип документа {0} входить до послідовності {1}, але не може перепровести частину"
+
+msgid "Document type {0} writes registers but has no make_movements method"
+msgstr "Тип документа {0} записує регістри, але не має методу make_movements"
+
+msgid "Documents, lists and reports open as windows."
+msgstr "Документи, списки та звіти відкриваються у вікнах."
+
+msgid "Edit widget"
+msgstr "Змінити віджет"
+
+msgid "Enter the organization's initial settings"
+msgstr "Введіть початкові налаштування організації"
+
+msgid "Exchange handler {0} is not registered"
+msgstr "Обробник обміну {0} не зареєстровано"
+
+msgid "Exchange rule {0} is already running"
+msgstr "Правило обміну {0} уже виконується"
+
+msgid "Exchange rule {0} is disabled"
+msgstr "Правило обміну {0} вимкнено"
+
+msgid "Favorites"
+msgstr "Обране"
+
+msgid "Field {0}: value {1} cannot be converted ({2})"
+msgstr "Поле {0}: значення {1} не можна перетворити ({2})"
+
+msgid "Fields row {0}"
+msgstr "Рядок полів {0}"
+
+msgid "Fill with demo data"
+msgstr "Заповнити демонстраційними даними"
+
+msgid "Find a command, report or open window…"
+msgstr "Знайти команду, звіт або відкрите вікно…"
+
+msgid "Find in section"
+msgstr "Знайти в розділі"
+
+msgid "Find in section…"
+msgstr "Знайти в розділі…"
+
+msgid "Generate"
+msgstr "Сформувати"
+
+msgid "Good night, {0}"
+msgstr "Доброї ночі, {0}"
+
+msgid "Group Field"
+msgstr "Поле групи"
+
+msgid "Group by"
+msgstr "Групувати за"
+
+msgid "Initial settings"
+msgstr "Початкові налаштування"
+
+msgid "Initial setup"
+msgstr "Початкове налаштування"
+
+msgid "Invalid Catalog"
+msgstr "Недійсний довідник"
+
+msgid "Invalid Characteristic Chart"
+msgstr "Недійсний план видів характеристик"
+
+msgid "Invalid Characteristic Value"
+msgstr "Недійсне значення характеристики"
+
+msgid "Invalid Chart of Accounts"
+msgstr "Недійсний план рахунків"
+
+msgid "Invalid Document Movements"
+msgstr "Недійсні рухи документа"
+
+msgid "Invalid Register"
+msgstr "Недійсний регістр"
+
+msgid "Invalid Sequence"
+msgstr "Недійсна послідовність"
+
+msgid "Invalid Value Type"
+msgstr "Недійсний тип значення"
+
+msgid "Keyboard shortcuts"
+msgstr "Комбінації клавіш"
+
+msgid "Large"
+msgstr "Великий"
+
+msgid "Look around with ready sample records"
+msgstr "Ознайомтеся з готовими зразками записів"
+
+msgid "Maximize"
+msgstr "Розгорнути"
+
+msgid "Mini report"
+msgstr "Міні-звіт"
+
+msgid "Month must look like YYYY-MM: {0}"
+msgstr "Місяць має мати вигляд РРРР-ММ: {0}"
+
+msgid "Move between commands in a section panel"
+msgstr "Переходьте між командами на панелі розділу"
+
+msgid "Movements of register {0} can only be written by posting a document"
+msgstr "Рухи регістра {0} можна записати лише проведенням документа"
+
+msgid "Next window"
+msgstr "Наступне вікно"
+
+msgid "No Numbering Setting for {0}"
+msgstr "Немає налаштування нумерації для {0}"
+
+msgid "No app provides demo data"
+msgstr "Жоден застосунок не постачає демонстраційні дані"
+
+msgid "No data for the period"
+msgstr "Немає даних за період"
+
+msgid "No data for the selected period and filters"
+msgstr "Немає даних за вибраний період і відбори"
+
+msgid "No permission to read the history of {0}"
+msgstr "Немає прав на читання історії {0}"
+
+msgid "No related documents"
+msgstr "Немає пов'язаних документів"
+
+msgid "No validator is registered for the code kind {0}"
+msgstr "Для виду коду {0} не зареєстровано засобу перевірки"
+
+msgid "Not enough rights to change status from {0} to {1}"
+msgstr "Недостатньо прав, щоб змінити статус із {0} на {1}"
+
+msgid "Nothing found"
+msgstr "Нічого не знайдено"
+
+msgid "Number format"
+msgstr "Формат числа"
+
+msgid "Off Balance Field"
+msgstr "Поле позабалансового"
+
+msgid "On Date"
+msgstr "На дату"
+
+msgid "Only the owner can delete a variant"
+msgstr "Лише власник може видалити варіант"
+
+msgid "Only the sample records are deleted. Your own data stays."
+msgstr "Видаляються лише зразки записів. Ваші власні дані залишаються."
+
+msgid "Open a command and keep the panel"
+msgstr "Відкрийте команду й залишіть панель"
+
+msgid "Open again"
+msgstr "Відкрити знову"
+
+msgid "Open windows"
+msgstr "Відкриті вікна"
+
+msgid "Owner Hierarchy Field"
+msgstr "Поле ієрархії власника"
+
+msgid "Parent Account Field"
+msgstr "Поле батьківського рахунку"
+
+msgid "Predefined Field"
+msgstr "Предвизначене поле"
+
+msgid "Provider {0} is not registered"
+msgstr "Постачальника {0} не зареєстровано"
+
+msgid "QR code data is too long"
+msgstr "Дані QR-коду задовгі"
+
+msgid "QR code data is too long (maximum {0} characters)"
+msgstr "Дані QR-коду задовгі (максимум {0} символів)"
+
+msgid "QR code scale must be an integer from 1 to {0}"
+msgstr "Масштаб QR-коду має бути цілим числом від 1 до {0}"
+
+msgid "Quantity Accounting Field"
+msgstr "Поле кількісного обліку"
+
+msgid "Recent"
+msgstr "Нещодавні"
+
+msgid "Recent documents"
+msgstr "Нещодавні документи"
+
+msgid "Regional settings"
+msgstr "Регіональні налаштування"
+
+msgid "Register {0} does not exist"
+msgstr "Регістр {0} не існує"
+
+msgid "Register {0} has no accounting totals"
+msgstr "Регістр {0} не має бухгалтерських підсумків"
+
+msgid "Register {0} has no balance"
+msgstr "Регістр {0} не має залишку"
+
+msgid "Register {0} has no current balance totals"
+msgstr "Регістр {0} не має підсумків поточних залишків"
+
+msgid "Register {0} has no date field"
+msgstr "Регістр {0} не має поля дати"
+
+msgid "Register {0} has no date field to partition by"
+msgstr "Регістр {0} не має поля дати для розбиття на секції"
+
+msgid "Register {0} has no part field"
+msgstr "Регістр {0} не має поля частини"
+
+msgid "Register {0} has no registrar field"
+msgstr "Регістр {0} не має поля реєстратора"
+
+msgid "Register {0} has no turnover"
+msgstr "Регістр {0} не має обороту"
+
+msgid "Register {0} is not an information register"
+msgstr "Регістр {0} не є регістром відомостей"
+
+msgid "Register {0}: DocType {1} does not exist"
+msgstr "Регістр {0}: тип документа {1} не існує"
+
+msgid "Register {0}: DocType {1} must be a regular DocType"
+msgstr "Регістр {0}: тип документа {1} має бути звичайним типом документа"
+
+msgid "Register {0}: Totals DocType is set but totals are None"
+msgstr "Регістр {0}: тип документа підсумків задано, але підсумків немає (None)"
+
+msgid "Register {0}: Totals DocType {1} does not exist"
+msgstr "Регістр {0}: тип документа підсумків {1} не існує"
+
+msgid "Register {0}: current balance totals need at least one dimension"
+msgstr "Регістр {0}: підсумки поточних залишків потребують щонайменше одного виміру"
+
+msgid "Register {0}: current balance totals need kind Accumulation: Balance"
+msgstr "Регістр {0}: підсумки поточних залишків потребують виду «Накопичення: Залишок»"
+
+msgid "Register {0}: field {1} is listed twice"
+msgstr "Регістр {0}: поле {1} указано двічі"
+
+msgid "Register {0}: information registers have no totals"
+msgstr "Регістр {0}: регістри відомостей не мають підсумків"
+
+msgid "Register {0}: resource {1} must be a numeric field"
+msgstr "Регістр {0}: ресурс {1} має бути числовим полем"
+
+msgid "Register {0}: row has unknown fields {1}"
+msgstr "Регістр {0}: рядок має невідомі поля {1}"
+
+msgid "Register {0}: row {1} has no date"
+msgstr "Регістр {0}: рядок {1} не має дати"
+
+msgid "Register {0}: the key of its totals has {1} parts, the limit is {2}; use fewer dimensions"
+msgstr "Регістр {0}: ключ його підсумків має частин: {1}, а ліміт — {2}; використайте менше вимірів"
+
+msgid "Register {0}: the key of its totals is {1} bytes, the limit is {2}; set a shorter Length on the dimension fields or use fewer dimensions"
+msgstr "Регістр {0}: ключ його підсумків займає {1} байт, а ліміт — {2}; задайте меншу довжину полів вимірів або використайте менше вимірів"
+
+msgid "Register {0}: {1} is required for kind {2}"
+msgstr "Регістр {0}: {1} обов'язкове для виду {2}"
+
+msgid "Register {0}: {1} must be a resource to control its negative values"
+msgstr "Регістр {0}: {1} має бути ресурсом, щоб контролювати його від'ємні значення"
+
+msgid "Register {0}: {1} refers to field {2}, which does not exist in DocType {3}"
+msgstr "Регістр {0}: {1} посилається на поле {2}, якого немає в типі документа {3}"
+
+msgid "Register {0}: {1} restricts rows, so it must be a Link dimension that does not ignore user permissions"
+msgstr "Регістр {0}: {1} обмежує рядки, тому має бути виміром-посиланням, що не ігнорує права користувачів"
+
+msgid "Registers need MariaDB or PostgreSQL, not {0}"
+msgstr "Регістри потребують MariaDB або PostgreSQL, а не {0}"
+
+msgid "Remove demo data"
+msgstr "Видалити демонстраційні дані"
+
+msgid "Remove from favorites"
+msgstr "Вилучити з обраного"
+
+msgid "Remove widget"
+msgstr "Вилучити віджет"
+
+msgid "Removed from favorites"
+msgstr "Вилучено з обраного"
+
+msgid "Reserve at least one number"
+msgstr "Зарезервуйте щонайменше один номер"
+
+msgid "Reset layout"
+msgstr "Скинути макет"
+
+msgid "Restore size"
+msgstr "Відновити розмір"
+
+msgid "Role desk"
+msgstr "Робочий стіл ролі"
+
+msgid "Row #{0}: duplicate value type {1}"
+msgstr "Рядок №{0}: дубль типу значення {1}"
+
+msgid "Row #{0}: {1} is neither a primitive type nor a DocType"
+msgstr "Рядок №{0}: {1} не є ні примітивним типом, ні типом документа"
+
+msgid "Sample records to look around"
+msgstr "Зразки записів для ознайомлення"
+
+msgid "Sample records will be created. This takes a few minutes."
+msgstr "Буде створено зразки записів. Це триватиме кілька хвилин."
+
+msgid "Save and continue"
+msgstr "Записати й продовжити"
+
+msgid "Save and finish"
+msgstr "Записати й завершити"
+
+msgid "Search all sections"
+msgstr "Шукати в усіх розділах"
+
+msgid "Sections"
+msgstr "Розділи"
+
+msgid "Sequence {0} has key fields: use rebuild_entries"
+msgstr "Послідовність {0} має поля ключа: використовуйте rebuild_entries"
+
+msgid "Sequence {0}: DocType {1} does not exist"
+msgstr "Послідовність {0}: тип документа {1} не існує"
+
+msgid "Sequence {0}: DocType {1} is not submittable"
+msgstr "Послідовність {0}: тип документа {1} не проводиться"
+
+msgid "Sequence {0}: Register {1} does not exist"
+msgstr "Послідовність {0}: регістр {1} не існує"
+
+msgid "Sequence {0}: a document type is listed twice"
+msgstr "Послідовність {0}: тип документа вказано двічі"
+
+msgid "Sequence {0}: add at least one document type"
+msgstr "Послідовність {0}: додайте щонайменше один тип документа"
+
+msgid "Sequence {0}: key field {1} does not exist in DocType {2}"
+msgstr "Послідовність {0}: поле ключа {1} не існує в типі документа {2}"
+
+msgid "Sequence {0}: restore method {1} cannot be found"
+msgstr "Послідовність {0}: метод відновлення {1} не знайдено"
+
+msgid "Set Not Nullable (and a default date) on the field {0} of {1}, migrate, then partition"
+msgstr "Встановіть Not Nullable (і дату за замовчуванням) для поля {0} у {1}, виконайте міграцію, а потім розбийте на секції"
+
+msgid "Show desktop"
+msgstr "Показати робочий стіл"
+
+msgid "Small"
+msgstr "Малий"
+
+msgid "Status of {0} does not change"
+msgstr "Статус {0} не змінюється"
+
+msgid "Step {0} is not finished"
+msgstr "Крок {0} не завершено"
+
+msgid "Subconto Is Dynamic Field"
+msgstr "Поле «Субконто динамічне»"
+
+msgid "Subconto Reference DocType Field"
+msgstr "Поле типу документа-довідника субконто"
+
+msgid "Subconto Table Field"
+msgstr "Поле таблиці субконто"
+
+msgid "Subconto Turnover Only Field"
+msgstr "Поле «Субконто лише за оборотами»"
+
+msgid "Subconto Type Field"
+msgstr "Поле виду субконто"
+
+msgid "Submit the document first"
+msgstr "Спершу проведіть документ"
+
+msgid "Subordination Tree"
+msgstr "Дерево підпорядкованості"
+
+msgid "Table {0} does not exist"
+msgstr "Таблиця {0} не існує"
+
+msgid "The basis document {0} is not submitted"
+msgstr "Документ-підставу {0} не проведено"
+
+msgid "The condition between needs two values"
+msgstr "Умова «між» потребує двох значень"
+
+msgid "The condition {0} needs a list of values"
+msgstr "Умова {0} потребує списку значень"
+
+msgid "The demo job failed. See the error log."
+msgstr "Завдання демонстраційних даних завершилося помилкою. Див. журнал помилок."
+
+msgid "The initial settings are entered"
+msgstr "Початкові налаштування введено"
+
+msgid "The layout is too big"
+msgstr "Макет завеликий"
+
+msgid "The period of the document is closed: posted documents of a closed period cannot be changed"
+msgstr "Період документа закрито: проведені документи закритого періоду змінювати не можна"
+
+msgid "The settings of a variant must be an object"
+msgstr "Налаштування варіанта мають бути об'єктом"
+
+msgid "The site already has its own data, so demo data cannot be added"
+msgstr "На сайті вже є власні дані, тому демонстраційні дані додати не можна"
+
+msgid "The status field cannot be set through extra values"
+msgstr "Поле статусу не можна задати через додаткові значення"
+
+msgid "The step could not be saved"
+msgstr "Не вдалося записати крок"
+
+msgid "The table has partitions that are not yearly"
+msgstr "Таблиця має секції, які не є річними"
+
+msgid "There is no demo data"
+msgstr "Демонстраційних даних немає"
+
+msgid "This document has no movements"
+msgstr "У цього документа немає рухів"
+
+msgid "This quarter"
+msgstr "Цей квартал"
+
+msgid "This step is required"
+msgstr "Цей крок обов'язковий"
+
+msgid "This takes a few minutes"
+msgstr "Це триватиме кілька хвилин"
+
+msgid "This year"
+msgstr "Цей рік"
+
+msgid "Time zone"
+msgstr "Часовий пояс"
+
+msgid "Try again"
+msgstr "Спробувати ще раз"
+
+msgid "Turnovers"
+msgstr "Обороти"
+
+msgid "Unknown change log action {0}"
+msgstr "Невідома дія журналу змін {0}"
+
+msgid "Unknown choice {0}"
+msgstr "Невідомий вибір {0}"
+
+msgid "Unknown condition {0}"
+msgstr "Невідома умова {0}"
+
+msgid "Unknown language {0}"
+msgstr "Невідома мова {0}"
+
+msgid "Unknown provider kind {0}"
+msgstr "Невідомий вид постачальника {0}"
+
+msgid "Unknown scale {0}. Use: {1}"
+msgstr "Невідомий масштаб {0}. Допустимі: {1}"
+
+msgid "Unknown setup step {0}"
+msgstr "Невідомий крок налаштування {0}"
+
+msgid "Unloaded from memory, will open again"
+msgstr "Вивантажено з пам'яті, відкриється знову"
+
+msgid "Value {0} does not fit the value types of {1} {2}: {3}"
+msgstr "Значення {0} не відповідає типам значень {1} {2}: {3}"
+
+msgid "Wide"
+msgstr "Широкий"
+
+msgid "Widget removed"
+msgstr "Віджет вилучено"
+
+msgid "Widgets"
+msgstr "Віджети"
+
+msgid "Window N on the task bar"
+msgstr "Вікно N на панелі завдань"
+
+msgid "Window closed: {0}"
+msgstr "Вікно закрито: {0}"
+
+msgid "Window minimized: {0}"
+msgstr "Вікно згорнуто: {0}"
+
+msgid "Window opened: {0}"
+msgstr "Вікно відкрито: {0}"
+
+msgid "Window: close"
+msgstr "Вікно: закрити"
+
+msgid "You have no permission to read field {0} of register {1}"
+msgstr "У вас немає прав на читання поля {0} регістра {1}"
+
+msgid "You have no permission to write register {0} with {1} {2}"
+msgstr "У вас немає прав на запис регістра {0} з {1} {2}"
+
+msgid "You may not read \"{0}\". No data is shown."
+msgstr "Ви не можете читати «{0}». Дані не показуються."
+
+msgid "Your widgets will be here"
+msgstr "Тут будуть ваші віджети"
+
+msgid "documents"
+msgstr "документи"
+
+msgid "no read permission"
+msgstr "немає права на читання"
+
+msgid "{0} commands"
+msgstr "Команд: {0}"
+
+msgid "{0} has a value that is not in the list"
+msgstr "{0} має значення, якого немає в списку"
+
+msgid "{0} is not a chart of characteristic types"
+msgstr "{0} не є планом видів характеристик"
+
+msgid "{0} is not a field of register {1}"
+msgstr "{0} не є полем регістра {1}"
+
+msgid "{0} is not a resource of register {1}"
+msgstr "{0} не є ресурсом регістра {1}"
+
+msgid "{0} must be a date"
+msgstr "{0} має бути датою"
+
+msgid "{0} must be a list"
+msgstr "{0} має бути списком"
+
+msgid "{0} must be a number"
+msgstr "{0} має бути числом"
+
+msgid "{0} must be a whole number"
+msgstr "{0} має бути цілим числом"
+
+msgid "{0} was not found"
+msgstr "{0} не знайдено"
+
+msgid "{0} windows"
+msgstr "Вікон: {0}"
+
+msgid "Force a new page"
+msgstr "Примусовий новий аркуш"
+
+msgid "Formatting options"
+msgstr "Параметри форматування"
+
+msgid "Forms"
+msgstr "Форми"
+
+msgid "Full screen"
+msgstr "На весь екран"
+
+msgid "Gantt View Mode"
+msgstr "Режим перегляду діаграми Ганта"
+
+msgid "Gap"
+msgstr "Проміжок"
+
+msgid "Generating preview…"
+msgstr "Створення попереднього перегляду…"
+
+msgid "Geo"
+msgstr "Гео"
+
+msgid "Get Started"
+msgstr "Почати роботу"
+
+msgid "Get around the system quickly with keyboard shortcuts."
+msgstr "Швидко працюйте в системі за допомогою клавіатурних скорочень."
+
+msgid "Get notified when a recipient opens an email you send."
+msgstr "Отримуйте сповіщення, коли одержувач відкриває надісланий вами лист."
+
+msgid "Get notified when there's a new reply in an email thread you're part of."
+msgstr "Отримуйте сповіщення про нову відповідь у розмові електронною поштою, в якій ви берете участь."
+
+msgid "Getting started"
+msgstr "Початок роботи"
+
+msgid "Give the version a name"
+msgstr "Дайте версії назву"
+
+msgid "Global"
+msgstr "Глобальні"
+
+msgid "Global Layouts"
+msgstr "Глобальні макети"
+
+msgid "Global Search"
+msgstr "Глобальний пошук"
+
+msgid "Global search updated"
+msgstr "Глобальний пошук оновлено"
+
+msgid "Go back to the current version before applying"
+msgstr "Повернутися до поточної версії перед застосуванням"
+
+msgid "Go to list"
+msgstr "Перейти до списку"
+
+msgid "Going to Projects"
+msgstr "Перехід до проєктів"
+
+msgid "Good afternoon"
+msgstr "Добрий день"
+
+msgid "Good afternoon, {0}"
+msgstr "Добрий день, {0}"
+
+msgid "Good evening"
+msgstr "Добрий вечір"
+
+msgid "Good evening, {0}"
+msgstr "Добрий вечір, {0}"
+
+msgid "Good morning"
+msgstr "Доброго ранку"
+
+msgid "Good morning, {0}"
+msgstr "Доброго ранку, {0}"
+
+msgid "Google Sheet"
+msgstr "Google-таблиця"
+
+msgid "Granted"
+msgstr "Надано"
+
+msgid "Great"
+msgstr "Чудово"
+
+msgid "Grid"
+msgstr "Сітка"
+
+msgid "Grid lines"
+msgstr "Лінії сітки"
+
+msgid "Groups and submenus"
+msgstr "Групи та підменю"
+
+msgid "Groups, shortcuts and disabled rows"
+msgstr "Групи, скорочення та вимкнені рядки"
+
+msgid "HTML block"
+msgstr "HTML-блок"
+
+msgid "HTML message with inline link"
+msgstr "HTML-повідомлення з вбудованим посиланням"
+
+msgid "Heading {0}"
+msgstr "Заголовок {0}"
+
+msgid "Height"
+msgstr "Висота"
+
+msgid "Hi {0}, an account has been created for you at {1}. Before you can log in, you'll need to set your password."
+msgstr "Вітаємо, {0}! Для вас створено обліковий запис на {1}. Щоб увійти, спершу встановіть пароль."
+
+msgid "Hi {0}, let's get the basics right"
+msgstr "Привіт, {0}, налаштуймо основне"
+
+msgid "Hidden by its visibility condition"
+msgstr "Приховано умовою видимості"
+
+msgid "Hide colon"
+msgstr "Приховати двокрапку"
+
+msgid "Hide this item. Explicit rather than implied by the row's presence, which is what lets a user's `hidden: 0` un-hide something the site hid."
+msgstr "Приховати цей елемент. Задається явно, а не випливає з наявності рядка, тому значення користувача `hidden: 0` може повернути елемент, який приховав сайт."
+
+msgid "Horizontal"
+msgstr "Горизонтально"
+
+msgid "Horizontal (arrows move between tabs, Home/End jump)"
+msgstr "Горизонтально (стрілки перемикають вкладки, Home/End — перехід на початок/кінець)"
+
+msgid "Horizontal rule"
+msgstr "Горизонтальна лінія"
+
+msgid "Horizontal, with icons"
+msgstr "Горизонтально, з піктограмами"
+
+msgid "Hover me"
+msgstr "Наведіть курсор"
+
+msgid "How cards look in the new Kanban experience."
+msgstr "Як виглядають картки в новому режимі Канбан."
+
+msgid "How do you want to start?"
+msgstr "Як ви хочете почати?"
+
+msgid "How it reads on the rail."
+msgstr "Як це виглядає на панелі."
+
+msgid "How this entry reads on the rail. Required when the row adds and optional when it references, exactly as `icon` is -- and outside the row's identity, so re-labelling can never detach a row from itself."
+msgstr "Як цей запис виглядає на панелі. Обов'язкове, якщо рядок додає елемент, і необов'язкове, якщо посилається на існуючий, так само як `icon`, і не входить до ідентифікатора рядка, тож перейменування ніколи не від'єднає рядок від самого себе."
+
+msgid "ID or a text field."
+msgstr "Ідентифікатор або текстове поле."
+
+msgid "IP address:"
+msgstr "IP-адреса:"
+
+msgid "Icon-only pills (label becomes the accessible name)"
+msgstr "Позначки лише з піктограмами (підпис стає доступною назвою)"
+
+msgid "Icons"
+msgstr "Піктограми"
+
+msgid "If this was you:"
+msgstr "Якщо це були ви:"
+
+msgid "If this wasn't you:"
+msgstr "Якщо це були не ви:"
+
+msgid "If you didn't request this code, you can safely ignore this email."
+msgstr "Якщо ви не запитували цей код, можете просто проігнорувати цей лист."
+
+msgid "If you didn't request this, you can safely ignore this email. Your account is safe."
+msgstr "Якщо ви цього не запитували, можете проігнорувати цей лист. Ваш обліковий запис у безпеці."
+
+msgid "If you didn't request this, you can safely ignore this email. Your password won't be changed."
+msgstr "Якщо ви цього не запитували, можете проігнорувати цей лист. Ваш пароль не буде змінено."
+
+msgid "If you weren't expecting this account, you can safely ignore this email."
+msgstr "Якщо ви не очікували цього облікового запису, можете проігнорувати цей лист."
+
+msgid "If you weren't expecting this, you can safely ignore this email."
+msgstr "Якщо ви цього не очікували, можете проігнорувати цей лист."
+
+msgid "Image loaded from a web address"
+msgstr "Зображення, завантажене з вебадреси"
+
+msgid "Image size"
+msgstr "Розмір зображення"
+
+msgid "Import Action"
+msgstr "Дія завантаження"
+
+msgid "Import could not start. Please resolve the errors in the import file."
+msgstr "Не вдалося почати завантаження. Усуньте помилки у файлі завантаження."
+
+msgid "Import failed"
+msgstr "Завантаження не вдалося"
+
+msgid "Import is running. Progress updates will appear shortly."
+msgstr "Виконується завантаження. Оновлення перебігу з'являться незабаром."
+
+msgid "Import log"
+msgstr "Журнал завантаження"
+
+msgid "Import settings"
+msgstr "Налаштування завантаження"
+
+msgid "Import steps"
+msgstr "Кроки завантаження"
+
+msgid "Import {0}"
+msgstr "Завантажити {0}"
+
+msgid "Imported"
+msgstr "Завантажено"
+
+msgid "Importing or updating {0} of {1}, {2}"
+msgstr "Завантаження або оновлення {0} з {1}, {2}"
+
+msgid "Importing row {0} of {1}"
+msgstr "Завантаження рядка {0} з {1}"
+
+msgid "Importing your data"
+msgstr "Завантаження ваших даних"
+
+msgid "In developer mode a standard workspace's edits belong to the app's JSON, not to a customization."
+msgstr "У режимі розробника зміни стандартного робочого простору належать до JSON програми, а не до налаштування."
+
+msgid "Include in Import Template"
+msgstr "Включити в шаблон завантаження"
+
+msgid "Include {0} in global search"
+msgstr "Включати {0} у глобальний пошук"
+
+msgid "Incorrect configuration"
+msgstr "Неправильна конфігурація"
+
+msgid "Increase"
+msgstr "Збільшити"
+
+msgid "Increase indent"
+msgstr "Збільшити відступ"
+
+msgid "Inherit"
+msgstr "Успадкувати"
+
+msgid "Insert image"
+msgstr "Вставити зображення"
+
+msgid "Insert link"
+msgstr "Вставити посилання"
+
+msgid "Insert or Update Records"
+msgstr "Вставити або оновити записи"
+
+msgid "Insert video"
+msgstr "Вставити відео"
+
+msgid "Inserted"
+msgstr "Вставлено"
+
+msgid "Interactive content (a filters panel)"
+msgstr "Інтерактивний вміст (панель відборів)"
+
+msgid "Intervals"
+msgstr "Інтервали"
+
+msgid "Invalid Cloud Settings data."
+msgstr "Недійсні дані Cloud Settings."
+
+msgid "Invalid Cloud Settings operation."
+msgstr "Недійсна операція Cloud Settings."
+
+msgid "Invalid Cloud Settings query."
+msgstr "Недійсний запит Cloud Settings."
+
+msgid "Invalid Cloud Settings time window."
+msgstr "Недійсний часовий проміжок Cloud Settings."
+
+msgid "Invalid Condition"
+msgstr "Недійсна умова"
+
+msgid "Invalid Snippet"
+msgstr "Недійсний фрагмент"
+
+msgid "Invalid Typst block"
+msgstr "Недійсний блок Typst"
+
+msgid "Invalid Typst markup"
+msgstr "Недійсна розмітка Typst"
+
+msgid "Invalid arguments"
+msgstr "Недійсні аргументи"
+
+msgid "Invalid expression in Web Form Dynamic Filter for {0}: {1}"
+msgstr "Недійсний вираз у динамічному відборі вебформи для {0}: {1}"
+
+msgid "Invalid group field"
+msgstr "Недійсне поле групування"
+
+msgid "Invalid value for {0}"
+msgstr "Недійсне значення для {0}"
+
+msgid "Is Default Module"
+msgstr "Основний модуль"
+
+msgid "Is Dismissible"
+msgstr "Можна закрити"
+
+msgid "Is Optional"
+msgstr "Необов'язково"
+
+msgid "Issues"
+msgstr "Проблеми"
+
+msgid "It expires in 1 minute."
+msgstr "Термін дії спливає через 1 хвилину."
+
+msgid "It expires in {0} minutes."
+msgstr "Термін дії спливає через {0} хв."
+
+msgid "Italic"
+msgstr "Курсив"
+
+msgid "Item"
+msgstr "Елемент"
+
+msgid "Item definitions (shortcuts / charts / cards ...) backing blocks the site added, so they can be rendered. Managed by the workspace editor."
+msgstr "Визначення елементів (скорочення / діаграми / картки ...), що лежать в основі блоків, доданих сайтом, щоб їх можна було показати. Керується редактором робочого простору."
+
+msgid "Its sidebar is derived from the module that owns it."
+msgstr "Його бічна панель визначається модулем, якому він належить."
+
+msgid "Job was not running; status updated."
+msgstr "Завдання не виконувалося; статус оновлено."
+
+msgid "Jobs"
+msgstr "Завдання"
+
+msgid "Just for me"
+msgstr "Лише для мене"
+
+msgid "Kanban Board Field"
+msgstr "Поле дошки Канбан"
+
+msgid "Kanban Board Group Field"
+msgstr "Поле групування дошки Канбан"
+
+msgid "Kanban Board {0} not found."
+msgstr "Дошку Канбан {0} не знайдено."
+
+msgid "Kanban Settings"
+msgstr "Налаштування Канбан"
+
+msgid "Keep Row {0}, Skip Rest"
+msgstr "Залишити рядок {0}, пропустити решту"
+
+msgid "Keep scanner open after scan"
+msgstr "Тримати сканер відкритим після сканування"
+
+msgid "Keep the app dock beside the sidebar, or let it slide in from the left edge."
+msgstr "Тримайте панель програм поруч із бічною панеллю або нехай вона висувається від лівого краю."
+
+msgid "Keep together"
+msgstr "Не розривати"
+
+msgid "Kept in the row so an explicitly hidden entry stays hidden when its app later adds entries, instead of reappearing because it is simply absent."
+msgstr "Залишається в рядку, щоб явно прихований запис лишався прихованим, коли його програма згодом додасть записи, а не з'являвся знову лише тому, що його немає."
+
+msgid "Kind"
+msgstr "Вид"
+
+msgid "Label Color"
+msgstr "Колір мітки"
+
+msgid "Label gap"
+msgstr "Проміжок мітки"
+
+msgid "Label side"
+msgstr "Сторона мітки"
+
+msgid "Language, timezone and notification preferences."
+msgstr "Мова, часовий пояс та налаштування сповіщень."
+
+msgid "Last modified by"
+msgstr "Хто змінив останнім"
+
+msgid "Last modified on"
+msgstr "Дата останньої зміни"
+
+msgid "Layers"
+msgstr "Шари"
+
+msgid "Layout <b>{0}</b> created"
+msgstr "Макет <b>{0}</b> створено"
+
+msgid "Layout <b>{0}</b> deleted"
+msgstr "Макет <b>{0}</b> видалено"
+
+msgid "Layout <b>{0}</b> updated"
+msgstr "Макет <b>{0}</b> оновлено"
+
+msgid "Layout Order"
+msgstr "Порядок макетів"
+
+msgid "Layout and fields used by the new Kanban experience for this board."
+msgstr "Макет і поля, що використовуються в новому режимі Канбан для цієї дошки."
+
+msgid "Layout name"
+msgstr "Назва макета"
+
+msgid "Layout name is required"
+msgstr "Назва макета обов'язкова"
+
+msgid "Layouts you create will show up here."
+msgstr "Створені вами макети з'являться тут."
+
+msgid "Leave anyway"
+msgstr "Все одно піти"
+
+msgid "Leave blank to inherit the app-shipped color."
+msgstr "Залиште порожнім, щоб успадкувати колір, що постачається з програмою."
+
+msgid "Leave blank to inherit the app-shipped icon."
+msgstr "Залиште порожнім, щоб успадкувати піктограму, що постачається з програмою."
+
+msgid "Leave blank to make this snippet available for all document types"
+msgstr "Залиште порожнім, щоб цей фрагмент був доступний для всіх типів документів"
+
+msgid "Leave blank to make this template available in all print formats"
+msgstr "Залиште порожнім, щоб цей шаблон був доступний у всіх форматах друку"
+
+msgid "Leave blank to show every row. Reference the row with"
+msgstr "Залиште порожнім, щоб показати всі рядки. Посилайтеся на рядок через"
+
+msgid "Leave empty to grant {0} directly."
+msgstr "Залиште порожнім, щоб надати {0} безпосередньо."
+
+msgid "Leave it empty to keep the one it inherits."
+msgstr "Залиште порожнім, щоб зберегти успадковане значення."
+
+msgid "Leaves the desk. It has no sidebar."
+msgstr "Виходить за межі робочого столу. Не має бічної панелі."
+
+msgid "Legacy html content (frappe.show_alert)"
+msgstr "Застарілий HTML-вміст (frappe.show_alert)"
+
+msgid "Let's get the basics right"
+msgstr "Налаштуймо основне"
+
+msgid "Let's get your workspace ready. It only takes a few minutes."
+msgstr "Підготуймо ваш робочий простір. Це займе кілька хвилин."
+
+msgid "Letter head"
+msgstr "Бланк листа"
+
+msgid "Letter head changes are saved right away and apply to every print format that uses it."
+msgstr "Зміни бланка листа записуються одразу і застосовуються до кожного формату друку, що його використовує."
+
+msgid "Letterhead footer with HTML content"
+msgstr "Нижній колонтитул бланка з HTML-вмістом"
+
+msgid "Letterhead image loaded from a web address"
+msgstr "Зображення бланка, завантажене з вебадреси"
+
+msgid "Letterhead with HTML content"
+msgstr "Бланк з HTML-вмістом"
+
+msgid "Letterhead with custom CSS"
+msgstr "Бланк з користувацьким CSS"
+
+msgid "Linked Field"
+msgstr "Пов'язане поле"
+
+msgid "Links To"
+msgstr "Посилається на"
+
+msgid "List virtualization failed to load. Rendering full list."
+msgstr "Не вдалося завантажити віртуалізацію списку. Показано весь список."
+
+msgid "Lists"
+msgstr "Списки"
+
+msgid "Live (next / previous on the first stepper above)"
+msgstr "Наживо (далі / назад на першому покроковому індикаторі вище)"
+
+msgid "Live (updates via set_value)"
+msgstr "Наживо (оновлення через set_value)"
+
+msgid "Live activity updates will appear here."
+msgstr "Тут з'являтимуться оновлення активності в реальному часі."
+
+msgid "Load a document to see live status"
+msgstr "Завантажте документ, щоб побачити поточний статус"
+
+msgid "Load the template from a file in a module instead of the Template field. Requires developer mode."
+msgstr "Завантажувати шаблон із файлу в модулі замість поля «Шаблон». Потребує режиму розробника."
+
+msgid "Loading full tree..."
+msgstr "Завантаження повного дерева..."
+
+msgid "Loading groups…"
+msgstr "Завантаження груп…"
+
+msgid "Loading import log"
+msgstr "Завантаження журналу завантаження"
+
+msgid "Loading import preview..."
+msgstr "Завантаження попереднього перегляду завантаження..."
+
+msgid "Loading preview..."
+msgstr "Завантаження попереднього перегляду..."
+
+msgid "Loading tree preview..."
+msgstr "Завантаження попереднього перегляду дерева..."
+
+msgid "Locale"
+msgstr "Локаль"
+
+msgid "Locked steps"
+msgstr "Заблоковані кроки"
+
+msgid "Login to {0}"
+msgstr "Вхід до {0}"
+
+msgid "Long"
+msgstr "Довгий"
+
+msgid "Long current page (truncates)"
+msgstr "Довга поточна сторінка (скорочується)"
+
+msgid "Long text (wraps)"
+msgstr "Довгий текст (переноситься)"
+
+msgid "Manage"
+msgstr "Керувати"
+
+msgid "Manage Dock"
+msgstr "Керувати панеллю програм"
+
+msgid "Manage Layouts"
+msgstr "Керувати макетами"
+
+msgid "Manage Workspaces"
+msgstr "Керувати робочими просторами"
+
+msgid "Manage priority"
+msgstr "Керувати пріоритетом"
+
+msgid "Manage your profile information and display picture."
+msgstr "Керуйте відомостями профілю та зображенням."
+
+msgid "Manage {0} Dock"
+msgstr "Керувати панеллю програм {0}"
+
+msgid "Manage {0} Sidebar"
+msgstr "Керувати бічною панеллю {0}"
+
+msgid "Map To"
+msgstr "Зіставити з"
+
+msgid "Map each file column to a field. Save to apply changes."
+msgstr "Зіставте кожен стовпець файлу з полем. Запишіть, щоб застосувати зміни."
+
+msgid "Mapping warnings"
+msgstr "Попередження зіставлення"
+
+msgid "Mappings"
+msgstr "Зіставлення"
+
+msgid "Margin"
+msgstr "Поле"
+
+msgid "Margins"
+msgstr "Поля"
+
+msgid "Mark as Standard"
+msgstr "Позначити як стандартний"
+
+msgid "Mark as group"
+msgstr "Позначити як групу"
+
+msgid "Mark as leaf"
+msgstr "Позначити як елемент"
+
+msgid "Marks this DocType as deprecated. It will continue to work, but users will be warned against using it."
+msgstr "Позначає цей тип документа як застарілий. Він продовжить працювати, але користувачів попередять не використовувати його."
+
+msgid "Max Bulk Print Documents"
+msgstr "Макс. кількість документів для масового друку"
+
+msgid "Max Concurrent Bulk Exports Per User"
+msgstr "Макс. кількість одночасних масових вивантажень на користувача"
+
+msgid "Maximum number of bulk PDF export jobs a single user can have queued or running at once."
+msgstr "Максимальна кількість завдань масового вивантаження в PDF, які один користувач може мати в черзі або на виконанні одночасно."
+
+msgid "Maximum number of documents that can be combined into a single bulk PDF export."
+msgstr "Максимальна кількість документів, які можна об'єднати в одне масове вивантаження в PDF."
+
+msgid "Merge fields"
+msgstr "Поля злиття"
+
+msgid "Merged From"
+msgstr "Об'єднано з"
+
+msgid "Merged table columns"
+msgstr "Об'єднані стовпці таблиці"
+
+msgid "Message (default, no icon)"
+msgstr "Повідомлення (за замовчуванням, без піктограми)"
+
+msgid "Min height"
+msgstr "Мін. висота"
+
+msgid "Minimize"
+msgstr "Згорнути"
+
+msgid "Minimum 8 characters, including at least one number or special character."
+msgstr "Мінімум 8 символів, включно з принаймні однією цифрою або спеціальним символом."
+
+msgid "Mixed"
+msgstr "Змішаний"
+
+msgid "Modified"
+msgstr "Змінено"
+
+msgid "Module is required for a standard Kanban Board"
+msgstr "Для стандартної дошки Канбан потрібен модуль"
+
+msgid "Module is required for a standard Print Format Snippet"
+msgstr "Для стандартного фрагмента формату друку потрібен модуль"
+
+msgid "Module is required for a standard Print Template"
+msgstr "Для стандартного шаблону друку потрібен модуль"
+
+msgid "Module is required for a standard layout"
+msgstr "Для стандартного макета потрібен модуль"
+
+msgid "Module {0} has no folder in an app, so a standard sidebar cannot be written to it."
+msgstr "Модуль {0} не має папки в програмі, тому стандартну бічну панель не можна записати в нього."
+
+msgid "Module {0} is now shipped by {1}; this site's module of that name is now {2}."
+msgstr "Модуль {0} тепер постачається програмою {1}; модуль цього сайту з такою назвою тепер {2}."
+
+msgid "More actions"
+msgstr "Більше дій"
+
+msgid "More options"
+msgstr "Більше параметрів"
+
+msgid "More send options"
+msgstr "Більше параметрів надсилання"
+
+msgid "Mount On"
+msgstr "Приєднати до"
+
+msgid "Move to..."
+msgstr "Перемістити до..."
+
+msgid "Move to…"
+msgstr "Перемістити до…"
+
+msgid "Move {0}"
+msgstr "Перемістити {0}"
+
+msgid "Moving {0}"
+msgstr "Переміщення {0}"
+
+msgid "Multiple actions (create button + docs link)"
+msgstr "Кілька дій (кнопка створення + посилання на документацію)"
+
+msgid "Mute sounds"
+msgstr "Вимкнути звуки"
+
+msgid "Muted"
+msgstr "Звук вимкнено"
+
+msgid "My Space"
+msgstr "Мій простір"
+
+msgid "Naming Rules"
+msgstr "Правила іменування"
+
+msgid "Narrow down the list."
+msgstr "Звузити список."
+
+msgid "Navigation on the desktop has two modes:"
+msgstr "Навігація на робочому столі має два режими:"
+
+msgid "New Format Name"
+msgstr "Нова назва формату"
+
+msgid "New Kanban"
+msgstr "Новий Канбан"
+
+msgid "New Parent"
+msgstr "Новий батьківський елемент"
+
+msgid "New Print Format"
+msgstr "Новий формат друку"
+
+msgid "New Template"
+msgstr "Новий шаблон"
+
+msgid "New Workflow"
+msgstr "Новий процес"
+
+msgid "New login to the Administrator account"
+msgstr "Новий вхід в обліковий запис Адміністратора"
+
+msgid "Next page"
+msgstr "Наступна сторінка"
+
+msgid "Next step"
+msgstr "Наступний крок"
+
+msgid "Next: {0}"
+msgstr "Далі: {0}"
+
+msgid "No Email Templates found"
+msgstr "Шаблонів листів не знайдено"
+
+msgid "No HTML content yet."
+msgstr "Вмісту HTML ще немає."
+
+msgid "No Kanban Board specified."
+msgstr "Дошку Канбан не вказано."
+
+msgid "No New Notifications"
+msgstr "Нових сповіщень немає"
+
+msgid "No Print Formats found"
+msgstr "Форматів друку не знайдено"
+
+msgid "No Role Profiles include this role."
+msgstr "Жоден профіль ролей не містить цю роль."
+
+msgid "No Workflows found"
+msgstr "Процесів не знайдено"
+
+msgid "No access"
+msgstr "Немає доступу"
+
+msgid "No actions available"
+msgstr "Немає доступних дій"
+
+msgid "No active user found with email address {0}"
+msgstr "Активного користувача з адресою електронної пошти {0} не знайдено"
+
+msgid "No addresses added yet"
+msgstr "Адрес ще не додано"
+
+msgid "No available parents"
+msgstr "Немає доступних батьківських елементів"
+
+msgid "No barcode value — set one in the panel"
+msgstr "Немає значення штрихкоду — задайте його на панелі"
+
+msgid "No cards to group."
+msgstr "Немає карток для групування."
+
+msgid "No charts or cards yet"
+msgstr "Діаграм або карток ще немає"
+
+msgid "No columns configured"
+msgstr "Стовпці не налаштовано"
+
+msgid "No contact details"
+msgstr "Немає контактних даних"
+
+msgid "No contacts added yet"
+msgstr "Контактів ще не додано"
+
+msgid "No data yet"
+msgstr "Даних ще немає"
+
+msgid "No delay"
+msgstr "Без затримки"
+
+msgid "No document available to preview"
+msgstr "Немає документа для попереднього перегляду"
+
+msgid "No document to preview"
+msgstr "Немає документа для попереднього перегляду"
+
+msgid "No documents added."
+msgstr "Документів не додано."
+
+msgid "No documents found."
+msgstr "Документів не знайдено."
+
+msgid "No email account associated with the User. Please add an account under User > Settings > User Emails."
+msgstr "До користувача не прив'язано жодного облікового запису електронної пошти. Додайте його в розділі Користувач > Налаштування > Електронна пошта користувача."
+
+msgid "No error log found for this import."
+msgstr "Журналу помилок для цього завантаження не знайдено."
+
+msgid "No failed log entries"
+msgstr "Невдалих записів журналу немає"
+
+msgid "No fields match"
+msgstr "Немає відповідних полів"
+
+msgid "No filters available for this report"
+msgstr "Для цього звіту немає доступних відборів"
+
+msgid "No image — set one in the panel"
+msgstr "Немає зображення — задайте його на панелі"
+
+msgid "No issues to fix"
+msgstr "Проблем для виправлення немає"
+
+msgid "No letter head"
+msgstr "Без бланка листа"
+
+msgid "No linked field set"
+msgstr "Пов'язане поле не задано"
+
+msgid "No matching field"
+msgstr "Немає відповідного поля"
+
+msgid "No matching records"
+msgstr "Відповідних записів немає"
+
+msgid "No matching records."
+msgstr "Відповідних записів немає."
+
+msgid "No module"
+msgstr "Без модуля"
+
+msgid "No notifications configured"
+msgstr "Сповіщення не налаштовано"
+
+msgid "No options"
+msgstr "Немає параметрів"
+
+msgid "No pages found."
+msgstr "Сторінок не знайдено."
+
+msgid "No pre-upgrade edits to standard workspaces were found."
+msgstr "Змін стандартних робочих просторів до оновлення не знайдено."
+
+msgid "No pre-upgrade layout edit is recorded for {0}."
+msgstr "Для {0} не записано змін макета до оновлення."
+
+msgid "No preview data for this row"
+msgstr "Для цього рядка немає даних попереднього перегляду"
+
+msgid "No printable fields"
+msgstr "Немає полів для друку"
+
+msgid "No private workspaces yet"
+msgstr "Приватних робочих просторів ще немає"
+
+msgid "No problem. You can try it anytime from Desktop Settings."
+msgstr "Без проблем. Ви можете спробувати це будь-коли в налаштуваннях робочого столу."
+
+msgid "No records found."
+msgstr "Записів не знайдено."
+
+msgid "No related settings"
+msgstr "Немає пов'язаних налаштувань"
+
+msgid "No reports found."
+msgstr "Звітів не знайдено."
+
+msgid "No results"
+msgstr "Немає результатів"
+
+msgid "No roles have access yet."
+msgstr "Жодна роль ще не має доступу."
+
+msgid "No rows were imported"
+msgstr "Жодного рядка не завантажено"
+
+msgid "No rules found."
+msgstr "Правил не знайдено."
+
+msgid "No saved layouts yet"
+msgstr "Збережених макетів ще немає"
+
+msgid "No sections yet"
+msgstr "Розділів ще немає"
+
+msgid "No session defaults configured."
+msgstr "Значення сеансу за замовчуванням не налаштовано."
+
+msgid "No settings from other areas are linked to {0}."
+msgstr "Налаштувань з інших областей, пов'язаних з {0}, немає."
+
+msgid "No source table selected"
+msgstr "Таблицю-джерело не вибрано"
+
+msgid "No successful log entries"
+msgstr "Успішних записів журналу немає"
+
+msgid "No templates"
+msgstr "Шаблонів немає"
+
+msgid "No thanks"
+msgstr "Ні, дякую"
+
+msgid "No user permissions yet."
+msgstr "Дозволів користувача ще немає."
+
+msgid "No users have this role."
+msgstr "Жоден користувач не має цієї ролі."
+
+msgid "No valid tree nodes found in the import file."
+msgstr "У файлі завантаження не знайдено дійсних вузлів дерева."
+
+msgid "No value to encode"
+msgstr "Значення для кодування немає"
+
+msgid "No warnings or mapping issues were found. You can continue to import."
+msgstr "Попереджень або проблем зіставлення не знайдено. Можна продовжити завантаження."
+
+msgid "No workspaces found."
+msgstr "Робочих просторів не знайдено."
+
+msgid "No workspaces in this module."
+msgstr "У цьому модулі немає робочих просторів."
+
+msgid "No {0} records yet"
+msgstr "Записів {0} ще немає"
+
+msgid "No."
+msgstr "Ні."
+
+msgid "No. of Rows"
+msgstr "Кількість рядків"
+
+msgid "Not Editable"
+msgstr "Не редагується"
+
+msgid "Not a builder format"
+msgstr "Не формат конструктора"
+
+msgid "Not imported:"
+msgstr "Не завантажено:"
+
+msgid "Not in any app"
+msgstr "Не належить жодній програмі"
+
+msgid "Not printed: no values for this record"
+msgstr "Не надруковано: для цього запису немає значень"
+
+msgid "Not set"
+msgstr "Не задано"
+
+msgid "Not yet overwritten"
+msgstr "Ще не перезаписано"
+
+msgid "Not your workspace"
+msgstr "Не ваш робочий простір"
+
+msgid "Nothing has been added yet."
+msgstr "Нічого ще не додано"
+
+msgid "Nothing here yet"
+msgstr "Тут поки нічого"
+
+msgid "Nothing left to navigate to"
+msgstr "Більше немає куди переходити"
+
+msgid "Nothing on the dock"
+msgstr "На панелі програм нічого немає"
+
+msgid "Nothing on the sidebar"
+msgstr "На бічній панелі нічого немає"
+
+msgid "Nothing to paste"
+msgstr "Нічого вставляти"
+
+msgid "Nothing to restore"
+msgstr "Нічого відновлювати"
+
+msgid "Notification categories"
+msgstr "Категорії сповіщень"
+
+msgid "Notifications By Type"
+msgstr "Сповіщення за типом"
+
+msgid "Numbered list"
+msgstr "Нумерований список"
+
+msgid "One entry on the dock. `link_type` says what kind of thing it opens, and each kind answers the two questions a click asks -- which page comes up and which shell comes up beside it -- in its own way. A `Sidebar` row *is* the shell: it selects that sidebar and opens its landing route. A `Workspace` row opens a page and derives its shell from the module that owns it. A `URL` row leaves the desk and has no shell at all. Every row also carries its own `icon` and `title`, so the rail reads the way its author wrote it -- blank at an upper layer means inherit. What a row points at *is* its identity, and none of it is stored: re-labelling cannot detach a row from itself, and re-pointing is not an edit but a different row. The same rows at all three layers -- the app's own dock, the site's arrangement and one person's -- told apart by the parent `Dock`, never by the row."
+msgstr "Один запис на панелі програм. `link_type` вказує, що саме він відкриває, і кожен вид відповідає на два питання, які ставить клік, — яка сторінка відкриється і яка оболонка з'явиться поруч, — по-своєму. Рядок `Sidebar` *є* оболонкою: він вибирає цю бічну панель і відкриває її початковий маршрут. Рядок `Workspace` відкриває сторінку й виводить оболонку з модуля, якому вона належить. Рядок `URL` виходить за межі робочого столу і не має оболонки взагалі. Кожен рядок також має власні `icon` і `title`, тож панель виглядає так, як її написав автор — порожнє значення на верхньому шарі означає успадкування. На що вказує рядок, *є* його ідентифікатором, і нічого з цього не зберігається: перейменування не може від'єднати рядок від самого себе, а переспрямування — це не редагування, а інший рядок. Ті самі рядки на всіх трьох шарах — власна панель програми, розкладка сайту і розкладка окремої особи — розрізняються батьківською `Dock`, а не рядком."
+
+msgid "One layer of one app's dock. Three of them share this table, told apart by `app`, `user` and `standard`: the app's own dock, which an app ships as an exported document and a developer authors; the site's arrangement of it, curated by a Workspace Manager and applying to everyone; and one person's own, applied last and winning. A dock belongs to an app, so arranging ERPNext's rail does not touch frappe's -- and a layer is addressed by app plus user rather than by user alone. Same shape at all three, because the rows are identical and the parent is what says whose they are; see `Custom Sidebar`, which layers a sidebar the same way in a table of its own."
+msgstr "Один шар панелі програм однієї програми. Три шари ділять цю таблицю й розрізняються за `app`, `user` і `standard`: власна панель програми, яку програма постачає як експортований документ і яку пише розробник; розкладка сайту, яку підтримує менеджер робочих просторів і яка діє для всіх; та власна розкладка окремої особи, яка застосовується останньою і перемагає. Панель належить програмі, тож зміна панелі ERPNext не зачіпає frappe, а шар адресується програмою плюс користувачем, а не лише користувачем. Форма однакова на всіх трьох шарах, бо рядки ідентичні, а батьківський запис вказує, кому вони належать; див. `Custom Sidebar`, що так само нашаровує бічну панель у власній таблиці."
+
+msgid "One ordered list holding both references to base items (`added` unset -- non-empty fields override, empty fields mean no opinion) and items this layer added (`added` set -- full items, rendered as they stand). Row order is the arrangement; base items not named here keep their base order and follow the ones that are, which is how a newly installed app's items still reach someone who has already reordered."
+msgstr "Єдиний упорядкований список, що містить і посилання на базові елементи (`added` не задано — непорожні поля перевизначають, порожні означають відсутність думки), і елементи, додані цим шаром (`added` задано — повні елементи, показані як є). Порядок рядків — це розкладка; базові елементи, не названі тут, зберігають базовий порядок і йдуть за названими, завдяки чому елементи нещодавно встановленої програми все одно доходять до того, хто вже змінив порядок."
+
+msgid "Only a new Kanban Board can be made standard"
+msgstr "Стандартною можна зробити лише нову дошку Канбан"
+
+msgid "Only a new list layout can be made standard"
+msgstr "Стандартним можна зробити лише новий макет списку"
+
+msgid "Only files up to {0} MB are supported for preview."
+msgstr "Для попереднього перегляду підтримуються файли розміром лише до {0} МБ."
+
+msgid "Only if Creator"
+msgstr "Лише якщо створювач"
+
+msgid "Only meaningful on a `Custom Sidebar` row referring to a base item that has no link -- a Section Break or a spacer -- which is the one kind of row with nothing else to name it by. A base row stores none: an unlinked one is identified by a hash of its type and label, and a linked one by its own link columns, which is what lets a rename repair the base row and the customization naming it together."
+msgstr "Має сенс лише для рядка `Custom Sidebar`, що посилається на базовий елемент без посилання — розрив розділу або відступ — єдиний вид рядка, який більше нічим не названо. Базовий рядок нічого не зберігає: рядок без посилання ідентифікується хешем його типу й мітки, а рядок із посиланням — власними стовпцями посилання, що дає змогу перейменуванню виправити і базовий рядок, і налаштування, яке його називає."
+
+msgid "Only meaningful on a `Custom Sidebar`, where a row is either a reference to a base item or an item the site or the user added."
+msgstr "Має сенс лише для `Custom Sidebar`, де рядок є або посиланням на базовий елемент, або елементом, доданим сайтом чи користувачем."
+
+msgid "Only own"
+msgstr "Лише власні"
+
+msgid "Only standard (app-shipped) workspaces can be customized."
+msgstr "Налаштувати можна лише стандартні (що постачаються з програмою) робочі простори."
+
+msgid "Only to you"
+msgstr "Лише для вас"
+
+msgid "Open Role Permissions Manager"
+msgstr "Відкрити менеджер дозволів ролей"
+
+msgid "Open a linked document in a side panel instead of navigating away from the report. Not available on mobile."
+msgstr "Відкрийте пов'язаний документ у бічній панелі, не залишаючи звіт. Недоступно на мобільних пристроях."
+
+msgid "Open file"
+msgstr "Відкрити файл"
+
+msgid "Open file in new tab"
+msgstr "Відкрити файл у новій вкладці"
+
+msgid "Open in Desk"
+msgstr "Відкрити на робочому столі"
+
+msgid "Open in New Tab"
+msgstr "Відкрити в новій вкладці"
+
+msgid "Open in full page"
+msgstr "Відкрити на всю сторінку"
+
+msgid "Open linked documents in a side panel instead of navigating away from the report."
+msgstr "Відкривайте пов'язані документи в бічній панелі, не залишаючи звіт."
+
+msgid "Open the app dock"
+msgstr "Відкрити панель програм"
+
+msgid "Open this board in the new Kanban experience. When off, the classic Kanban is used. Same List / Kanban route either way."
+msgstr "Відкрийте цю дошку в новому режимі Канбан. Якщо вимкнено, використовується класичний Канбан. Маршрут Список / Канбан той самий."
+
+msgid "Open {0} Workspace"
+msgstr "Відкрити робочий простір {0}"
+
+msgid "Opening settings..."
+msgstr "Відкриття налаштувань..."
+
+msgid "Opens the module's home and shows its sidebar."
+msgstr "Відкриває головну сторінку модуля та показує його бічну панель."
+
+msgid "Optional"
+msgstr "Необов'язково"
+
+msgid "Optional heading"
+msgstr "Необов'язковий заголовок"
+
+msgid "Optional. When set, the card shows this icon and the label on hover; when empty, the label is shown directly."
+msgstr "Необов'язково. Якщо задано, картка показує цю піктограму, а мітку — при наведенні; якщо порожньо, мітка показується одразу."
+
+msgid "Or copy and paste:"
+msgstr "Або скопіюйте й вставте:"
+
+msgid "Or skip rows instead"
+msgstr "Або пропустіть рядки"
+
+msgid "Override Sidebar Position"
+msgstr "Перевизначити позицію бічної панелі"
+
+msgid "Override whether the standard workspace is shown. \"Inherit\" keeps the app-shipped value."
+msgstr "Перевизначає, чи показувати стандартний робочий простір. «Успадкувати» зберігає значення, що постачається з програмою."
+
+msgid "Overrides the dock label for this module."
+msgstr "Перевизначає підпис панелі програм для цього модуля."
+
+msgid "Overwritten"
+msgstr "Перезаписано"
+
+msgid "Owned by an app: exported to its module's folder -- or to the app's own folder when it has no module -- and re-imported by migrate. Set via the Mark as Standard action, not by hand -- a standard sidebar with no exported file is an orphan and gets deleted on the next migrate. Everything else belongs to this site, however it got here."
+msgstr "Належить програмі: експортується в папку її модуля — або в папку самої програми, якщо модуля немає, — і повторно завантажується під час міграції. Задається дією «Позначити як стандартний», а не вручну — стандартна бічна панель без експортованого файлу є осиротілою і видаляється під час наступної міграції. Усе інше належить цьому сайту, як би воно сюди потрапило."
+
+msgid "Owned by the app: exported to `<app>/dock/<app>/<app>.json` and re-imported by migrate. This is the app layer, and the layer the other two are laid over. Ordinarily set via the Export to App action rather than by hand, which is why it is writable only in developer mode -- a standard dock with no exported file is an orphan and gets deleted on the next migrate."
+msgstr "Належить програмі: експортується в `<app>/dock/<app>/<app>.json` і повторно завантажується під час міграції. Це шар програми, поверх якого накладаються два інших. Зазвичай задається дією «Експортувати в програму», а не вручну, тому доступний для запису лише в режимі розробника — стандартна панель програм без експортованого файлу є осиротілою і видаляється під час наступної міграції."
+
+msgid "Owner"
+msgstr "Власник"
+
+msgid "PDF encryption is not supported by the Typst renderer"
+msgstr "Шифрування PDF не підтримується рендерером Typst"
+
+msgid "PDF renderer"
+msgstr "Рендерер PDF"
+
+msgid "Padding"
+msgstr "Відступ"
+
+msgid "Page break must follow a section"
+msgstr "Розрив сторінки має йти після розділу"
+
+msgid "Page numbers"
+msgstr "Номери сторінок"
+
+msgid "Page size: {0}"
+msgstr "Розмір сторінки: {0}"
+
+msgid "Pages"
+msgstr "Сторінки"
+
+msgid "Pages this role can access."
+msgstr "Сторінки, до яких ця роль має доступ."
+
+msgid "Paragraph"
+msgstr "Абзац"
+
+msgid "Parent {0} not found in file"
+msgstr "Батьківський {0} не знайдено у файлі"
+
+msgid "Pass either an existing {0} name or a {1} to import into."
+msgstr "Вкажіть наявну назву {0} або {1}, у який завантажувати."
+
+msgid "Password changed"
+msgstr "Пароль змінено"
+
+msgid "Path to the template file inside the app, e.g. templates/print_formats/my_template.html"
+msgstr "Шлях до файлу шаблону всередині програми, напр. templates/print_formats/my_template.html"
+
+msgid "Per-row parent / is_group overrides for tree DocType imports, keyed by sheet row number. Applied at import time."
+msgstr "Перевизначення батьківського елемента / is_group для кожного рядка при завантаженні деревоподібних типів документів, за номером рядка аркуша. Застосовується під час завантаження."
+
+msgid "Permission added."
+msgstr "Дозвіл додано."
+
+msgid "Permission removed."
+msgstr "Дозвіл вилучено."
+
+msgid "Permission row not found after add. Please refresh."
+msgstr "Рядок дозволу не знайдено після додавання. Оновіть сторінку."
+
+msgid "Permission row not found after conversion. Please refresh."
+msgstr "Рядок дозволу не знайдено після перетворення. Оновіть сторінку."
+
+msgid "Permission updated."
+msgstr "Дозвіл оновлено."
+
+msgid "Permissions for this doctype have been customized."
+msgstr "Дозволи для цього типу документа налаштовано."
+
+msgid "Permissions reset"
+msgstr "Дозволи скинуто"
+
+msgid "Pick a module"
+msgstr "Виберіть модуль"
+
+msgid "Pick a record in the toolbar above to preview it."
+msgstr "Виберіть запис на панелі інструментів вище, щоб переглянути його."
+
+msgid "Pick a source table"
+msgstr "Виберіть таблицю-джерело"
+
+msgid "Pick a {0} to preview..."
+msgstr "Виберіть {0} для попереднього перегляду..."
+
+msgid "Pick another title"
+msgstr "Виберіть іншу назву"
+
+msgid "Pick something for it to open."
+msgstr "Виберіть, що він відкриватиме."
+
+msgid "Pilot returned an invalid domain."
+msgstr "Pilot повернув недійсний домен."
+
+msgid "Pinned sits beside the sidebar. Floating slides in from the left edge."
+msgstr "Закріплена панель розташована поруч із бічною. Плаваюча висувається від лівого краю."
+
+msgid "Placement"
+msgstr "Розташування"
+
+msgid "Placement and empty state"
+msgstr "Розташування та порожній стан"
+
+msgid "Plain"
+msgstr "Звичайний"
+
+msgid "Plain text (strings render as text, never HTML)"
+msgstr "Звичайний текст (рядки показуються як текст, ніколи як HTML)"
+
+msgid "Play video"
+msgstr "Відтворити відео"
+
+msgid "Please attach an import file or provide a Google Sheets URL."
+msgstr "Додайте файл завантаження або вкажіть посилання на Google-таблицю."
+
+msgid "Please configure the start field for this Doctype in the controller file."
+msgstr "Налаштуйте початкове поле для цього типу документа у файлі контролера."
+
+msgid "Please enter a valid URL"
+msgstr "Введіть дійсний URL"
+
+msgid "Please select Document Type and Import Type."
+msgstr "Виберіть тип документа і тип завантаження."
+
+msgid "Please select a Document Type first"
+msgstr "Спершу виберіть тип документа"
+
+msgid "Please select a Report first"
+msgstr "Спершу виберіть звіт"
+
+msgid "Please set at least one filter: User or DocType"
+msgstr "Задайте принаймні один відбір: Користувач або Тип документа"
+
+msgid "Please {0}, click on the three dots (⋯) and select Manage to configure it."
+msgstr "{0}, натисніть три крапки (⋯) і виберіть «Керувати», щоб налаштувати."
+
+msgid "Poor"
+msgstr "Погано"
+
+msgid "Pre-filled with all document fields. Customize from there."
+msgstr "Попередньо заповнено всіма полями документа. Далі налаштуйте за потреби."
+
+msgid "Preferences"
+msgstr "Налаштування"
+
+msgid "Prefix and suffix (rich content per option)"
+msgstr "Префікс і суфікс (розширений вміст для кожного варіанта)"
+
+msgid "Prefix, suffix and icon-only crumbs"
+msgstr "Префікс, суфікс і крихти лише з піктограмами"
+
+msgid "Preparing import..."
+msgstr "Підготовка завантаження..."
+
+msgid "Preview Fields"
+msgstr "Поля попереднього перегляду"
+
+msgid "Preview Image"
+msgstr "Зображення попереднього перегляду"
+
+msgid "Preview not available for this file type."
+msgstr "Попередній перегляд недоступний для цього типу файлу."
+
+msgid "Preview: {0}"
+msgstr "Попередній перегляд: {0}"
+
+msgid "Previous page"
+msgstr "Попередня сторінка"
+
+msgid "Previous step"
+msgstr "Попередній крок"
+
+msgid "Print Format Snippet"
+msgstr "Фрагмент формату друку"
+
+msgid "Print Formats"
+msgstr "Формати друку"
+
+msgid "Print Settings updated"
+msgstr "Налаштування друку оновлено"
+
+msgid "Print format"
+msgstr "Формат друку"
+
+msgid "Print if empty"
+msgstr "Друкувати, якщо порожньо"
+
+msgid "Product engineer. Writes the release notes nobody reads."
+msgstr "Інженер продукту. Пише примітки до випуску, яких ніхто не читає."
+
+msgid "Profiles"
+msgstr "Профілі"
+
+msgid "Progress summary"
+msgstr "Підсумок перебігу"
+
+msgid "Promise that fails"
+msgstr "Обіцянка, що завершується помилкою"
+
+msgid "Promise that succeeds"
+msgstr "Обіцянка, що завершується успішно"
+
+msgid "Protect"
+msgstr "Захистити"
+
+msgid "Published version"
+msgstr "Опублікована версія"
+
+msgid "Put <b>{0}</b> back to the sidebar its app ships? This removes the site's arrangement and every person's own, so nobody keeps a customization of this module."
+msgstr "Повернути <b>{0}</b> до бічної панелі, яку постачає її програма? Це вилучить розкладку сайту і власні розкладки всіх користувачів, тож ніхто не збереже налаштування цього модуля."
+
+msgid "Put this sidebar back to the site's arrangement? Everything you have arranged here is dropped."
+msgstr "Повернути цю бічну панель до розкладки сайту? Усе, що ви тут розташували, буде скасовано."
+
+msgid "Put this sidebar back to what the apps ship? Everything the site has arranged here is dropped, for everyone."
+msgstr "Повернути цю бічну панель до того, що постачають програми? Усе, що сайт тут розташував, буде скасовано для всіх."
+
+msgid "Quick List"
+msgstr "Швидкий список"
+
+msgid "Radius"
+msgstr "Радіус"
+
+msgid "Raw HTML or Jinja template"
+msgstr "Необроблений HTML або шаблон Jinja"
+
+msgid "Raw Typst markup"
+msgstr "Необроблена розмітка Typst"
+
+msgid "Read the migration guide"
+msgstr "Прочитайте посібник з міграції"
