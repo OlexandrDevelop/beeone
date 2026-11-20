@@ -41547,3 +41547,23 @@ msgstr "Розшифрувати в цьому звіті"
 #: frappe/public/js/beeone/report_drilldown.js
 msgid "No reports to drill down into"
 msgstr "Немає звітів для розшифровки"
+
+#: frappe/public/js/beeone/subordination.js
+msgid "Subordination structure"
+msgstr "Структура підпорядкованості"
+
+#: frappe/public/js/beeone/subordination.js
+msgid "Marked for deletion"
+msgstr "Позначено на видалення"
+
+#: frappe/public/js/beeone/subordination.js
+msgid "Posted document"
+msgstr "Проведений"
+
+#: frappe/public/js/beeone/subordination.js
+msgid "dated"
+msgstr "від"
+
+#: frappe/public/js/beeone/subordination.js
+msgid "Only the first documents are shown"
+msgstr "Показано лише перші документи"

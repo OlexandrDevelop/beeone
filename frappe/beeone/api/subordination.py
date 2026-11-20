@@ -25,3 +25,13 @@ def get_related(doctype, name):
 	except frappe.PermissionError:
 		# beeone: relation visibility is best-effort; inaccessible related doctypes must not break the host form.
 		return []
+
+
+@frappe.whitelist()
+def get_structure(doctype, name):
+	"""The subordination structure of a document (tree from the root basis document), see subordination.get_structure."""
+	from frappe.beeone.subordination import get_structure as structure
+
+	doc = frappe.get_doc(doctype, name)
+	doc.check_permission("read")
+	return structure(doc)

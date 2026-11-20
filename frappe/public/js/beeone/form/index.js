@@ -637,6 +637,7 @@ frappe.provide("beeone.form");
 			if (F.group_buttons(frm, "status").length) mid.push(btn("status", __("Document status"), "sliders", { menu: true }));
 			if (basis_entries(frm).length) mid.push(btn("basis", __("Create on the basis"), "file-plus", { menu: true }));
 			if (ds === 1 && !frm.is_new()) mid.push(btn("movements", __("Document movements"), "dtkt"));
+			if (!frm.is_new() && window.beeone?.subordination?.show) mid.push(btn("structure", __("Subordination structure"), "tree"));
 			if (!frm.is_new()) mid.push(btn("print", __("Print"), "printer"));
 		}
 		if (spec.details) mid.push(btn("details", __(spec.details.label), spec.details.icon));
@@ -684,6 +685,8 @@ frappe.provide("beeone.form");
 				return frm.print_doc();
 			case "movements":
 				return window.beeone?.registers?.show_movements && beeone.registers.show_movements(frm);
+			case "structure":
+				return beeone.subordination.show(frm);
 			case "details":
 				return F.open_details(frm);
 			case "fill":

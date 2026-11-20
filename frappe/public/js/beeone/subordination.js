@@ -167,3 +167,98 @@ function _get_status_color(docstatus) {
 		default: return "var(--text-muted)";
 	}
 }
+
+// ---------------------------------------------------------------- the structure window (user 2026-11-20, like 1C)
+// «Subordination structure»: the tree from the root basis document down to every document made from it; the current
+// document is marked, every node shows its kind, number, date, amount and state; a click opens the document.
+frappe.provide("beeone.subordination");
+
+beeone.subordination.show = function (frm) {
+	const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
+	const dialog = new frappe.ui.Dialog({
+		title: __("Subordination structure") + ": " + __(frm.doctype) + " " + frm.doc.name,
+		size: "large",
+		fields: [{ fieldtype: "HTML", fieldname: "body" }],
+	});
+	dialog.$wrapper.addClass("bo-sub-dialog");
+	const $body = dialog.fields_dict.body.$wrapper;
+	$body.html(`<div class="bo-sub"><div class="bo-sub-loading">${esc(__("Loading..."))}</div></div>`);
+	dialog.show();
+
+	const state = (n) => {
+		if (n.deletion_mark) return { cls: "is-deleted", label: __("Marked for deletion") };
+		if (n.docstatus === 1) return { cls: "is-posted", label: __("Posted document") };
+		if (n.docstatus === 2) return { cls: "is-cancelled", label: __("Cancelled") };
+		return { cls: "is-draft", label: __("Draft") };
+	};
+	const node_html = (n) => {
+		const s = state(n);
+		const date = n.posting_date ? frappe.datetime.str_to_user(n.posting_date) + (n.posting_time ? " " + n.posting_time : "") : "";
+		const amount =
+			n.amount != null && n.amount !== ""
+				? frappe.format(n.amount, { fieldtype: "Currency", options: n.currency ? undefined : undefined }, { inline: true })
+				: "";
+		const kids = (n.children || []).map(node_html).join("");
+		return (
+			`<li class="bo-sub-node${n.current ? " is-current" : ""}${kids ? " has-kids" : ""}">` +
+			`<div class="bo-sub-row" tabindex="0" data-doctype="${esc(n.doctype)}" data-name="${esc(n.name)}">` +
+			(kids ? `<button type="button" class="bo-sub-toggle" tabindex="-1" aria-label="${esc(__("Collapse"))}"></button>` : `<span class="bo-sub-toggle is-leaf"></span>`) +
+			`<span class="bo-sub-state ${s.cls}" title="${esc(s.label)}"></span>` +
+			`<span class="bo-sub-kind">${esc(__(n.doctype))}</span>` +
+			`<span class="bo-sub-name">${esc(n.name)}</span>` +
+			(date ? `<span class="bo-sub-date">${esc(__("dated"))} ${esc(date)}</span>` : "") +
+			(amount ? `<span class="bo-sub-amount">${amount}</span>` : "") +
+			`</div>` +
+			(kids ? `<ul>${kids}</ul>` : "") +
+			`</li>`
+		);
+	};
+
+	frappe
+		.xcall("frappe.beeone.api.subordination.get_structure", { doctype: frm.doctype, name: frm.doc.name })
+		.then((r) => {
+			if (!r || !r.root) {
+				$body.find(".bo-sub").html(`<div class="bo-sub-empty">${esc(__("No related documents"))}</div>`);
+				return;
+			}
+			const count = (n) => 1 + (n.children || []).reduce((s, c) => s + count(c), 0);
+			const legend = [
+				["is-posted", __("Posted document")],
+				["is-draft", __("Draft")],
+				["is-deleted", __("Marked for deletion")],
+			]
+				.map(([cls, label]) => `<span><i class="bo-sub-state ${cls}"></i>${esc(label)}</span>`)
+				.join("");
+			$body.find(".bo-sub").html(
+				`<div class="bo-sub-bar"><span class="bo-sub-total">${esc(__("Documents"))}: <b>${count(r.root)}</b></span>` +
+					`<span class="bo-sub-legend">${legend}</span></div>` +
+					`<ul class="bo-sub-tree">${node_html(r.root)}</ul>` +
+					(r.truncated ? `<div class="bo-sub-note">${esc(__("Only the first documents are shown"))}</div>` : "")
+			);
+			const $cur = $body.find(".is-current > .bo-sub-row");
+			setTimeout(() => $cur.trigger("focus"), 50);
+		});
+
+	$body.on("click", ".bo-sub-toggle", function (e) {
+		e.stopPropagation();
+		$(this).closest(".bo-sub-node").toggleClass("is-collapsed");
+	});
+	const open = (el) => {
+		const { doctype, name } = el.dataset;
+		if (doctype === frm.doctype && name === frm.doc.name) return dialog.hide();
+		dialog.hide();
+		frappe.set_route("Form", doctype, name);
+	};
+	$body.on("click", ".bo-sub-row", function () {
+		open(this);
+	});
+	$body.on("keydown", ".bo-sub-row", function (e) {
+		const rows = $body.find(".bo-sub-row:visible").toArray();
+		const i = rows.indexOf(this);
+		if (e.key === "Enter") open(this);
+		else if (e.key === "ArrowDown" && rows[i + 1]) rows[i + 1].focus(), e.preventDefault();
+		else if (e.key === "ArrowUp" && rows[i - 1]) rows[i - 1].focus(), e.preventDefault();
+		else if (e.key === "ArrowLeft") $(this).closest(".bo-sub-node").addClass("is-collapsed");
+		else if (e.key === "ArrowRight") $(this).closest(".bo-sub-node").removeClass("is-collapsed");
+	});
+};

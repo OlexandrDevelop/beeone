@@ -1,0 +1,159 @@
+/* «Subordination structure» window (subordination.js): a tree with guide lines, a state mark per document,
+   the current document highlighted */
+.bo-sub {
+	--sub-line: #cbd5e1;
+	--sub-muted: #64748b;
+	--sub-current: #eff6ff;
+	--sub-current-line: #2563eb;
+	font-size: 13px;
+}
+[data-theme="dark"] .bo-sub {
+	--sub-line: #3a4354;
+	--sub-muted: #a6afbf;
+	--sub-current: rgb(37 99 235 / 0.16);
+}
+.bo-sub-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 10px;
+	color: var(--sub-muted);
+	font-size: 12.5px;
+}
+.bo-sub-legend {
+	display: flex;
+	gap: 12px;
+	margin-left: auto;
+}
+.bo-sub-legend span {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.bo-sub-tree,
+.bo-sub-tree ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.bo-sub-tree ul {
+	position: relative;
+	margin-left: 13px;
+	padding-left: 16px;
+	border-left: 1px solid var(--sub-line);
+}
+.bo-sub-tree ul > .bo-sub-node {
+	position: relative;
+}
+.bo-sub-tree ul > .bo-sub-node::before {
+	content: "";
+	position: absolute;
+	top: 17px;
+	left: -16px;
+	width: 14px;
+	border-top: 1px solid var(--sub-line);
+}
+.bo-sub-node.is-collapsed > ul {
+	display: none;
+}
+.bo-sub-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 34px;
+	margin: 1px 0;
+	padding: 4px 10px 4px 4px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	cursor: pointer;
+	outline: 0;
+}
+.bo-sub-row:hover,
+.bo-sub-row:focus-visible {
+	background: #f8fafc;
+	border-color: #e2e8f0;
+}
+[data-theme="dark"] .bo-sub-row:hover,
+[data-theme="dark"] .bo-sub-row:focus-visible {
+	background: #161a23;
+	border-color: #2a303c;
+}
+.bo-sub-node.is-current > .bo-sub-row {
+	background: var(--sub-current);
+	border-color: var(--sub-current-line);
+	box-shadow: inset 3px 0 0 var(--sub-current-line);
+}
+.bo-sub-toggle {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--sub-muted);
+	cursor: pointer;
+}
+.bo-sub-toggle::before {
+	content: "";
+	width: 6px;
+	height: 6px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg) translate(-1px, -1px);
+	transition: transform 0.12s;
+}
+.bo-sub-node.is-collapsed > .bo-sub-row .bo-sub-toggle::before {
+	transform: rotate(-45deg);
+}
+.bo-sub-toggle.is-leaf::before {
+	display: none;
+}
+.bo-sub-state {
+	display: inline-block;
+	flex: none;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	border: 2px solid transparent;
+}
+.bo-sub-state.is-posted {
+	background: #16a34a;
+}
+.bo-sub-state.is-draft {
+	background: #fff;
+	border-color: #94a3b8;
+}
+.bo-sub-state.is-cancelled,
+.bo-sub-state.is-deleted {
+	background: #e5484d;
+}
+.bo-sub-node:has(> .bo-sub-row .is-deleted) > .bo-sub-row .bo-sub-name {
+	text-decoration: line-through;
+}
+.bo-sub-kind {
+	color: var(--sub-muted);
+}
+.bo-sub-name {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+.bo-sub-date {
+	color: var(--sub-muted);
+	font-variant-numeric: tabular-nums;
+}
+.bo-sub-amount {
+	margin-left: auto;
+	padding-left: 12px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+.bo-sub-loading,
+.bo-sub-empty,
+.bo-sub-note {
+	padding: 16px 4px;
+	color: var(--sub-muted);
+}
