@@ -84,32 +84,173 @@ beeone.registers.show_movements = function (frm) {
 	});
 };
 
+// the kind of a register gives the colour of its tab and table (accounting, balance, turnover, information)
+const KIND_TONE = {
+	Accounting: "acc",
+	"Accumulation: Balance": "bal",
+	"Accumulation: Turnover": "turn",
+	"Information: Periodic": "info",
+	"Information: Plain": "info",
+};
+const tone_of = (set) => KIND_TONE[set.kind] || "info";
+
+// Receipt / expense of a balance register: a coloured badge, not the raw value
+beeone.registers.direction = function (value) {
+	if (!value) return "";
+	const receipt = ["receipt", "Receipt", "income", "in", "+"].includes(String(value));
+	return (
+		`<span class="beeone-dir ${receipt ? "is-in" : "is-out"}">` +
+		`${receipt ? "+" : "−"} ${esc(__(receipt ? "Receipt" : "Expense"))}</span>`
+	);
+};
+
+// A register table with the receipt/expense rows tinted (balance registers)
+beeone.registers.movement_table = function (set) {
+	const direction = set.columns.find((c) => c.role === "System" && /direction|record_type|movement_type/.test(c.fieldname));
+	const columns = set.columns.map((c) =>
+		c === direction ? Object.assign({}, c, { render: (v) => beeone.registers.direction(v) }) : c
+	);
+	const numeric = (c) => NUMERIC.includes(c.fieldtype);
+	const head = columns
+		.map((c) => `<th class="${numeric(c) ? "beeone-r" : ""}${c.role === "Resource" ? " beeone-res" : ""}">${esc(c.label)}</th>`)
+		.join("");
+	const body = set.rows
+		.map((row) => {
+			const dir = direction ? row[direction.fieldname] : "";
+			const cls = dir ? (["receipt", "Receipt", "income", "in", "+"].includes(String(dir)) ? "is-in" : "is-out") : "";
+			return (
+				`<tr class="${cls}">` +
+				columns
+					.map((c) => {
+						const html = c.render ? c.render(row[c.fieldname]) : beeone.registers.format(row[c.fieldname], c, row);
+						const klass = [numeric(c) ? "beeone-r beeone-num" : "", c.role === "Resource" ? "beeone-res" : ""].join(" ");
+						return `<td class="${klass}">${html}</td>`;
+					})
+					.join("") +
+				`</tr>`
+			);
+		})
+		.join("");
+	let foot = "";
+	if (set.rows.length > 1 && columns.some((c) => c.role === "Resource")) {
+		foot =
+			`<tfoot><tr>` +
+			columns
+				.map((c, i) => {
+					if (c.role !== "Resource") return `<td>${i ? "" : esc(__("Total"))}</td>`;
+					const total = set.rows.reduce((sum, row) => sum + flt(row[c.fieldname]), 0);
+					return `<td class="beeone-r beeone-num beeone-res">${beeone.registers.format(total, c, {})}</td>`;
+				})
+				.join("") +
+			`</tr></tfoot>`;
+	}
+	return (
+		`<div class="beeone-table-wrap"><table class="beeone-table beeone-mv-table"><thead><tr>${head}</tr></thead>` +
+		`<tbody>${body}</tbody>${foot}</table></div>`
+	);
+};
+
+// Accounting entries like 1C: one row per entry, the debit side tinted blue, the credit side tinted green,
+// the subaccounts under the account (kind: value), the amount and the content at the end
+beeone.registers.entries_table = function (entries) {
+	const money = (v) => (v ? frappe.format(v, { fieldtype: "Currency" }, { inline: true }) : "");
+	const qty = (v) => (v ? frappe.format(v, { fieldtype: "Float" }, { inline: true }) : "");
+	const any = (fn) => entries.some((e) => fn(e.debit) || fn(e.credit));
+	const has_qty = any((s) => flt(s.quantity));
+	const has_cur = any((s) => s.currency || flt(s.currency_amount));
+	const has_content = entries.some((e) => e.content);
+	const link = (doctype, value, title) =>
+		doctype && value && frappe.model.can_read(doctype)
+			? `<a href="${esc(frappe.utils.get_form_link(doctype, value))}">${esc(title || value)}</a>`
+			: esc(title || value);
+	// the title of an account often repeats its code ("902 Cost of sales"): the code is shown once
+	const acc_name = (s) => {
+		const title = String(s.title || "");
+		return s.account && title.startsWith(s.account) ? title.slice(s.account.length).trim() : title;
+	};
+	const side = (s, cls) => {
+		const sub = s.subconto
+			.map(
+				(x) =>
+					`<div class="beeone-sub"><span class="beeone-sub-kind">${esc(x.kind)}</span>` +
+					`<span class="beeone-sub-val">${x.value ? link(x.doctype, x.value, x.title) : "<i>—</i>"}</span></div>`
+			)
+			.join("");
+		let cells =
+			`<td class="beeone-acc ${cls}"><b class="beeone-acc-code">${esc(s.account || "")}</b>` +
+			`<span class="beeone-acc-title">${esc(acc_name(s))}</span></td>` +
+			`<td class="beeone-subs ${cls}">${sub}</td>`;
+		if (has_qty) cells += `<td class="beeone-r beeone-num ${cls}">${qty(s.quantity)}</td>`;
+		if (has_cur)
+			cells +=
+				`<td class="beeone-r beeone-num ${cls}">${s.currency ? esc(s.currency) + " " : ""}` +
+				`${flt(s.currency_amount) ? qty(s.currency_amount) : ""}</td>`;
+		return cells;
+	};
+	const side_head = (label, cls) =>
+		`<th class="${cls}">${esc(__("Account"))} ${esc(label)}</th><th class="${cls}">${esc(__("Subaccounts"))} ${esc(label)}</th>` +
+		(has_qty ? `<th class="beeone-r ${cls}">${esc(__("Quantity"))} ${esc(label)}</th>` : "") +
+		(has_cur ? `<th class="beeone-r ${cls}">${esc(__("Currency"))} ${esc(label)}</th>` : "");
+	const dr = __("Dr");
+	const cr = __("Cr");
+	const head =
+		`<tr class="beeone-band"><th rowspan="2" class="beeone-r">№</th>` +
+		`<th colspan="${2 + has_qty + has_cur}" class="beeone-dr">${esc(__("Debit"))}</th>` +
+		`<th colspan="${2 + has_qty + has_cur}" class="beeone-cr">${esc(__("Credit"))}</th>` +
+		`<th rowspan="2" class="beeone-r beeone-amt">${esc(__("Amount"))}</th>` +
+		(has_content ? `<th rowspan="2">${esc(__("Content"))}</th>` : "") +
+		`</tr><tr>${side_head(dr, "beeone-dr")}${side_head(cr, "beeone-cr")}</tr>`;
+	const body = entries
+		.map(
+			(e, i) =>
+				`<tr><td class="beeone-r beeone-num beeone-ln">${esc(e.line_no || i + 1)}</td>` +
+				side(e.debit, "beeone-dr") +
+				side(e.credit, "beeone-cr") +
+				`<td class="beeone-r beeone-num beeone-amt">${money(e.amount)}</td>` +
+				(has_content ? `<td class="beeone-content">${esc(e.content)}</td>` : "") +
+				`</tr>`
+		)
+		.join("");
+	const total = entries.reduce((sum, e) => sum + flt(e.amount), 0);
+	const span = 1 + 2 * (2 + has_qty + has_cur);
+	const foot =
+		`<tfoot><tr><td colspan="${span}">${esc(__("Total"))}</td>` +
+		`<td class="beeone-r beeone-num beeone-amt">${money(total)}</td>${has_content ? "<td></td>" : ""}</tr></tfoot>`;
+	return (
+		`<div class="beeone-table-wrap"><table class="beeone-table beeone-entries"><thead>${head}</thead>` +
+		`<tbody>${body}</tbody>${foot}</table></div>`
+	);
+};
+
 beeone.registers.movements_dialog = function (frm, sets) {
 	const dialog = new frappe.ui.Dialog({
 		title: __("Document Movements") + ": " + __(frm.doctype) + " " + frm.doc.name,
 		size: "extra-large",
 		fields: [{ fieldtype: "HTML", fieldname: "body" }],
 	});
+	dialog.$wrapper.addClass("beeone-mv-dialog");
+	// the accounting entries come first, like the «Проводки» tab of 1C
+	sets = [...sets].sort((a, b) => (a.entries ? 0 : 1) - (b.entries ? 0 : 1));
 	const tabs = sets
 		.map(
 			(set, i) =>
-				`<button type="button" class="beeone-tab${i ? "" : " is-active"}" data-register="${esc(set.register)}">` +
-				`${esc(__(set.register))} <span class="beeone-count">${set.rows.length}</span></button>`
+				`<button type="button" class="beeone-tab tone-${tone_of(set)}${i ? "" : " is-active"}" data-register="${esc(set.register)}">` +
+				`<span class="beeone-dot"></span>${esc(__(set.register))} <span class="beeone-count">${set.rows.length}</span></button>`
 		)
 		.join("");
 	const panels = sets
 		.map(
 			(set, i) =>
-				`<div class="beeone-panel" data-register="${esc(set.register)}"${i ? " hidden" : ""}>` +
-				beeone.registers.table(set.columns, set.rows) +
+				`<div class="beeone-panel tone-${tone_of(set)}" data-register="${esc(set.register)}"${i ? " hidden" : ""}>` +
+				(set.entries ? beeone.registers.entries_table(set.entries) : beeone.registers.movement_table(set)) +
 				`<div class="beeone-note">${esc(__("Rows"))}: <b class="beeone-num">${set.rows.length}</b>` +
 				(set.truncated ? ` · ${esc(__("Only the first rows are shown"))}` : "") +
-				`</div></div>`
+				`<span class="beeone-kind">${esc(__(set.kind))}</span></div></div>`
 		)
 		.join("");
 	const empty = `<div class="beeone-empty">${esc(__("This document has no movements"))}</div>`;
 	dialog.fields_dict.body.$wrapper.html(
-		`<div class="beeone-viewer">${sets.length ? `<div class="beeone-tabs">${tabs}</div>${panels}` : empty}</div>`
+		`<div class="beeone-viewer beeone-mv">${sets.length ? `<div class="beeone-tabs">${tabs}</div>${panels}` : empty}</div>`
 	);
 	dialog.$wrapper.on("click", ".beeone-tab", function () {
 		const register = $(this).attr("data-register");

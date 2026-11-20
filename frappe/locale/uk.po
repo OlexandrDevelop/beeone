@@ -41479,3 +41479,59 @@ msgstr "Необроблена розмітка Typst"
 
 msgid "Read the migration guide"
 msgstr "Прочитайте посібник з міграції"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Subaccounts"
+msgstr "Субконто"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Debit"
+msgstr "Дебет"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Credit"
+msgstr "Кредит"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Amount"
+msgstr "Сума"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Receipt"
+msgstr "Прихід"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Expense"
+msgstr "Витрата"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Accounting"
+msgstr "Бухгалтерський"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Accumulation: Balance"
+msgstr "Накопичення: залишки"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Accumulation: Turnover"
+msgstr "Накопичення: обороти"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Information: Periodic"
+msgstr "Відомості: періодичний"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Information: Plain"
+msgstr "Відомості: неперіодичний"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Invalid date or time"
+msgstr "Неправильна дата або час"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Date and time"
+msgstr "Дата і час"
+
+#: frappe/public/js/beeone/registers.js
+msgid "Quantity"
+msgstr "Кількість"

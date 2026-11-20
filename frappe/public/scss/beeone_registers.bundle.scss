@@ -177,3 +177,289 @@
 		text-align: center;
 	}
 }
+
+/* ---------------------------------------------------------------- the movement viewer (user 2026-11-20: colourful, like 1C)
+ * A colour per register kind (tab dot, table header band), the accounting entries with the debit side blue and the credit
+ * side green, receipt / expense rows of balance registers tinted green / red, a light zebra, tabular digits. */
+.beeone-mv-dialog .modal-dialog {
+	max-width: min(1400px, 96vw);
+}
+.beeone-mv {
+	--mv-acc: #2563eb;
+	--mv-acc-soft: #eff6ff;
+	--mv-bal: #0f9f8f;
+	--mv-bal-soft: #ecfdf8;
+	--mv-turn: #d97706;
+	--mv-turn-soft: #fff7ed;
+	--mv-info: #7c3aed;
+	--mv-info-soft: #f5f3ff;
+	--mv-dr: #eef4ff;
+	--mv-dr-head: #dbe7fe;
+	--mv-dr-text: #1e40af;
+	--mv-cr: #effaf3;
+	--mv-cr-head: #d3f2df;
+	--mv-cr-text: #166534;
+	--mv-in: #f0fbf4;
+	--mv-out: #fff4f4;
+	--mv-line: #e2e8f0;
+	--mv-row-line: #eef2f6;
+	--mv-zebra: #fafbfd;
+	--mv-muted: #64748b;
+	--mv-text: #0f172a;
+}
+[data-theme="dark"] .beeone-mv {
+	--mv-acc-soft: rgb(37 99 235 / 0.16);
+	--mv-bal-soft: rgb(15 159 143 / 0.16);
+	--mv-turn-soft: rgb(217 119 6 / 0.16);
+	--mv-info-soft: rgb(124 58 237 / 0.16);
+	--mv-dr: rgb(37 99 235 / 0.1);
+	--mv-dr-head: rgb(37 99 235 / 0.22);
+	--mv-dr-text: #93b4ff;
+	--mv-cr: rgb(22 163 74 / 0.1);
+	--mv-cr-head: rgb(22 163 74 / 0.22);
+	--mv-cr-text: #7ee2a8;
+	--mv-in: rgb(22 163 74 / 0.08);
+	--mv-out: rgb(229 72 77 / 0.08);
+	--mv-line: #2a303c;
+	--mv-row-line: #1d222c;
+	--mv-zebra: #141820;
+	--mv-muted: #a6afbf;
+	--mv-text: #e8ecf3;
+}
+.beeone-viewer.beeone-mv {
+	.beeone-tabs {
+		gap: 6px;
+		padding-bottom: 10px;
+		border-bottom: 0;
+		margin-bottom: 8px;
+	}
+	.beeone-tab {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin: 0;
+		padding: 6px 12px;
+		border: 1px solid var(--mv-line);
+		border-radius: 999px;
+		background: transparent;
+		color: var(--mv-muted);
+		font-size: 13px;
+		transition: background 0.12s, color 0.12s, border-color 0.12s;
+	}
+	.beeone-tab:hover {
+		color: var(--mv-text);
+		border-color: #cbd5e1;
+	}
+	.beeone-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--tone);
+	}
+	.tone-acc { --tone: var(--mv-acc); --tone-soft: var(--mv-acc-soft); }
+	.tone-bal { --tone: var(--mv-bal); --tone-soft: var(--mv-bal-soft); }
+	.tone-turn { --tone: var(--mv-turn); --tone-soft: var(--mv-turn-soft); }
+	.tone-info { --tone: var(--mv-info); --tone-soft: var(--mv-info-soft); }
+	.beeone-tab.is-active {
+		border-color: var(--tone);
+		background: var(--tone-soft);
+		color: var(--mv-text);
+		font-weight: 600;
+	}
+	.beeone-tab .beeone-count {
+		background: var(--tone-soft);
+		color: var(--tone);
+		font-weight: 600;
+	}
+	.beeone-tab.is-active .beeone-count {
+		background: var(--tone);
+		color: #fff;
+	}
+	.beeone-table-wrap {
+		max-height: 62vh;
+		border: 1px solid var(--mv-line);
+		border-top: 3px solid var(--tone);
+		border-radius: 10px;
+	}
+	.beeone-table {
+		font-size: 13px;
+		color: var(--mv-text);
+		th,
+		td {
+			padding: 6px 10px;
+			border-bottom: 1px solid var(--mv-row-line);
+		}
+		th {
+			background: var(--tone-soft);
+			color: var(--mv-muted);
+			font-size: 12px;
+			font-weight: 500;
+			border-bottom: 1px solid var(--mv-line);
+		}
+		tbody tr:nth-child(even) td {
+			background: var(--mv-zebra);
+		}
+		tbody tr:hover td {
+			background: var(--tone-soft);
+		}
+		tfoot td {
+			position: sticky;
+			bottom: 0;
+			background: var(--tone-soft);
+			border-top: 1px solid var(--mv-line);
+			font-weight: 600;
+		}
+		td.beeone-res {
+			font-weight: 500;
+		}
+		a {
+			color: inherit;
+			text-decoration: none;
+		}
+		a:hover {
+			color: var(--tone);
+			text-decoration: underline;
+		}
+	}
+	/* receipt / expense */
+	.beeone-mv-table tbody tr.is-in td:first-child {
+		box-shadow: inset 3px 0 0 #16a34a;
+	}
+	.beeone-mv-table tbody tr.is-out td:first-child {
+		box-shadow: inset 3px 0 0 #e5484d;
+	}
+	.beeone-dir {
+		display: inline-flex;
+		align-items: center;
+		padding: 1px 8px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+	.beeone-dir.is-in {
+		background: #dcfce7;
+		color: #166534;
+	}
+	.beeone-dir.is-out {
+		background: #fee2e2;
+		color: #b42318;
+	}
+	/* accounting entries */
+	.beeone-entries {
+		th.beeone-dr,
+		td.beeone-dr {
+			background: var(--mv-dr);
+		}
+		th.beeone-cr,
+		td.beeone-cr {
+			background: var(--mv-cr);
+		}
+		tr.beeone-band th {
+			text-align: center;
+			font-size: 12px;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+		}
+		tr.beeone-band th.beeone-dr {
+			background: var(--mv-dr-head);
+			color: var(--mv-dr-text);
+		}
+		tr.beeone-band th.beeone-cr {
+			background: var(--mv-cr-head);
+			color: var(--mv-cr-text);
+		}
+		thead tr:nth-child(2) th {
+			top: 31px;
+		}
+		tbody tr:nth-child(even) td.beeone-dr {
+			background: color-mix(in srgb, var(--mv-dr) 70%, var(--mv-dr-head));
+		}
+		tbody tr:nth-child(even) td.beeone-cr {
+			background: color-mix(in srgb, var(--mv-cr) 70%, var(--mv-cr-head));
+		}
+		tbody tr:hover td {
+			box-shadow: inset 0 1px 0 var(--tone), inset 0 -1px 0 var(--tone);
+		}
+		td {
+			vertical-align: top;
+			white-space: normal;
+		}
+		td.beeone-dr + td.beeone-cr,
+		th.beeone-dr + th.beeone-cr {
+			border-left: 2px solid #fff;
+		}
+		.beeone-acc {
+			min-width: 160px;
+			max-width: 220px;
+		}
+		.beeone-subs {
+			max-width: 360px;
+		}
+		.beeone-acc-code {
+			display: inline-block;
+			min-width: 34px;
+			margin-right: 6px;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+		}
+		td.beeone-dr .beeone-acc-code {
+			color: var(--mv-dr-text);
+		}
+		td.beeone-cr .beeone-acc-code {
+			color: var(--mv-cr-text);
+		}
+		.beeone-acc-title {
+			color: var(--mv-muted);
+			font-size: 12px;
+		}
+		.beeone-subs {
+			min-width: 200px;
+		}
+		.beeone-sub {
+			display: flex;
+			gap: 6px;
+			line-height: 1.45;
+		}
+		.beeone-sub-kind {
+			flex: none;
+			color: var(--mv-muted);
+			font-size: 11.5px;
+		}
+		.beeone-sub-kind::after {
+			content: ":";
+		}
+		.beeone-sub-val {
+			min-width: 0;
+		}
+		.beeone-sub-val i {
+			color: var(--mv-muted);
+		}
+		.beeone-amt {
+			font-weight: 600;
+			white-space: nowrap;
+		}
+		.beeone-ln {
+			color: var(--mv-muted);
+			width: 1%;
+		}
+		.beeone-content {
+			color: var(--mv-muted);
+			min-width: 140px;
+		}
+	}
+	.beeone-note {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
+	.beeone-kind {
+		margin-left: auto;
+		padding: 1px 8px;
+		border-radius: 999px;
+		background: var(--tone-soft);
+		color: var(--tone);
+		font-size: 11.5px;
+	}
+}

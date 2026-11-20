@@ -133,16 +133,147 @@ def document_movements(doctype: str, name: str) -> list[dict]:
 		)
 		if not rows:
 			continue
-		result.append(
-			{
-				"register": reg.name,
-				"doctype": reg.register_doctype,
-				"kind": reg.register_kind,
-				"columns": cols,
-				"rows": rows[:MOVEMENT_LIMIT],
-				"truncated": len(rows) > MOVEMENT_LIMIT,
+		entry = {
+			"register": reg.name,
+			"doctype": reg.register_doctype,
+			"kind": reg.register_kind,
+			"columns": cols,
+			"rows": rows[:MOVEMENT_LIMIT],
+			"truncated": len(rows) > MOVEMENT_LIMIT,
+		}
+		entries = accounting_entries(reg, filters, order)
+		if entries is not None:
+			entry["entries"] = entries
+		result.append(entry)
+	return result
+
+
+def accounting_entries(reg, filters, order) -> list[dict] | None:
+	"""Entries of an accounting register as debit / credit pairs for the movement viewer (like 1C):
+	the account with its title, the subaccounts with their kind and the title of the value, the quantity,
+	the currency and the currency amount of each side, the amount and the content of the entry.
+	None when the register has no accounting mapping (beeone_accounting_totals)."""
+	from frappe.beeone.accounting_totals import mapping_for
+	from frappe.desk import link_title
+
+	mapping = mapping_for(reg)
+	if not mapping:
+		return None
+	meta = frappe.get_meta(reg.register_doctype)
+	chart = frappe.get_cached_doc("Chart of Accounts", mapping["chart"])
+
+	def companion(slot: str, what: str) -> str | None:
+		# subconto_dr_1 -> subconto_dr_doctype_1 / subconto_dr_kind_1, when the register stores them
+		head, _sep, n = slot.rpartition("_")
+		fieldname = f"{head}_{what}_{n}"
+		return fieldname if meta.has_field(fieldname) else None
+
+	sides = ("debit", "credit")
+	fields = {mapping["amount"]}
+	for side in sides:
+		fields.add(mapping["account"][side])
+		for key in ("quantity", "currency", "currency_amount"):
+			if mapping.get(key, {}).get(side):
+				fields.add(mapping[key][side])
+		for slot in mapping["subconto"][side]:
+			fields.add(slot)
+			fields.update(f for f in (companion(slot, "doctype"), companion(slot, "kind")) if f)
+	for extra in ("content", "line_no"):
+		if meta.has_field(extra):
+			fields.add(extra)
+	if reg.line_no_field:
+		fields.add(reg.line_no_field)
+	rows = frappe.get_all(
+		reg.register_doctype,
+		filters=filters,
+		fields=sorted(fields),
+		order_by=order,
+		limit_page_length=MOVEMENT_LIMIT,
+	)
+
+	accounts, kinds, names_by_doctype = {}, {}, {}
+
+	def title_field_of(doctype):
+		# the link title rule, else the DocType's own title field (a code "902" reads as "902 Cost of sales")
+		field = link_title.get_link_title_field(doctype)
+		if field:
+			return field
+		title = (frappe.get_meta(doctype).title_field or "").strip()
+		return title if title and title != "name" and frappe.has_permission(doctype, "read") else None
+
+	def account(name):
+		if name and name not in accounts:
+			doc = frappe.db.get_value(chart.account_doctype, name, "*", as_dict=True) or {}
+			definitions = frappe.get_all(
+				frappe.get_meta(chart.account_doctype).get_field(chart.subconto_table_field).options,
+				filters={"parent": name, "parenttype": chart.account_doctype},
+				fields=[chart.subconto_type_field],
+				order_by="idx asc",
+			)
+			title_field = title_field_of(chart.account_doctype)
+			accounts[name] = {
+				"title": doc.get(title_field) if title_field else "",
+				"kinds": [d.get(chart.subconto_type_field) for d in definitions],
 			}
-		)
+		return accounts.get(name) or {"title": "", "kinds": []}
+
+	def kind_info(kind):
+		if kind and kind not in kinds:
+			info = {"label": kind, "doctype": ""}
+			if chart.subconto_type_doctype and frappe.db.exists(chart.subconto_type_doctype, kind):
+				doc = frappe.get_cached_doc(chart.subconto_type_doctype, kind)
+				title_field = frappe.get_meta(chart.subconto_type_doctype).title_field
+				info = {
+					"label": _(doc.get(title_field) if title_field else kind),
+					"doctype": doc.get(chart.subconto_reference_doctype_field) or "",
+				}
+			kinds[kind] = info
+		return kinds.get(kind) or {"label": "", "doctype": ""}
+
+	result = []
+	for row in rows:
+		item = {
+			"line_no": row.get(reg.line_no_field) if reg.line_no_field else None,
+			"amount": row.get(mapping["amount"]),
+			"content": row.get("content") or "",
+		}
+		for side in sides:
+			name = row.get(mapping["account"][side])
+			acc = account(name)
+			subconto = []
+			for n, slot in enumerate(mapping["subconto"][side]):
+				kind = row.get(companion(slot, "kind")) if companion(slot, "kind") else None
+				kind = kind or (acc["kinds"][n] if n < len(acc["kinds"]) else None)
+				info = kind_info(kind)
+				doctype = (row.get(companion(slot, "doctype")) if companion(slot, "doctype") else None) or info["doctype"]
+				value = row.get(slot)
+				if not value and not kind:
+					continue
+				if value and doctype:
+					names_by_doctype.setdefault(doctype, set()).add(value)
+				subconto.append({"kind": info["label"], "doctype": doctype or "", "value": value or ""})
+			item[side] = {
+				"account": name or "",
+				"title": acc["title"] or "",
+				"subconto": subconto,
+				"quantity": row.get(mapping.get("quantity", {}).get(side)) or 0,
+				"currency": row.get(mapping.get("currency", {}).get(side)) or "",
+				"currency_amount": row.get(mapping.get("currency_amount", {}).get(side)) or 0,
+			}
+		result.append(item)
+
+	titles = {}
+	for doctype, names in names_by_doctype.items():
+		if not frappe.db.exists("DocType", doctype) or not frappe.has_permission(doctype, "read"):
+			continue
+		title_field = title_field_of(doctype)
+		if title_field:
+			for name, title in link_title.get_link_titles(doctype, title_field, names).items():
+				titles[(doctype, name)] = title
+	for item in result:
+		for side in sides:
+			for sub in item[side]["subconto"]:
+				sub["title"] = titles.get((sub["doctype"], sub["value"])) or sub["value"]
 	return result
 
 
