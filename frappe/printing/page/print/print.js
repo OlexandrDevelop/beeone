@@ -9,6 +9,8 @@ frappe.pages["print"].on_page_load = function (wrapper) {
 		const route = frappe.get_route();
 		const doctype = route[1];
 		const docname = route.slice(2).join("/");
+		print_view.requested_format = frappe.route_options?.print_format || null;
+		if (frappe.route_options) delete frappe.route_options.print_format;
 		if (!frappe.route_options || !frappe.route_options.frm) {
 			frappe.model.with_doc(doctype, docname, () => {
 				let frm = { doctype: doctype, docname: docname };
@@ -38,7 +40,7 @@ frappe.ui.form.PrintView = class {
 		this.make();
 
 		this.wrapper.on("show", () => {
-			this.page.sidebar.show();
+			this.page.sidebar.toggle(!this.requested_format);
 		});
 	}
 
@@ -206,6 +208,7 @@ frappe.ui.form.PrintView = class {
 
 	show(frm) {
 		this.frm = frm;
+		this.page.sidebar.toggle(!this.requested_format);
 		this.set_title();
 		this.set_breadcrumbs();
 		this.setup_customize_dialog();
@@ -869,6 +872,10 @@ frappe.ui.form.PrintView = class {
 	}
 
 	set_default_print_format() {
+		if (this.requested_format) {
+			this.set_print_format_value(this.requested_format);
+			return;
+		}
 		if (
 			frappe.meta
 				.get_print_formats(this.frm.doctype)

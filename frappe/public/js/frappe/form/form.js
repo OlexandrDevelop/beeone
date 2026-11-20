@@ -1421,7 +1421,11 @@ frappe.ui.form.Form = class FrappeForm {
 
 	// ACTIONS
 
-	print_doc() {
+	print_doc(print_format) {
+		if (!print_format && window.beeone?.form?.enabled(this.doctype)) {
+			const anchor = this.page.wrapper.find('[data-bf-cmd="print"], .form-print button')[0];
+			if (anchor) return beeone.form.print_menu(this, anchor);
+		}
 		if (this.is_dirty()) {
 			frappe.toast({
 				message: __(
@@ -1433,6 +1437,7 @@ frappe.ui.form.Form = class FrappeForm {
 
 		frappe.route_options = {
 			frm: this,
+			print_format: print_format || null,
 		};
 		frappe.set_route("print", this.doctype, this.doc.name);
 	}

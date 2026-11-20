@@ -41567,3 +41567,7 @@ msgstr "від"
 #: frappe/public/js/beeone/subordination.js
 msgid "Only the first documents are shown"
 msgstr "Показано лише перші документи"
+
+#: frappe/public/js/beeone/form/index.js
+msgid "No print formats available"
+msgstr "Немає доступних друкованих форм"

@@ -638,7 +638,7 @@ frappe.provide("beeone.form");
 			if (basis_entries(frm).length) mid.push(btn("basis", __("Create on the basis"), "file-plus", { menu: true }));
 			if (ds === 1 && !frm.is_new()) mid.push(btn("movements", __("Document movements"), "dtkt"));
 			if (!frm.is_new() && window.beeone?.subordination?.show) mid.push(btn("structure", __("Subordination structure"), "tree"));
-			if (!frm.is_new()) mid.push(btn("print", __("Print"), "printer"));
+			if (!frm.is_new() && frappe.model.can_print_doc(frm)) mid.push(btn("print", __("Print"), "printer", { menu: true }));
 		}
 		if (spec.details) mid.push(btn("details", __(spec.details.label), spec.details.icon));
 		((F.COMMANDS[frm.doctype] || []).filter((c) => !c.show || c.show(frm))).forEach((c) =>
@@ -682,7 +682,7 @@ frappe.provide("beeone.form");
 			case "amend":
 				return frm.amend_doc();
 			case "print":
-				return frm.print_doc();
+				return F.print_menu(frm, el);
 			case "movements":
 				return window.beeone?.registers?.show_movements && beeone.registers.show_movements(frm);
 			case "structure":
@@ -703,6 +703,26 @@ frappe.provide("beeone.form");
 				if (frm.sidebar && frm.sidebar.toggle_visibility) frm.sidebar.toggle_visibility();
 				return F.render_bar(frm);
 		}
+	};
+
+	// Configurations can supply their enabled forms and their own renderer.
+	F.print_menu = async function (frm, el) {
+		const formats = frm.get_print_menu_formats
+			? await frm.get_print_menu_formats()
+			: frappe.meta.get_print_formats(frm.doctype);
+		if (!formats.length) {
+			frappe.msgprint(__("No print formats available"));
+			return;
+		}
+		ui().menu(
+			el,
+			formats.map((name, i) => `<button class="bo-menu-item" data-i="${i}">${esc(__(name))}</button>`).join(""),
+			(item) => {
+				const name = formats[Number(item.getAttribute("data-i"))];
+				if (frm.open_print_format) return frm.open_print_format(name);
+				frm.print_doc(name);
+			}
+		);
 	};
 
 	// the custom buttons of the groups F.GROUPS[kind] (the English names and their translations)
