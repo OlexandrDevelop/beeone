@@ -199,6 +199,27 @@ html[data-theme="dark"] .bf-form {
 	background: var(--bf-accent-hover);
 	border-color: var(--bf-accent-hover);
 }
+/* posting is a semantic action: green (--bf-ok), not the brand blue */
+.bf-btn--primary[data-bf-cmd="post_close"],
+.bf-btn--primary[data-bf-cmd="repost_close"] {
+	background: var(--bf-ok);
+	border-color: var(--bf-ok);
+	color: #ffffff;
+}
+.bf-btn--primary[data-bf-cmd="post_close"]:hover,
+.bf-btn--primary[data-bf-cmd="repost_close"]:hover {
+	background: #0b5f58;
+	border-color: #0b5f58;
+}
+html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="post_close"],
+html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"] {
+	color: #06232a;
+}
+html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="post_close"]:hover,
+html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
+	background: #7fe6d3;
+	border-color: #7fe6d3;
+}
 .bf-btn--ghost {
 	border-color: transparent;
 	background: transparent;
