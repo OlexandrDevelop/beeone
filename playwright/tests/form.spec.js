@@ -50,9 +50,8 @@ test.describe("Form", () => {
 		await page.goto("/desk/contact");
 
 		await desk.clear_filters();
-		const name_filter = page.locator('.standard-filter-section [data-fieldname="name"] input');
-		await name_filter.pressSequentially("Test Form Contact 3");
-		await name_filter.blur();
+		// beeone: lists have no ID filter field by default; the filter comes in the route
+		await page.goto("/desk/contact?name=Test%20Form%20Contact%203");
 		await desk.click_listview_row_item_with_text("Test Form Contact 3");
 
 		await page.goto("/desk/contact");

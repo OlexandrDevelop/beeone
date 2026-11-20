@@ -1174,7 +1174,8 @@ class FilterArea {
 		);
 		let fields = [];
 
-		if (!this.list_view.settings.hide_name_filter) {
+		// beeone: the service ID field is not a filter by default (user 2026-11-20); a list opts in by show_name_filter
+		if (this.list_view.settings.show_name_filter && !this.list_view.settings.hide_name_filter) {
 			let field = {
 				fieldtype: "Data",
 				label: "ID",
@@ -1283,6 +1284,8 @@ class FilterArea {
 		});
 
 		fields.map((df) => {
+			// beeone: a quick filter the list settings already added for this field is not repeated
+			if (this.standard_filters_wrapper.find(`> [data-fieldname="${df.fieldname}"]`).length) return;
 			this.list_view.page.add_field(df, this.standard_filters_wrapper);
 
 			const input_fieldtypes = [

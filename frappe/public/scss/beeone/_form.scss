@@ -15,9 +15,10 @@
 	--bf-surface: #ffffff;
 	--bf-surface-2: #f2f4f7;
 	--bf-line: #e4e7ec; /* decorative: card separators, interior row lines */
-	--bf-line-ctl: #7b8597; /* controls: inputs, table frame, header line (>= 3:1) */
-	--bf-text: #0e1525;
-	--bf-label: #263244;
+	--bf-line-ctl: #cbd5e1; /* controls: soft input frame (user 2026-11-20: light frames, the focus ring carries the contrast) */
+	--bf-line-hover: #94a3b8;
+	--bf-text: #0f172a;
+	--bf-label: #64748b;
 	--bf-text-2: #475467;
 	--bf-ok: #0f766e;
 	--bf-ok-weak: #dcf5ef;
@@ -28,6 +29,10 @@
 	--bf-warn: #8a5300;
 	--bf-warn-weak: #fff4db;
 	--bf-locked-bg: #eef1f5;
+	--bf-th-bg: #f8fafc;
+	--bf-th-line: #e2e8f0;
+	--bf-row-line: #f1f5f9;
+	--bf-zebra: #fafbfd;
 	--bf-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 html[data-theme="dark"] .bf-form {
@@ -39,9 +44,10 @@ html[data-theme="dark"] .bf-form {
 	--bf-surface: #12151c;
 	--bf-surface-2: #181c25;
 	--bf-line: #252a35;
-	--bf-line-ctl: #6b7586;
+	--bf-line-ctl: #3a4354;
+	--bf-line-hover: #5b6678;
 	--bf-text: #e8ecf3;
-	--bf-label: #d5dbe5;
+	--bf-label: #a6afbf;
 	--bf-text-2: #a6afbf;
 	--bf-ok: #4fd8bf;
 	--bf-ok-weak: rgb(79 216 191 / 0.14);
@@ -52,6 +58,10 @@ html[data-theme="dark"] .bf-form {
 	--bf-warn: #f5b748;
 	--bf-warn-weak: rgb(245 183 72 / 0.14);
 	--bf-locked-bg: #1d222c;
+	--bf-th-bg: #161a23;
+	--bf-th-line: #2a303c;
+	--bf-row-line: #1d222c;
+	--bf-zebra: #141820;
 }
 
 .bf-form {
@@ -421,7 +431,7 @@ html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
 .bf-form .bf-grid .control-label {
 	margin-bottom: 2px;
 	font-size: 12px;
-	font-weight: 600;
+	font-weight: 500;
 	color: var(--bf-label);
 }
 .bf-form .bf-grid .help-box,
@@ -433,11 +443,16 @@ html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
 }
 .bf-form .bf-grid .form-control,
 .bf-form .bf-grid .like-disabled-input {
-	height: 30px;
-	padding: 0 8px;
-	font-size: 12.5px;
+	height: 32px;
+	padding: 0 9px;
+	font-size: 13px;
+	font-weight: 400;
 	border-radius: 6px;
 	color: var(--bf-text);
+	transition: border-color 0.12s, box-shadow 0.12s;
+}
+.bf-form .bf-grid [data-bo-state="edit"] .form-control:not(:disabled):not([readonly]):hover {
+	border-color: var(--bf-line-hover);
 }
 
 /* Field states (T-864, WCAG 1.4.1 / 1.4.11). base_input.js sets data-bo-state on every control:
@@ -448,14 +463,15 @@ html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
 }
 .bf-form .bf-grid [data-bo-state="text"] .control-value {
 	height: auto;
-	min-height: 30px;
+	min-height: 32px;
 	display: flex;
 	align-items: center;
 	padding: 0;
 	border: 0;
 	border-bottom: 1px solid transparent;
 	background: transparent;
-	font-weight: 500;
+	font-size: 13px;
+	font-weight: 400;
 	color: var(--bf-text);
 }
 .bf-form .bf-grid [data-bo-state="locked"] .control-value,
@@ -499,10 +515,11 @@ html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
 .bf-form .bf-grid .frappe-control[data-fieldtype="Check"] {
 	align-self: end;
 }
-.bf-form .bf-grid .form-control:focus {
-	outline: 2px solid var(--bf-accent);
-	outline-offset: 1px;
-	border-color: var(--bf-accent);
+.bf-form .bf-grid .form-control:focus,
+.bf-form .bf-grid [data-bo-state="edit"] .form-control:not(:disabled):not([readonly]):focus {
+	outline: 0;
+	border: 1px solid var(--bf-accent);
+	box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
 }
 body.bo-shell .bo-win[data-bw~="lt560"] .bf-grid {
 	grid-template-columns: minmax(0, 1fr);
@@ -624,10 +641,10 @@ body.bo-shell .bo-win:not([data-bw~="lt1440"]) .bf-grid {
 .bf-form .bf-tp-body .grid-heading-row .row-check,
 .bf-form .bf-tp-body .grid-heading-row .col {
 	border-radius: 0 !important;
-	background: var(--bf-surface);
+	background: var(--bf-th-bg);
 }
 .bf-form .bf-tp-body .grid-heading-row {
-	border-bottom: 1px solid var(--bf-line-ctl);
+	border-bottom: 1px solid var(--bf-th-line);
 }
 .bf-form .bf-tp-body .grid-body,
 .bf-form .bf-tp-body .grid-body .grid-static-col,
@@ -640,25 +657,51 @@ body.bo-shell .bo-win:not([data-bw~="lt1440"]) .bf-grid {
 .bf-form .bf-tp-body .grid-body {
 	margin-bottom: 0;
 }
-/* column and row lines: the same thin line in the header and the body */
-.bf-form .bf-tp-body .grid-row > .row .col {
-	border-right-color: var(--bf-line);
+/* lines: vertical lines only in the header (column resize), thin horizontal separators between the rows */
+.bf-form .bf-tp-body .grid-heading-row .grid-row > .row .col {
+	border-right-color: var(--bf-th-line);
+}
+.bf-form .bf-tp-body .grid-body .grid-row > .row .col,
+.bf-form .bf-tp-body .grid-body .grid-row > .row .row-check,
+.bf-form .bf-tp-body .grid-body .grid-row > .row .row-index {
+	border-right-color: transparent;
 }
 .bf-form .bf-tp-body .grid-body .grid-row {
-	border-bottom: 1px solid var(--bf-line);
+	border-bottom: 1px solid var(--bf-row-line);
+}
+/* light zebra */
+.bf-form .bf-tp-body .grid-body .grid-row:nth-child(even) .grid-static-col,
+.bf-form .bf-tp-body .grid-body .grid-row:nth-child(even) .row-check,
+.bf-form .bf-tp-body .grid-body .grid-row:nth-child(even) .row-index,
+.bf-form .bf-tp-body .grid-body .grid-row:nth-child(even) .col:last-child {
+	background: var(--bf-zebra);
 }
 .bf-form .bf-tp-body .grid-body .grid-row:last-child {
 	border-bottom: 0;
 }
 .bf-form .bf-tp-body .grid-heading-row .data-row,
 .bf-form .bf-tp-body .grid-heading-row .col {
-	font-size: 11.5px;
-	font-weight: 600;
+	font-size: 12px;
+	font-weight: 500;
 	color: var(--bf-label);
 }
 .bf-form .bf-tp-body .grid-row > .data-row {
-	font-size: 12.5px;
+	font-size: 13px;
+	font-weight: 400;
 	color: var(--bf-text);
+}
+.bf-form .bf-tp-body .grid-body .static-area,
+.bf-form .bf-tp-body .grid-body .grid-static-col {
+	font-weight: 400;
+}
+/* numbers and dates: digits stand one under another */
+.bf-form .bf-tp-body .grid-body .grid-static-col:is([data-fieldtype="Currency"], [data-fieldtype="Float"], [data-fieldtype="Int"], [data-fieldtype="Percent"], [data-fieldtype="Date"], [data-fieldtype="Datetime"], [data-fieldtype="Time"]),
+.bf-form .bf-tp-body .grid-body .row-index {
+	font-variant-numeric: tabular-nums;
+}
+/* only the amount column keeps a medium weight */
+.bf-form .bf-tp-body .grid-body .grid-static-col:is([data-fieldname="amount"], [data-fieldname="total"], [data-fieldname="total_amount"], [data-fieldname="amount_with_vat"]) .static-area {
+	font-weight: 500;
 }
 .bf-form .bf-tp-body .grid-body .data-row {
 	color: var(--bf-text);

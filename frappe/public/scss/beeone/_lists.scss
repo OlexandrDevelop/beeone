@@ -1,0 +1,181 @@
+/* Lists of the shell (user 2026-11-20): one compact filter row, a light table look.
+ * Filters: every filter of the list in ONE row on a white field with a thin frame, the label is the placeholder;
+ * a row that does not fit scrolls sideways instead of wrapping into two or three rows.
+ * Table: a grey header band, thin horizontal separators only, a light zebra, normal weight, tabular digits. */
+
+body.bo-shell {
+	--bo-ctl-line: #d1d5db;
+	--bo-ctl-line-hover: #94a3b8;
+	--bo-ctl-focus: #2563eb;
+	--bo-th-band: #f8fafc;
+	--bo-th-line: #e2e8f0;
+	--bo-th-text: #64748b;
+	--bo-row-line: #f1f5f9;
+	--bo-zebra: #fafbfd;
+	--bo-cell-text: #0f172a;
+}
+html[data-theme="dark"] body.bo-shell {
+	--bo-ctl-line: #343b48;
+	--bo-ctl-line-hover: #5b6678;
+	--bo-ctl-focus: #6b9cff;
+	--bo-th-band: #161a23;
+	--bo-th-line: #2a303c;
+	--bo-th-text: #a6afbf;
+	--bo-row-line: #1d222c;
+	--bo-zebra: #141820;
+	--bo-cell-text: #e8ecf3;
+}
+
+/* ---------------------------------------------------------------- the filter row */
+body.bo-shell .page-form.list-page-form {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	margin: 0 0 6px;
+	border: 1px solid var(--bo-th-line);
+	border-radius: 10px;
+	background: var(--bo-surface);
+	min-height: 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section {
+	display: flex;
+	flex: 1 1 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: thin;
+	padding: 2px 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section > .frappe-control,
+body.bo-shell .bo-win-body .page-form.list-page-form .standard-filter-section > .frappe-control.col-md-2 {
+	flex: 0 1 180px;
+	min-width: 120px;
+	max-width: 220px;
+	width: auto;
+	margin: 0;
+	padding: 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section > .frappe-control[data-fieldtype="Check"] {
+	flex: 0 0 auto;
+	min-width: 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .form-group {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .form-control {
+	height: 30px;
+	padding: 0 9px;
+	border: 1px solid var(--bo-ctl-line);
+	border-radius: 6px;
+	background: var(--bo-surface);
+	font-size: 13px;
+	font-weight: 400;
+	color: var(--bo-cell-text);
+	box-shadow: none;
+	transition: border-color 0.12s, box-shadow 0.12s;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .form-control:hover {
+	border-color: var(--bo-ctl-line-hover);
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .form-control:focus {
+	border-color: var(--bo-ctl-focus);
+	box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
+	outline: 0;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .form-control::placeholder {
+	color: #94a3b8;
+	opacity: 1;
+}
+body.bo-shell .page-form.list-page-form .standard-filter-section .checkbox {
+	margin: 0;
+	white-space: nowrap;
+}
+body.bo-shell .page-form.list-page-form .filter-section {
+	flex: 0 0 auto;
+	align-items: center;
+	margin: 0;
+}
+body.bo-shell .page-form.list-page-form .filter-selector .btn-group,
+body.bo-shell .page-form.list-page-form .sort-selector .btn-group {
+	margin: 0 0 0 4px;
+}
+body.bo-shell .page-form.list-page-form .filter-section .btn {
+	height: 30px;
+	border: 1px solid var(--bo-ctl-line);
+	background: var(--bo-surface);
+	box-shadow: none;
+	font-weight: 400;
+}
+/* the mobile toggle and the mobile ID slot are not used inside the shell windows */
+body.bo-shell .page-form.list-page-form .mobile-id-filter:empty {
+	display: none;
+}
+
+/* ---------------------------------------------------------------- the list table */
+body.bo-shell .frappe-list .list-row-head {
+	background: var(--bo-th-band);
+	border-bottom: 1px solid var(--bo-th-line);
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--bo-th-text);
+}
+body.bo-shell .frappe-list .list-row-head .list-row-col,
+body.bo-shell .frappe-list .list-row-head .level-item {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--bo-th-text);
+}
+body.bo-shell .frappe-list .list-row-head .list-row-col + .list-row-col {
+	border-left: 1px solid var(--bo-th-line);
+}
+body.bo-shell .frappe-list .list-row-container {
+	border-bottom: 1px solid var(--bo-row-line);
+}
+body.bo-shell .frappe-list .list-row-container .list-row {
+	border-bottom: 0;
+}
+body.bo-shell .frappe-list .result .list-row-container:nth-child(even) .list-row {
+	background: var(--bo-zebra);
+}
+body.bo-shell .frappe-list .list-row .list-row-col,
+body.bo-shell .frappe-list .list-row .list-subject,
+body.bo-shell .frappe-list .list-row .list-subject a,
+body.bo-shell .frappe-list .list-row .ellipsis {
+	font-weight: 400;
+	color: var(--bo-cell-text);
+	font-size: 13px;
+}
+body.bo-shell .frappe-list .list-row .list-subject.seen,
+body.bo-shell .frappe-list .list-row .list-subject .bold {
+	font-weight: 400;
+}
+body.bo-shell .frappe-list .list-row .list-row-col.text-right,
+body.bo-shell .frappe-list .list-row .list-row-col[data-fieldname*="date"],
+body.bo-shell .frappe-list .list-row .list-subject {
+	font-variant-numeric: tabular-nums;
+}
+body.bo-shell .frappe-list .list-row .list-row-col:is([data-fieldname="document_amount"], [data-fieldname="amount"], [data-fieldname="total"], [data-fieldname="grand_total"]) {
+	font-weight: 500;
+}
+
+/* ---------------------------------------------------------------- report tables (datatable) and register tables */
+/* low specificity: the report tones (group and total rows) keep their own colours over the zebra */
+:where(body.bo-shell .dt-body .dt-row:nth-child(even)) .dt-cell {
+	background-color: var(--bo-zebra);
+}
+body.bo-shell .dt-header .dt-cell,
+body.bo-shell .dt-header .dt-cell__content {
+	background-color: var(--bo-th-band);
+	font-weight: 500;
+	color: var(--bo-th-text);
+}
+body.bo-shell .dt-cell__content {
+	font-variant-numeric: tabular-nums;
+}

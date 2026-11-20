@@ -2,20 +2,25 @@
 // input and a required input must differ by more than colour. base_input.js sets
 // data-bo-state = text | locked | edit, data-bo-reqd and data-bo-empty on the control.
 //   text    value only, no box
-//   edit    solid border with >= 3:1 contrast against the page
+//   edit    a soft solid border (#cbd5e1, hover #94a3b8); the focus draws a clear blue frame with a glow
+//           (user 2026-11-20: light frames make a form of many fields quiet)
 //   locked  dashed border, tinted background and a lock icon
 //   reqd    asterisk on the label (plus "(required)" for screen readers)
 //   reqd + empty: thick bar on the start edge
 //   error   2px border and an alert icon on the label
 
 :root {
-	--control-border-strong: #7b8597;
+	--control-border-strong: #cbd5e1;
+	--control-border-hover: #94a3b8;
+	--control-border-focus: #2563eb;
 	--bo-state-warn: #8a5300;
 	--bo-state-error: #b42318;
 }
 
 [data-theme="dark"] {
-	--control-border-strong: #6b7586;
+	--control-border-strong: #3a4354;
+	--control-border-hover: #5b6678;
+	--control-border-focus: #6b9cff;
 	--bo-state-warn: #f5b748;
 	--bo-state-error: #ff8a8d;
 }
@@ -43,6 +48,18 @@ $bo-icon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
 	&[data-bo-state="edit"] .form-control:not(:disabled):not([readonly]),
 	&[data-bo-state="edit"] .control-input .input-with-feedback {
 		border: 1px solid var(--control-border-strong);
+		font-weight: 400;
+		transition: border-color 0.12s, box-shadow 0.12s;
+	}
+
+	&[data-bo-state="edit"] .form-control:not(:disabled):not([readonly]):hover {
+		border-color: var(--control-border-hover);
+	}
+
+	&[data-bo-state="edit"] .form-control:not(:disabled):not([readonly]):focus {
+		outline: 0;
+		border-color: var(--control-border-focus);
+		box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
 	}
 
 	&[data-bo-state="text"] .control-value {

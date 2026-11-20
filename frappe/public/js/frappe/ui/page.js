@@ -1175,6 +1175,15 @@ frappe.ui.Page = class Page {
 	add_field(df, parent) {
 		this.show_form();
 
+		// beeone: on a list every field of the page form is a filter and sits in the one filter row;
+		// a field that is already a filter there is returned as it is (no second copy of the same filter)
+		const $standard = !parent && this.page_form.find("> .standard-filter-section");
+		if ($standard && $standard.length) {
+			const existing = df.fieldname && this.fields_dict[df.fieldname];
+			if (existing && $standard.find(existing.wrapper).length) return existing;
+			parent = $standard;
+		}
+
 		if (!df.placeholder) {
 			df.placeholder = df.label;
 		}

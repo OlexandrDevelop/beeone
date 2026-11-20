@@ -336,10 +336,11 @@ frappe.ui.form.ControlInput = class ControlInput extends frappe.ui.form.Control 
 	}
 	set_bold() {
 		if (this.$input) {
-			this.$input.toggleClass("bold", !!(this.df.bold || this.df.reqd));
+			// beeone: a required value is not bold (the asterisk marks it); only a DocField marked bold is
+			this.$input.toggleClass("bold", !!this.df.bold);
 		}
 		if (this.disp_area) {
-			$(this.disp_area).toggleClass("bold", !!(this.df.bold || this.df.reqd));
+			$(this.disp_area).toggleClass("bold", !!this.df.bold);
 		}
 	}
 };

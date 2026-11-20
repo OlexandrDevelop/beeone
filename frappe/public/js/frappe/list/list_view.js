@@ -1572,12 +1572,126 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	}
 
 	/**
+	 * beeone: an optimal width for every column that has no width of its own (DocField width or a width the
+	 * user dragged): the widest of the header and the cell contents of the rendered rows, so a long text gets room
+	 * and an empty or short column stays narrow. Spare room of the window goes to the text columns.
+	 * Computed once per set of columns, after the first rows are on screen.
+	 */
+	auto_column_widths() {
+		if (frappe.is_mobile() || !this.$result) return;
+		const $head = this.$result.find(".list-row-head .level-left");
+		const head_cols = $head.find(".list-row-col[data-fieldname]").toArray();
+		const signature = head_cols.map((el) => el.dataset.fieldname).join(",");
+		if (!signature || this._bo_auto_signature === signature) return;
+		const rows = this.$result.find(".list-row .level-left").slice(0, 120).toArray();
+		if (!rows.length) return;
+		this._bo_auto_signature = signature;
+
+		const by_fieldname = {};
+		(this.columns || []).forEach((col) => {
+			const fieldname = col.type === "Status" ? "status_field" : col.df?.fieldname;
+			if (fieldname) by_fieldname[fieldname] = col;
+		});
+		const range = document.createRange();
+		// the extent of the cell's content (a clipped text counts in full); the resize handle is not content
+		const content_width = (el) => {
+			if (!el) return 0;
+			let left = Infinity;
+			let right = -Infinity;
+			el.childNodes.forEach((node) => {
+				if (node.nodeType === 1 && node.classList.contains("list-col-resize-handle")) return;
+				if (node.nodeType === 3 && !node.textContent.trim()) return;
+				if (node.nodeType === 3) range.selectNode(node);
+				else range.selectNodeContents(node);
+				const rects = [range.getBoundingClientRect()];
+				// a pill or a badge: its own box with the padding around the text
+				if (node.nodeType === 1 && node.scrollWidth <= node.clientWidth + 1) {
+					rects.push(node.getBoundingClientRect());
+				}
+				rects.forEach((rect) => {
+					if (!rect.width) return;
+					left = Math.min(left, rect.left);
+					right = Math.max(right, rect.right);
+				});
+			});
+			if (right < left) return 0;
+			const style = getComputedStyle(el);
+			return right - left + parseFloat(style.paddingLeft || 0) + parseFloat(style.paddingRight || 0);
+		};
+		const MIN = 56;
+		const MAX = 360;
+		const widths = {};
+		const text_like = [];
+		head_cols.forEach((head) => {
+			const fieldname = head.dataset.fieldname;
+			const col = by_fieldname[fieldname];
+			if (!col || col.type === "Tag" || cint(col.df?.width)) return;
+			const selector = `.list-row-col[data-fieldname="${CSS.escape(fieldname)}"]`;
+			let width = content_width(head) + 14; // room for the resize handle and the sort arrow
+			rows.forEach((row) => {
+				width = Math.max(width, content_width(row.querySelector(selector)) + 6);
+			});
+			widths[fieldname] = Math.min(MAX, Math.max(MIN, Math.ceil(width)));
+			const df = col.df || {};
+			const numeric = frappe.model.is_numeric_field(df);
+			const is_date = ["Date", "Datetime", "Time"].includes(df.fieldtype);
+			// the document number (Subject) keeps its full width, it never grows or shrinks
+			if (!numeric && !is_date && !["Status", "Subject"].includes(col.type) && widths[fieldname] < MAX) {
+				text_like.push(fieldname);
+			}
+		});
+
+		// spare room of the row goes to the text columns, in proportion to their width
+		const $row_head = $head.closest(".list-row-head");
+		const available =
+			this.$result.parent()[0].clientWidth -
+			// the count ("200 of 3,861"), comments and likes fill the right part after the rows: room for them
+			Math.max($row_head.find("> .level-right").outerWidth() || 0, 150) -
+			(parseFloat($row_head.css("padding-left")) || 0) -
+			(parseFloat($row_head.css("padding-right")) || 0);
+		// the row keeps its gaps and paddings: only the column widths change
+		const cols = $head.find("> .list-row-col").toArray().filter((el) => el.getBoundingClientRect().width);
+		const first = cols[0].getBoundingClientRect();
+		const last = cols[cols.length - 1].getBoundingClientRect();
+		const head_box = $head[0].getBoundingClientRect();
+		let used = first.left - head_box.left + (last.right - first.left);
+		head_cols.forEach((el) => {
+			const now = el.getBoundingClientRect().width;
+			used += (widths[el.dataset.fieldname] || now) - now;
+		});
+		const spare = available - used - 2;
+		const text_total = text_like.reduce((sum, f) => sum + widths[f], 0);
+		if (spare > 0 && text_total) {
+			// spare room goes to the text columns, in proportion to their width
+			text_like.forEach((f) => {
+				widths[f] = Math.floor(widths[f] + (spare * widths[f]) / text_total);
+			});
+		} else if (spare < 0 && text_like.length) {
+			// too wide for the window: the text columns give back room, never below their header or 90 px
+			const floor = {};
+			text_like.forEach((f) => {
+				const head = head_cols.find((el) => el.dataset.fieldname === f);
+				floor[f] = Math.min(widths[f], Math.max(90, Math.ceil(content_width(head) + 14)));
+			});
+			const slack = text_like.reduce((sum, f) => sum + widths[f] - floor[f], 0);
+			const cut = Math.min(-spare, slack);
+			if (slack > 0) {
+				text_like.forEach((f) => {
+					widths[f] = Math.floor(widths[f] - (cut * (widths[f] - floor[f])) / slack);
+				});
+			}
+		}
+		Object.assign(this.column_max_widths, widths);
+	}
+
+	/**
 	 * Applies dynamically calculated widths to elements based on their respective class names.
 	 * Iterates through `column_max_widths` and sets the `width` and `flex` styles for each column.
 	 * The width for each column is applied as both a fixed `width` and a flexible `flex` property.
 	 */
 	apply_column_widths() {
 		if (this.list_view_settings?.disable_scrolling) return;
+		this.auto_column_widths();
 		const MIN_WIDTH = 50;
 		const MAX_WIDTH = 400;
 		Object.entries(this.column_max_widths).forEach(([fieldname, width]) => {
