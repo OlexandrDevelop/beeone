@@ -11,6 +11,15 @@ const MAX_FAV = 40;
 let save_timer = null;
 let dirty = false;
 
+// a window of a page may be tracked before its title is known: then the label is the raw route (a slug).
+// Use the name the app gave the command, else the (translated) title of the Page.
+function recent_label(route, label) {
+	const slug = route.join("/");
+	if (label && label !== slug && label !== route[0]) return label;
+	const page = window.locals && locals.Page && locals.Page[route[0]];
+	return W.label_of(route) || (page && page.title && __(page.title)) || label || slug;
+}
+
 function state_to_layout() {
 	const st = beeone.shell.state;
 	return { v: 1, ...W.snapshot(), widgets: st.widgets || [], has_widgets: !!st.has_widgets, favorites: st.favorites || [], recent: st.recent || [], accent: st.accent || "cobalt" };
@@ -79,7 +88,7 @@ Object.assign(beeone.shell, {
 		const st = beeone.shell.state;
 		const route = win.route.map(String);
 		const key = route.join("/");
-		st.recent = [{ route, label: win.title }, ...(st.recent || []).filter((r) => r.route.join("/") !== key)].slice(0, MAX_RECENT);
+		st.recent = [{ route, label: recent_label(route, win.title) }, ...(st.recent || []).filter((r) => r.route.join("/") !== key)].slice(0, MAX_RECENT);
 	},
 
 	is_fav(route) {
@@ -145,7 +154,7 @@ Object.assign(beeone.shell, {
 			widgets: layout.widgets || [],
 			has_widgets: !!(layout.has_widgets || (layout.widgets || []).length),
 			favorites: layout.favorites || [],
-			recent: layout.recent || [],
+			recent: (layout.recent || []).map((r) => ({ ...r, label: recent_label(r.route, r.label) })),
 			accent: layout.accent || "cobalt",
 		};
 		document.body.classList.add("bo-shell");

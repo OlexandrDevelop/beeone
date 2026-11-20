@@ -1496,3 +1496,36 @@ html:not([data-bo-sidebar="collapsed"]) .bo-sb-item[data-bo-tip]::after {
 .bo-skel-row:last-child {
 	border-bottom: 0;
 }
+
+/* The main button of a list/page head (Frappe .btn-primary, black by the desk theme): the brand blue #2563eb,
+ * a lighter blue on the dark theme. The posting button of a form is not affected: it keeps --bf-ok. */
+body.bo-shell .btn.btn-primary {
+	--btn-primary: #2563eb;
+	--icon-fill-bg: #2563eb;
+	background-color: #2563eb;
+	border-color: #2563eb;
+	color: #ffffff;
+}
+body.bo-shell .btn.btn-primary:hover {
+	background-color: #1d4ed8;
+	border-color: #1d4ed8;
+}
+body.bo-shell .btn.btn-primary:active {
+	color: #ffffff !important;
+	background-color: #1e40af !important;
+}
+html[data-theme="dark"] body.bo-shell .btn.btn-primary {
+	--btn-primary: #6b9cff;
+	--icon-fill-bg: #6b9cff;
+	background-color: #6b9cff;
+	border-color: #6b9cff;
+	color: #06122e;
+}
+html[data-theme="dark"] body.bo-shell .btn.btn-primary:hover {
+	background-color: #93b5ff;
+	border-color: #93b5ff;
+}
+html[data-theme="dark"] body.bo-shell .btn.btn-primary:active {
+	color: #06122e !important;
+	background-color: #4f86f7 !important;
+}

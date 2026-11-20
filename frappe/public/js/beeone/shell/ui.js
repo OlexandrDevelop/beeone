@@ -16,7 +16,8 @@ frappe.provide("beeone.ui");
 		hr_payroll: '<rect x="6.5" y="4.5" width="6" height="6"/><path d="M3.5 19.5v-3.5l2-2h8l2 2v3.5"/><path d="M16 5.5h3.5v4.5H16" stroke="var(--icon-primary, #2563eb)"/><path d="M17.5 14h2l1.5 1.5v4" stroke="var(--icon-primary, #2563eb)"/>',
 		accounting_tax: '<path d="M5 3.5h9.5L19 8v12.5H5V3.5Z"/><path d="M14.5 3.5V8H19"/><path d="M8.5 11.5h7"/><path d="M8.5 15.5h4.5"/><path d="M8.5 7.5h3" stroke="var(--icon-primary, #2563eb)"/><path d="M15 15.5h1.5" stroke="var(--icon-primary, #2563eb)"/>',
 		analytics: '<path d="M3.5 19.5h17"/><path d="M6 19.5v-5h3v5"/><path d="M11 19.5v-9h3v9"/><path d="M16 19.5V5h3v14.5" stroke="var(--icon-primary, #2563eb)"/>',
-		settings: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><rect x="7" y="5" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="var(--icon-primary, #2563eb)"/><rect x="14" y="10" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="currentColor"/><rect x="8.5" y="15" width="3.5" height="4" fill="var(--bg-sidebar, #ffffff)" stroke="var(--icon-primary, #2563eb)"/>',
+		settings: '<g stroke-linecap="butt"><path d="M3.5 7H7M10.5 7h10"/><path d="M3.5 12h10M17 12h3.5"/><path d="M3.5 17H8.5M12 17h8.5"/><rect x="7" y="5" width="3.5" height="4" stroke="var(--icon-primary, #2563eb)"/><rect x="13.5" y="10" width="3.5" height="4"/><rect x="8.5" y="15" width="3.5" height="4" stroke="var(--icon-primary, #2563eb)"/></g>',
+		registers: '<path d="M3.5 9v10.5h17V9"/><path d="M3.5 14.25h17"/><path d="M9.5 9v10.5"/><rect x="3.5" y="4.5" width="17" height="4.5" stroke="var(--icon-primary, #2563eb)"/>',
 	};
 
 	const ICONS = {

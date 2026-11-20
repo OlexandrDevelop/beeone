@@ -74,8 +74,8 @@ def core_sections(user: str | None = None) -> list[dict]:
 			"id": "registers",
 			"label": _("Registers"),
 			"description": _("Movements and balances"),
-			"icon": "list",
-			"order": 35,
+			"icon": "registers",
+			"order": 1000,
 			"create": [],
 			"commands": [
 				{

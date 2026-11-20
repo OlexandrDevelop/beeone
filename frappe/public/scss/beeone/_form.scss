@@ -1,16 +1,16 @@
 /* HiveTrade Classic forms (T-853): one layout for catalogs and documents.
  * Columns follow the WINDOW width (.bo-win[data-bw], SHELL.md T-704): 1 below 560 px, 2 up to 1439 px, 3 from 1440 px.
  * Outside the shell the same breakpoints use @media. Motion: opacity/transform only, <= 160 ms, off for reduced motion.
- * The palette is our own (deep teal + slate + amber for drafts), derived from the shell tokens. */
+ * The palette is our own (brand blue + slate + amber for drafts), derived from the shell tokens. */
 
 /* Tokens are explicit hex values (not shell fallbacks) so that every text/background pair can be measured:
  * tests/test_form_contrast.py parses this block and checks WCAG 2.2 AA (1.4.3 text >= 4.5, 1.4.11 controls >= 3).
  * The pale shell grey (third text level, ~3:1) is never used for text in forms. */
 .bf-form {
-	--bf-accent: #0b7285;
-	--bf-accent-hover: #095c6b;
-	--bf-accent-weak: #e3f4f7;
-	--bf-accent-line: #a5dbe3;
+	--bf-accent: #2563eb;
+	--bf-accent-hover: #1d4ed8;
+	--bf-accent-weak: #e8effd;
+	--bf-accent-line: #b6cbfa;
 	--bf-on-accent: #ffffff;
 	--bf-surface: #ffffff;
 	--bf-surface-2: #f2f4f7;
@@ -31,11 +31,11 @@
 	--bf-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 html[data-theme="dark"] .bf-form {
-	--bf-accent: #3cc3d6;
-	--bf-accent-hover: #6fd6e4;
-	--bf-accent-weak: rgb(60 195 214 / 0.14);
-	--bf-accent-line: rgb(60 195 214 / 0.4);
-	--bf-on-accent: #06232a;
+	--bf-accent: #6b9cff;
+	--bf-accent-hover: #93b5ff;
+	--bf-accent-weak: rgb(107 156 255 / 0.14);
+	--bf-accent-line: rgb(107 156 255 / 0.4);
+	--bf-on-accent: #06122e;
 	--bf-surface: #12151c;
 	--bf-surface-2: #181c25;
 	--bf-line: #252a35;
