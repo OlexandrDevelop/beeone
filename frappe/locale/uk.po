@@ -41535,3 +41535,15 @@ msgstr "Дата і час"
 #: frappe/public/js/beeone/registers.js
 msgid "Quantity"
 msgstr "Кількість"
+
+#: frappe/public/js/beeone/report_drilldown.js
+msgid "Drill down"
+msgstr "Розшифровка"
+
+#: frappe/public/js/beeone/report_drilldown.js
+msgid "Drill down in this report"
+msgstr "Розшифрувати в цьому звіті"
+
+#: frappe/public/js/beeone/report_drilldown.js
+msgid "No reports to drill down into"
+msgstr "Немає звітів для розшифровки"
