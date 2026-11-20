@@ -815,3 +815,32 @@ body.bo-shell #desk-dock {
 		transition: none;
 	}
 }
+
+/* T-2309: "Date and time" is one compact cell: the date and the time side by side under one label */
+.bf-form .bf-grid > .bf-dt .bf-dt-row {
+	display: flex;
+	gap: 6px;
+	min-width: 0;
+}
+.bf-form .bf-grid .bf-dt-part {
+	margin: 0;
+	min-width: 0;
+}
+.bf-form .bf-grid .bf-dt-part:first-child {
+	flex: 1 1 58%;
+}
+.bf-form .bf-grid .bf-dt-part:last-child {
+	flex: 1 1 42%;
+}
+
+/* T-2309: the details dialog ("Prices and currency"): the same dense field grid, always two columns */
+.bf-details-dlg .bf-details-body {
+	padding: 12px 18px 16px;
+	overflow: auto;
+}
+body .bf-details-dlg .bf-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+body .bf-details-dlg .bo-dialog {
+	width: min(640px, 100%);
+}

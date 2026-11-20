@@ -12,6 +12,9 @@
 //   beeone.form.LAYOUTS["DocType"] = {kind, head, groups, tables, totals, go}   // replaces the automatic layout
 //   beeone.form.COMMANDS["DocType"] = [{name, label, icon, menu, run(frm, el)}] // extra buttons of the command bar
 //   beeone.form.enable("DocType") / beeone.form.disable("DocType")
+//   beeone.form.DETAILS["*" | "DocType"] = {label, icon, fields}  // T-2309: fields kept out of the head, edited in a dialog
+//                                                                // opened by a button of the command bar (e.g. "Prices and currency")
+//   beeone.form.PAIRS = [[date_field, time_field, label]]          // two fields shown as one compact "Date and time" control
 // A DocType that no app enabled is never touched, so an app that has its own form template is not affected.
 frappe.provide("beeone.form");
 
@@ -25,6 +28,13 @@ frappe.provide("beeone.form");
 		totals: ["document_amount", "vat_amount", "total", "vat_total", "amount"],
 		number: ["document_number", "onec_number"],
 	};
+	// T-2309: a date and a time field of one group are one compact control (both stay real fields of the form)
+	F.PAIRS = F.PAIRS || [["posting_date", "posting_time", "Date and time"]];
+	// T-2309: the fields a configuration moves from the head into the details dialog; "*" is for every DocType,
+	// a DocType key replaces it. Absent fields are ignored, a DocType with none of them has no button.
+	F.DETAILS = F.DETAILS || {};
+	// "*" applies to the submittable DocTypes (documents) only; a catalog is given the dialog by its own key
+	F.details_cfg = (doctype) => F.DETAILS[doctype] || (frappe.get_meta(doctype).is_submittable && F.DETAILS["*"]) || null;
 	// the groups of custom buttons (frm.add_custom_button(label, fn, group)) that fill the «Fill» and «Status» menus
 	F.GROUPS = F.GROUPS || { fill: ["Actions"], status: ["Status"] };
 	const enabled = (F._on = F._on || new Set());
@@ -144,6 +154,8 @@ frappe.provide("beeone.form");
 		const src = F.LAYOUTS[frm.doctype] || F.auto_spec(frm.doctype);
 		const known = new Set(meta.fields.filter((df) => !SKIP.includes(df.fieldtype)).map((df) => df.fieldname));
 		const used = new Set();
+		const cfg = F.details_cfg(frm.doctype);
+		const details = cfg ? (cfg.fields || []).filter((n) => known.has(n) && !used.has(n) && used.add(n)) : [];
 		const groups = src.groups.map((g) => ({
 			key: g.key,
 			label: g.label,
@@ -166,7 +178,14 @@ frappe.provide("beeone.form");
 		meta.fields.forEach((df) => {
 			if (!SKIP.includes(df.fieldtype) && !used.has(df.fieldname)) more.fields.push(df.fieldname);
 		});
-		frm.bf_spec = Object.assign({}, src, { groups: groups.filter((g) => g.fields.length), tables, comment, totals: (src.totals || []).filter((t) => known.has(t[0])) });
+		frm.bf_spec = Object.assign({}, src, {
+			details: details.length ? { label: cfg.label || "Prices and currency", icon: cfg.icon || "sheet", fields: details } : null,
+			head: (src.head || []).filter((n) => !details.includes(n)),
+			groups: groups.filter((g) => g.fields.length),
+			tables,
+			comment,
+			totals: (src.totals || []).filter((t) => known.has(t[0])),
+		});
 		return frm.bf_spec;
 	};
 
@@ -185,9 +204,15 @@ frappe.provide("beeone.form");
 		spec.groups.forEach((g) => {
 			$tabs.append(`<button type="button" class="bf-tab" role="tab" data-grp="${esc(g.key)}">${esc(__(g.label))}</button>`);
 			const $grp = $(`<div class="bf-grp" role="tabpanel" data-grp="${esc(g.key)}"><div class="bf-grid"></div></div>`);
+			const merged = new Set();
 			g.fields.forEach((n) => {
 				const f = frm.fields_dict[n];
-				if (f && f.$wrapper) $grp.find(".bf-grid").append(f.$wrapper);
+				if (!f || !f.$wrapper || merged.has(n)) return;
+				const pair = F.PAIRS.find((p) => p[0] === n && g.fields.includes(p[1]) && frm.fields_dict[p[1]] && frm.fields_dict[p[1]].$wrapper);
+				if (pair) {
+					merged.add(pair[1]);
+					$grp.find(".bf-grid").append(F.pair_cell(frm, pair));
+				} else $grp.find(".bf-grid").append(f.$wrapper);
 			});
 			$main.append($grp);
 		});
@@ -244,6 +269,16 @@ frappe.provide("beeone.form");
 			});
 		}
 
+		if (spec.details) {
+			// the fields of the details dialog stay in the form (values, events, autofill), only out of sight
+			frm.bf_details = $('<div class="bf-details-holder bf-gone" aria-hidden="true"></div>');
+			spec.details.fields.forEach((n) => {
+				const f = frm.fields_dict[n];
+				if (f && f.$wrapper) frm.bf_details.append(f.$wrapper);
+			});
+			$body.append(frm.bf_details);
+		}
+
 		$page.prepend($body);
 		// everything the spec places has moved; the Frappe sections are empty shells now
 		sections.forEach((s) => s.wrapper && $(s.wrapper).addClass("bf-gone"));
@@ -267,6 +302,64 @@ frappe.provide("beeone.form");
 		F.wrap_frm(frm);
 		frm.bf_done = true;
 		return true;
+	};
+
+	// T-2309: "Date and time" - the date and the time control side by side in one grid cell under one label
+	F.pair_cell = function (frm, pair) {
+		const a = frm.fields_dict[pair[0]];
+		const b = frm.fields_dict[pair[1]];
+		const id = "bf-dt-" + pair[0];
+		const reqd = a.df.reqd || b.df.reqd;
+		const $cell = $(
+			`<div class="frappe-control bf-dt" data-fieldtype="Datetime" data-fieldname="${esc(pair[0])}" role="group" aria-labelledby="${id}">` +
+				`<div class="form-group"><label class="control-label${reqd ? " reqd" : ""}" id="${id}">${esc(__(pair[2]))}</label>` +
+				`<div class="bf-dt-row"></div></div></div>`
+		);
+		[a, b].forEach((f) => {
+			// the own labels of the two controls are read by screen readers only
+			$(f.$wrapper).addClass("bf-dt-part").find(".control-label").first().addClass("bf-sr-only");
+			$(f.$wrapper).find("input").first().attr("aria-label", __(f.df.label || f.df.fieldname));
+			$cell.find(".bf-dt-row").append(f.$wrapper);
+		});
+		return $cell;
+	};
+
+	// T-2309: the details dialog ("Prices and currency"): the fields move into it while it is open and go back on close
+	F.open_details = function (frm) {
+		const spec = F.spec(frm);
+		if (!spec.details || !frm.bf_details || !ui() || !ui().dialog) return null;
+		if (frm.bf_details_dlg) return frm.bf_details_dlg;
+		const title = __(spec.details.label);
+		const d = ui().dialog({
+			title,
+			width: 640,
+			className: "bf-form bf-details-dlg",
+			html:
+				`<div class="bo-dialog-head"><div><div class="bo-dialog-title">${esc(title)}</div></div></div>` +
+				`<div class="bf-details-body"><div class="bf-grid"></div></div>` +
+				`<div class="bo-dialog-foot"><div class="bo-right"><button class="bo-btn bo-btn--primary" data-close autofocus>${esc(__("Close"))}</button></div></div>`,
+			on_close: () => {
+				spec.details.fields.forEach((n) => {
+					const f = frm.fields_dict[n];
+					if (f && f.$wrapper) frm.bf_details.append(f.$wrapper);
+				});
+				frm.bf_details_dlg = null;
+				F.refresh_fields(frm);
+				F.render_totals(frm);
+			},
+		});
+		const $grid = $(d.box).find(".bf-grid");
+		spec.details.fields.forEach((n) => {
+			const f = frm.fields_dict[n];
+			if (f && f.$wrapper) $grid.append(f.$wrapper);
+		});
+		frm.bf_details_dlg = d;
+		return d;
+	};
+
+	F.refresh_fields = (frm) => {
+		const spec = F.spec(frm);
+		((spec.details && spec.details.fields) || []).forEach((n) => frm.fields_dict[n] && frm.fields_dict[n].refresh && frm.fields_dict[n].refresh());
 	};
 
 	// All groups stay in the layout (one grid cell, see bf_form.css .bf-main), so the head keeps the
@@ -399,6 +492,7 @@ frappe.provide("beeone.form");
 		if (scroll) {
 			frm.scroll_to_field = function (fieldname) {
 				F.spec(frm).groups.forEach((g) => g.fields.includes(fieldname) && F.show_group(frm, g.key, false));
+				if (((F.spec(frm).details || {}).fields || []).includes(fieldname)) F.open_details(frm);
 				F.spec(frm).tables.forEach((t) => t.field === fieldname && ((frm.bf_tab = fieldname), F.render_tp(frm)));
 				return scroll.apply(null, arguments);
 			};
@@ -543,6 +637,7 @@ frappe.provide("beeone.form");
 			if (ds === 1 && !frm.is_new()) mid.push(btn("movements", __("Document movements"), "dtkt"));
 			if (!frm.is_new()) mid.push(btn("print", __("Print"), "printer"));
 		}
+		if (spec.details) mid.push(btn("details", __(spec.details.label), spec.details.icon));
 		((F.COMMANDS[frm.doctype] || []).filter((c) => !c.show || c.show(frm))).forEach((c) =>
 			mid.push(btn("x:" + c.name, c.label, c.icon || "list", { menu: !!c.menu }))
 		);
@@ -587,6 +682,8 @@ frappe.provide("beeone.form");
 				return frm.print_doc();
 			case "movements":
 				return window.beeone?.registers?.show_movements && beeone.registers.show_movements(frm);
+			case "details":
+				return F.open_details(frm);
 			case "fill":
 				return F.custom_menu(frm, el, "fill");
 			case "status":
