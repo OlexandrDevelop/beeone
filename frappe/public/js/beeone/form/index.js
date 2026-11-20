@@ -304,7 +304,7 @@ frappe.provide("beeone.form");
 		return true;
 	};
 
-	// T-2309: "Date and time" - the date and the time control side by side in one grid cell under one label
+	// T-2309: "Date and time" - one grid cell under one label; since 2026-11-20 one masked input (dt_input.js)
 	F.pair_cell = function (frm, pair) {
 		const a = frm.fields_dict[pair[0]];
 		const b = frm.fields_dict[pair[1]];
@@ -315,11 +315,13 @@ frappe.provide("beeone.form");
 				`<div class="form-group"><label class="control-label${reqd ? " reqd" : ""}" id="${id}">${esc(__(pair[2]))}</label>` +
 				`<div class="bf-dt-row"></div></div></div>`
 		);
+		// one masked input shows and edits both fields (dt_input.js); the two controls stay in the form, hidden
+		$cell.find(".bf-dt-row").append(F.dt_input(frm, a, b, $cell));
+		$cell.find("label").attr("for", null);
+		const $hidden = $('<div class="bf-dt-fields" hidden></div>').appendTo($cell.find(".form-group"));
 		[a, b].forEach((f) => {
-			// the own labels of the two controls are read by screen readers only
-			$(f.$wrapper).addClass("bf-dt-part").find(".control-label").first().addClass("bf-sr-only");
-			$(f.$wrapper).find("input").first().attr("aria-label", __(f.df.label || f.df.fieldname));
-			$cell.find(".bf-dt-row").append(f.$wrapper);
+			$(f.$wrapper).addClass("bf-dt-part");
+			$hidden.append(f.$wrapper);
 		});
 		return $cell;
 	};

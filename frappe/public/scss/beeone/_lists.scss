@@ -179,3 +179,10 @@ body.bo-shell .dt-header .dt-cell__content {
 body.bo-shell .dt-cell__content {
 	font-variant-numeric: tabular-nums;
 }
+
+/* the time of a document's "Date and time" next to its date */
+body.bo-shell .frappe-list .list-row .bo-list-time {
+	margin-inline-start: 4px;
+	color: var(--bo-th-text);
+	font-variant-numeric: tabular-nums;
+}

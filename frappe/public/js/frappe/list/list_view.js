@@ -306,6 +306,19 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				this._add_field(df.options);
 			}
 		});
+
+		// beeone: a document's date column shows the date and the time of the "Date and time" pair
+		this.datetime_pairs = {};
+		((window.beeone && beeone.form && beeone.form.PAIRS) || []).forEach(([date, time]) => {
+			if (
+				this.fields.some((f) => f[0] === date) &&
+				frappe.meta.has_field(this.doctype, date) &&
+				frappe.meta.has_field(this.doctype, time)
+			) {
+				this.datetime_pairs[date] = time;
+				this._add_field(time);
+			}
+		});
 	}
 
 	patch_refresh_and_load_lib() {
@@ -901,6 +914,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					Math.min(400, startWidth + dir * (e.pageX - startX))
 				);
 				this.column_max_widths[fieldname] = newWidth;
+				(this._bo_dragged_widths = this._bo_dragged_widths || new Set()).add(fieldname);
 				this.save_column_width(fieldname, newWidth);
 			}
 			fieldname = null;
@@ -1069,6 +1083,8 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		}
 
 		if (!frappe.is_mobile()) {
+			// measured on a render only, not on every virtual-scroll window shift
+			if (!this.list_view_settings?.disable_scrolling) this.auto_column_widths();
 			this.apply_column_widths();
 		}
 		this.update_listview_classes(has_assignto, assign_to_count);
@@ -1457,6 +1473,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 					</div>`;
 			} else if (df.fieldtype === "Data") {
 				return frappe.format(frappe.utils.escape_html(value), df, null, doc);
+			} else if (this.datetime_pairs?.[fieldname] && value && doc[this.datetime_pairs[fieldname]]) {
+				const time = String(doc[this.datetime_pairs[fieldname]]).split(".")[0];
+				return `${frappe.format(value, df, null, doc)} <span class="bo-list-time">${frappe.utils.escape_html(time)}</span>`;
 			} else {
 				return frappe.format(value, df, null, doc);
 			}
@@ -1575,17 +1594,16 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	 * beeone: an optimal width for every column that has no width of its own (DocField width or a width the
 	 * user dragged): the widest of the header and the cell contents of the rendered rows, so a long text gets room
 	 * and an empty or short column stays narrow. Spare room of the window goes to the text columns.
-	 * Computed once per set of columns, after the first rows are on screen.
+	 * Measured again on every render (an app may restyle the cells after the first one, e.g. the status badges).
 	 */
 	auto_column_widths() {
 		if (frappe.is_mobile() || !this.$result) return;
 		const $head = this.$result.find(".list-row-head .level-left");
 		const head_cols = $head.find(".list-row-col[data-fieldname]").toArray();
-		const signature = head_cols.map((el) => el.dataset.fieldname).join(",");
-		if (!signature || this._bo_auto_signature === signature) return;
+		if (!head_cols.length) return;
 		const rows = this.$result.find(".list-row .level-left").slice(0, 120).toArray();
 		if (!rows.length) return;
-		this._bo_auto_signature = signature;
+		const dragged = (this._bo_dragged_widths = this._bo_dragged_widths || new Set());
 
 		const by_fieldname = {};
 		(this.columns || []).forEach((col) => {
@@ -1593,30 +1611,49 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			if (fieldname) by_fieldname[fieldname] = col;
 		});
 		const range = document.createRange();
-		// the extent of the cell's content (a clipped text counts in full); the resize handle is not content
+		// the extent of the cell's content: a clipped text counts in full, a pill or a badge with its own padding;
+		// the resize handle is not content
+		const box_extra = (node) => {
+			const style = getComputedStyle(node);
+			return [
+				parseFloat(style.paddingLeft || 0) + parseFloat(style.borderLeftWidth || 0),
+				parseFloat(style.paddingRight || 0) + parseFloat(style.borderRightWidth || 0),
+			];
+		};
 		const content_width = (el) => {
 			if (!el) return 0;
 			let left = Infinity;
 			let right = -Infinity;
+			const add = (rect, [pad_left, pad_right]) => {
+				if (!rect.width) return;
+				left = Math.min(left, rect.left - pad_left);
+				right = Math.max(right, rect.right + pad_right);
+			};
 			el.childNodes.forEach((node) => {
 				if (node.nodeType === 1 && node.classList.contains("list-col-resize-handle")) return;
-				if (node.nodeType === 3 && !node.textContent.trim()) return;
-				if (node.nodeType === 3) range.selectNode(node);
-				else range.selectNodeContents(node);
-				const rects = [range.getBoundingClientRect()];
-				// a pill or a badge: its own box with the padding around the text
-				if (node.nodeType === 1 && node.scrollWidth <= node.clientWidth + 1) {
-					rects.push(node.getBoundingClientRect());
+				if (node.nodeType === 3) {
+					if (!node.textContent.trim()) return;
+					range.selectNode(node);
+					return add(range.getBoundingClientRect(), [0, 0]);
 				}
-				rects.forEach((rect) => {
-					if (!rect.width) return;
-					left = Math.min(left, rect.left);
-					right = Math.max(right, rect.right);
+				if (node.nodeType !== 1) return;
+				[node, ...node.querySelectorAll("*")].forEach((child) => {
+					range.selectNodeContents(child);
+					add(range.getBoundingClientRect(), box_extra(child));
+					// a label clipped by its own ellipsis: its full scroll width plus the padding of its box and parent
+					if (child.scrollWidth > child.clientWidth + 1) {
+						const box = child.getBoundingClientRect();
+						const parent_right = child.parentElement === el ? 0 : box_extra(child.parentElement)[1];
+						add(
+							{ left: box.left, right: box.left + child.scrollWidth, width: child.scrollWidth },
+							[0, box_extra(child)[1] + parent_right]
+						);
+					}
 				});
 			});
 			if (right < left) return 0;
-			const style = getComputedStyle(el);
-			return right - left + parseFloat(style.paddingLeft || 0) + parseFloat(style.paddingRight || 0);
+			const [pad_left, pad_right] = box_extra(el);
+			return right - left + pad_left + pad_right;
 		};
 		const MIN = 56;
 		const MAX = 360;
@@ -1625,7 +1662,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 		head_cols.forEach((head) => {
 			const fieldname = head.dataset.fieldname;
 			const col = by_fieldname[fieldname];
-			if (!col || col.type === "Tag" || cint(col.df?.width)) return;
+			if (!col || col.type === "Tag" || cint(col.df?.width) || dragged.has(fieldname)) return;
 			const selector = `.list-row-col[data-fieldname="${CSS.escape(fieldname)}"]`;
 			let width = content_width(head) + 14; // room for the resize handle and the sort arrow
 			rows.forEach((row) => {
@@ -1667,11 +1704,11 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 				widths[f] = Math.floor(widths[f] + (spare * widths[f]) / text_total);
 			});
 		} else if (spare < 0 && text_like.length) {
-			// too wide for the window: the text columns give back room, never below their header or 90 px
+			// too wide for the window: the text columns give back room, down to their header (at most 130 px) or 90 px
 			const floor = {};
 			text_like.forEach((f) => {
 				const head = head_cols.find((el) => el.dataset.fieldname === f);
-				floor[f] = Math.min(widths[f], Math.max(90, Math.ceil(content_width(head) + 14)));
+				floor[f] = Math.min(widths[f], Math.max(90, Math.min(130, Math.ceil(content_width(head) + 14))));
 			});
 			const slack = text_like.reduce((sum, f) => sum + widths[f] - floor[f], 0);
 			const cut = Math.min(-spare, slack);
@@ -1691,7 +1728,6 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 	 */
 	apply_column_widths() {
 		if (this.list_view_settings?.disable_scrolling) return;
-		this.auto_column_widths();
 		const MIN_WIDTH = 50;
 		const MAX_WIDTH = 400;
 		Object.entries(this.column_max_widths).forEach(([fieldname, width]) => {

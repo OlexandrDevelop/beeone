@@ -859,21 +859,89 @@ body.bo-shell #desk-dock {
 	}
 }
 
-/* T-2309: "Date and time" is one compact cell: the date and the time side by side under one label */
+/* "Date and time": one masked input over the two fields (dt_input.js), a calendar button at its end */
 .bf-form .bf-grid > .bf-dt .bf-dt-row {
 	display: flex;
-	gap: 6px;
 	min-width: 0;
 }
-.bf-form .bf-grid .bf-dt-part {
-	margin: 0;
+.bf-form .bf-dt-fields {
+	display: none !important;
+}
+.bf-form .bf-dt-box {
+	position: relative;
+	flex: 1 1 auto;
 	min-width: 0;
 }
-.bf-form .bf-grid .bf-dt-part:first-child {
-	flex: 1 1 58%;
+.bf-form .bf-grid .bf-dt-input.form-control {
+	width: 100%;
+	padding-inline-end: 32px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+	background: var(--bf-surface);
+	border: 1px solid var(--bf-line-ctl);
 }
-.bf-form .bf-grid .bf-dt-part:last-child {
-	flex: 1 1 42%;
+.bf-form .bf-grid .bf-dt-input.form-control:hover:not([readonly]) {
+	border-color: var(--bf-line-hover);
+}
+.bf-form .bf-grid .bf-dt-input.form-control:focus {
+	outline: 0;
+	border-color: var(--bf-accent);
+	box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
+}
+.bf-form .bf-grid .bf-dt-input::placeholder {
+	color: #94a3b8;
+}
+.bf-form .bf-grid .bf-dt[data-bo-state="text"] .bf-dt-input.form-control {
+	padding-inline: 0;
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+.bf-form .bf-grid .bf-dt[data-bo-state="locked"] .bf-dt-input.form-control {
+	border-style: dashed;
+	background: var(--bf-locked-bg);
+	cursor: not-allowed;
+}
+.bf-form .bf-grid .bf-dt[data-bo-reqd="1"][data-bo-empty="1"][data-bo-state="edit"] .bf-dt-input {
+	box-shadow: inset 3px 0 0 var(--bf-warn);
+	background: var(--bf-warn-weak);
+}
+.bf-form .bf-grid .bf-dt.has-error .bf-dt-input {
+	border: 2px solid var(--bf-err);
+}
+.bf-form .bf-dt-cal {
+	position: absolute;
+	top: 50%;
+	inset-inline-end: 4px;
+	display: grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	margin-top: -12px;
+	padding: 0;
+	border: 0;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--bf-text-2);
+	cursor: pointer;
+}
+.bf-form .bf-dt-cal:hover {
+	background: var(--bf-surface-2);
+	color: var(--bf-accent);
+}
+.bf-form .bf-dt-cal[hidden] {
+	display: none;
+}
+.bf-form .bf-dt-native {
+	position: absolute;
+	inset-inline-start: 0;
+	bottom: 0;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+	border: 0;
+	padding: 0;
 }
 
 /* T-2309: the details dialog ("Prices and currency"): the same dense field grid, always two columns */
