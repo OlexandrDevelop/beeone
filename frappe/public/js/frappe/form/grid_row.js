@@ -1042,17 +1042,6 @@ export default class GridRow {
 			.on("focus", function () {
 				if (me.is_readonly_inline()) me.set_roving_cell($col);
 			})
-			.on("mousedown", function (event) {
-				// Activate the intended row before blur redraws the previous row. With
-				// long tables that redraw can move the cell before mouseup, losing click.
-				if (
-					event.button === 0 && me.doc && !me.header_row &&
-					frappe.ui.form.editable_row !== me &&
-					me.grid.allow_on_grid_editing() && me.grid.is_editable()
-				) {
-					me.toggle_editable_row(true);
-				}
-			})
 			.on("click", function (event) {
 				if (frappe.ui.form.editable_row !== me) {
 					var out = me.toggle_editable_row();
