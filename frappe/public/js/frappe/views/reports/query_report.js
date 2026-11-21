@@ -781,6 +781,17 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	refresh(have_filters_changed) {
+        // Missing required filters are a normal state when a report opens.
+        // Display guidance without throwing an unhandled browser exception.
+        if (!this.prepared_report_name && (this.filters || []).some(
+            (f) => (f.df.reqd || f.df.mandatory) && !f.get_value()
+        )) {
+            this.is_loading = false;
+            this.hide_loading_screen();
+            this.toggle_report(false);
+            this.toggle_message(true, __("Please set filters"));
+            return Promise.resolve();
+        }
 		this.toggle_message(true);
 		this.toggle_report(false);
 		let filters = this.get_filter_values(!this.prepared_report_name);
@@ -1744,6 +1755,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			field_value_map = fieldname;
 		}
 
+		const previously_suppressed = this._no_refresh;
 		this._no_refresh = true;
 		try {
 			for (const fieldname of Object.keys(field_value_map)) {
@@ -1754,8 +1766,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				}
 			}
 		} finally {
-			this._no_refresh = false;
+			this._no_refresh = previously_suppressed;
 		}
+		if (!previously_suppressed) this.refresh(true);
 	}
 
 	make_access_log(method, file_format) {
