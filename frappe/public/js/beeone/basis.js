@@ -51,7 +51,8 @@ beeone.basis.open = function (data) {
 };
 
 beeone.basis.sync = function (data) {
-	const doc = Object.assign({ __islocal: 1, docstatus: 0 }, data);
+	// __on_basis: the header and the rows of the basis are already in the document (the defaults of a new one must not replace them)
+	const doc = Object.assign({ __islocal: 1, docstatus: 0, __on_basis: 1 }, data);
 	if (!doc.name) doc.name = frappe.model.make_new_doc_and_get_name(doc.doctype, true);
 	const meta = frappe.get_meta(doc.doctype);
 	if (meta) {
