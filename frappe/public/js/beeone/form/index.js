@@ -175,7 +175,7 @@ frappe.provide("beeone.form");
 		// a field the spec does not name is never lost: it goes to the last group "Additional"
 		let more = groups.find((g) => g.key === "more");
 		if (!more) {
-			more = { key: "more", label: "Additional fields", fields: [] };
+			more = { key: "more", label: "Additional fields", tables: [], fields: [] };
 			groups.push(more);
 		}
 		meta.fields.forEach((df) => {
@@ -185,7 +185,7 @@ frappe.provide("beeone.form");
 			header_fields,
 			details: details.length ? { label: cfg.label || "Prices and currency", icon: cfg.icon || "sheet", fields: details } : null,
 			head: (src.head || []).filter((n) => !details.includes(n)),
-			groups: groups.filter((g) => g.fields.length || g.tables.length),
+			groups: groups.filter((g) => g.fields.length || (g.tables && g.tables.length)),
 			tables,
 			comment,
 			totals: (src.totals || []).filter((t) => known.has(t[0])),
@@ -316,7 +316,7 @@ frappe.provide("beeone.form");
 		});
 
 		$(frm.page.wrapper).addClass("bf-form bf-form--" + spec.kind);
-		$(frm.page.wrapper).toggleClass("bf-grouped-tables", spec.groups.some((g) => g.tables.length));
+		$(frm.page.wrapper).toggleClass("bf-grouped-tables", spec.groups.some((g) => g.tables && g.tables.length));
 		F.watch_fit(frm);
 		F.setup_queries(frm);
 		F.wrap_frm(frm);
@@ -404,7 +404,7 @@ frappe.provide("beeone.form");
 		set_active_group($w, key);
 		frm.bf_group = key;
 		const spec = F.spec(frm);
-		if (spec.groups.some((g) => g.tables.length)) {
+		if (spec.groups.some((g) => g.tables && g.tables.length)) {
 			const group = spec.groups.find((g) => g.key === key);
 			const tables = group?.tables || [];
 			const $tp = $w.find('.bf-tp');
@@ -429,7 +429,7 @@ frappe.provide("beeone.form");
 		const visible = [];
 		spec.groups.forEach((g) => {
 			const fs = g.fields.map((n) => frm.fields_dict[n]).filter(Boolean);
-			const shown = g.tables.length || fs.some((f) => !f.$wrapper.hasClass("hide-control") && f.$wrapper.css("display") !== "none");
+			const shown = (g.tables && g.tables.length) || fs.some((f) => !f.$wrapper.hasClass("hide-control") && f.$wrapper.css("display") !== "none");
 			const bad = tried && fs.some((f) => f.df.reqd && !f.$wrapper.hasClass("hide-control") && (frm.doc[f.df.fieldname] == null || frm.doc[f.df.fieldname] === ""));
 			const $t = $w.find(`.bf-main > .bf-tabs .bf-tab[data-grp="${g.key}"]`);
 			$t.prop("hidden", !shown).toggleClass("has-error", !!bad);
@@ -964,7 +964,7 @@ frappe.provide("beeone.form");
 		const $tp = $(frm.layout.wrapper).find(".bf-tp");
 		if (!$tp.length) return;
 		const spec = F.spec(frm);
-		if (spec.groups.some((g) => g.tables.length)) {
+		if (spec.groups.some((g) => g.tables && g.tables.length)) {
 			const group = spec.groups.find((g) => g.key === frm.bf_group);
 			const available = (group?.tables || []).filter((n) => {
 				const f = frm.fields_dict[n];
