@@ -118,6 +118,34 @@ body.bo-shell .page-form.list-page-form .mobile-id-filter:empty {
 	display: none;
 }
 
+/* A narrow window must keep every filter reachable without placing inputs
+ * outside the viewport. Desktop retains its single scrolling filter row. */
+body.bo-shell .bo-win[data-bw~="lt560"] {
+	.page-form.list-page-form {
+		align-items: stretch;
+		.standard-filter-section {
+			flex-wrap: wrap;
+			width: 100%;
+			overflow: visible;
+			> .frappe-control.col-md-2 {
+				flex: 1 1 120px;
+				min-width: 0;
+				max-width: 100%;
+			}
+		}
+		.filter-section { flex-wrap: wrap; }
+	}
+	.frappe-list .list-row-container,
+	.frappe-list .list-row-head { min-width: 0; max-width: 100%; }
+	.frappe-list .result-container .result {
+		display: block;
+		width: 100%;
+		.list-row-container { width: 100%; min-width: 0; }
+		.list-row .level-left { min-width: 0; flex: 1 1 0; }
+		.list-row .level-right { min-width: 0; flex: 0 1 auto; }
+	}
+}
+
 /* ---------------------------------------------------------------- the list table */
 body.bo-shell .frappe-list .list-row-head {
 	background: var(--bo-th-band);

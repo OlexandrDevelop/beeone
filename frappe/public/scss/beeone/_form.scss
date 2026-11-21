@@ -173,6 +173,22 @@ html[data-theme="dark"] .bf-form {
 	gap: 4px;
 	align-items: center;
 }
+
+/* Keep commands reachable at phone/window widths rather than clipping them
+ * in the title row. The toolbar itself scrolls, not the form/page. */
+.bo-win[data-bw~="lt560"] .bf-head {
+	flex-wrap: wrap;
+	gap: 6px;
+	.bf-title-row { flex: 1 1 100%; }
+	.bf-bar {
+		flex: 1 1 100%;
+		min-width: 0;
+		max-width: 100%;
+		overflow-x: auto;
+		> * { flex-shrink: 0; }
+	}
+}
+.bf-header { padding: 12px; }
 .bf-btn {
 	display: inline-flex;
 	align-items: center;

@@ -10,6 +10,7 @@
 //   beeone_form_exclude = ["DocType"]     # the template is off for these DocTypes
 // and, from the app's JS, with
 //   beeone.form.LAYOUTS["DocType"] = {kind, head, groups, tables, totals, go}   // replaces the automatic layout
+//   header_fields stays above tabs; optional groups[].tables places table parts inside that tab.
 //   beeone.form.COMMANDS["DocType"] = [{name, label, icon, menu, run(frm, el)}] // extra buttons of the command bar
 //   beeone.form.enable("DocType") / beeone.form.disable("DocType")
 //   beeone.form.DETAILS["*" | "DocType"] = {label, icon, fields}  // T-2309: fields kept out of the head, edited in a dialog
@@ -154,11 +155,13 @@ frappe.provide("beeone.form");
 		const src = F.LAYOUTS[frm.doctype] || F.auto_spec(frm.doctype);
 		const known = new Set(meta.fields.filter((df) => !SKIP.includes(df.fieldtype)).map((df) => df.fieldname));
 		const used = new Set();
+		const header_fields = (src.header_fields || []).filter((n) => known.has(n) && !used.has(n) && used.add(n));
 		const cfg = F.details_cfg(frm.doctype);
 		const details = cfg ? (cfg.fields || []).filter((n) => known.has(n) && !used.has(n) && used.add(n)) : [];
 		const groups = src.groups.map((g) => ({
 			key: g.key,
 			label: g.label,
+			tables: g.tables || [],
 			fields: g.fields.filter((n) => known.has(n) && !used.has(n) && used.add(n)),
 		}));
 		const tables = (src.tables || []).filter((t) => known.has(t.field));
@@ -179,9 +182,10 @@ frappe.provide("beeone.form");
 			if (!SKIP.includes(df.fieldtype) && !used.has(df.fieldname)) more.fields.push(df.fieldname);
 		});
 		frm.bf_spec = Object.assign({}, src, {
+			header_fields,
 			details: details.length ? { label: cfg.label || "Prices and currency", icon: cfg.icon || "sheet", fields: details } : null,
 			head: (src.head || []).filter((n) => !details.includes(n)),
-			groups: groups.filter((g) => g.fields.length),
+			groups: groups.filter((g) => g.fields.length || g.tables.length),
 			tables,
 			comment,
 			totals: (src.totals || []).filter((t) => known.has(t[0])),
@@ -200,6 +204,20 @@ frappe.provide("beeone.form");
 		const $body = $('<div class="bf-body"></div>');
 		const $main = $('<section class="bf-card bf-main"></section>');
 		const $tabs = $(`<div class="bf-tabs" role="tablist" aria-label="${esc(__("Form sections"))}"></div>`);
+		if (spec.header_fields.length) {
+			const $header = $('<section class="bf-card bf-header"><div class="bf-grid"></div></section>');
+			const merged = new Set();
+			spec.header_fields.forEach((n) => {
+				const f = frm.fields_dict[n];
+				if (!f || !f.$wrapper || merged.has(n)) return;
+				const pair = F.PAIRS.find((p) => p[0] === n && spec.header_fields.includes(p[1]) && frm.fields_dict[p[1]]);
+				if (pair) {
+					merged.add(pair[1]);
+					$header.find('.bf-grid').append(F.pair_cell(frm, pair));
+				} else $header.find('.bf-grid').append(f.$wrapper);
+			});
+			$body.append($header);
+		}
 		$main.append($tabs);
 		spec.groups.forEach((g) => {
 			$tabs.append(`<button type="button" class="bf-tab" role="tab" data-grp="${esc(g.key)}">${esc(__(g.label))}</button>`);
@@ -383,6 +401,15 @@ frappe.provide("beeone.form");
 		});
 		set_active_group($w, key);
 		frm.bf_group = key;
+		const spec = F.spec(frm);
+		if (spec.groups.some((g) => g.tables.length)) {
+			const group = spec.groups.find((g) => g.key === key);
+			const tables = group?.tables || [];
+			const $tp = $w.find('.bf-tp');
+			$tp.appendTo($w.find(`.bf-main > .bf-grp[data-grp="${key}"]`));
+			if (!tables.includes(frm.bf_tab)) frm.bf_tab = tables[0];
+			F.render_tp(frm);
+		}
 		if (remember) {
 			try {
 				localStorage.setItem("bf_form_grp:" + frm.doctype, key);
@@ -400,7 +427,7 @@ frappe.provide("beeone.form");
 		const visible = [];
 		spec.groups.forEach((g) => {
 			const fs = g.fields.map((n) => frm.fields_dict[n]).filter(Boolean);
-			const shown = fs.some((f) => !f.$wrapper.hasClass("hide-control") && f.$wrapper.css("display") !== "none");
+			const shown = g.tables.length || fs.some((f) => !f.$wrapper.hasClass("hide-control") && f.$wrapper.css("display") !== "none");
 			const bad = tried && fs.some((f) => f.df.reqd && !f.$wrapper.hasClass("hide-control") && (frm.doc[f.df.fieldname] == null || frm.doc[f.df.fieldname] === ""));
 			const $t = $w.find(`.bf-main > .bf-tabs .bf-tab[data-grp="${g.key}"]`);
 			$t.prop("hidden", !shown).toggleClass("has-error", !!bad);
@@ -890,6 +917,19 @@ frappe.provide("beeone.form");
 	F.render_tp = function (frm) {
 		const $tp = $(frm.layout.wrapper).find(".bf-tp");
 		if (!$tp.length) return;
+		const spec = F.spec(frm);
+		if (spec.groups.some((g) => g.tables.length)) {
+			const group = spec.groups.find((g) => g.key === frm.bf_group);
+			const available = (group?.tables || []).filter((n) => {
+				const f = frm.fields_dict[n];
+				return f && !f.df.hidden && !f.$wrapper.hasClass('hide-control');
+			});
+			$tp.prop('hidden', !available.length);
+			$tp.find('.bf-tp-tabs .bf-tab').each(function () {
+				$(this).prop('hidden', !available.includes($(this).attr('data-tab')));
+			});
+			if (!available.includes(frm.bf_tab)) frm.bf_tab = available[0];
+		}
 		const tab = frm.bf_tab;
 		$tp.find(".bf-tp-sec").each(function () {
 			$(this).prop("hidden", $(this).attr("data-tab") !== tab);
