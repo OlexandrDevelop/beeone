@@ -507,7 +507,9 @@ frappe.provide("beeone.form");
 				label !== __("Save and close") &&
 				label !== __("Save and Close") &&
 				label !== "Save and close" &&
-				label !== "Save and Close"
+				label !== "Save and Close" &&
+				label !== "Записати і закрити" &&
+				label !== "Зберегти та закрити"
 			) (out[""] = out[""] || []).push({ label, el: this });
 		});
 		return out;
@@ -807,10 +809,15 @@ frappe.provide("beeone.form");
 	// the custom buttons that no fixed menu takes over: [{cmd, label, group, items}]
 	F.own_buttons = function (frm) {
 		const custom = frm.bf_custom || {};
-		const taken = new Set([__("Create on basis"), "Create on basis"]);
+		const taken = new Set([
+			__("Create on basis"), "Create on basis",
+			__("Save and close"), __("Save and Close"),
+			"Save and close", "Save and Close",
+			"Записати і закрити", "Зберегти та закрити",
+		]);
 		["fill", "status"].forEach((k) => (F.GROUPS[k] || []).forEach((g) => (taken.add(g), taken.add(__(g)))));
 		const out = [];
-		(custom[""] || []).forEach((b, i) => out.push({ cmd: "cb:" + i, label: b.label, items: [b] }));
+		(custom[""] || []).filter((b) => !taken.has(b.label)).forEach((b, i) => out.push({ cmd: "cb:" + i, label: b.label, items: [b] }));
 		Object.keys(custom)
 			.filter((g) => g && !taken.has(g))
 			.forEach((g) => out.push({ cmd: "cg:" + g, label: g, group: g, items: custom[g] }));
