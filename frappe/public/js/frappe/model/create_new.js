@@ -45,7 +45,14 @@ $.extend(frappe.model, {
 		if (frappe.route_options && frappe.route_options.name_field) {
 			var meta = frappe.get_meta(doctype);
 			// set title field / name as name
-			if (meta.autoname && meta.autoname.indexOf("field:") !== -1) {
+			const autoname_field =
+				meta.autoname &&
+				meta.autoname.indexOf("field:") === 0 &&
+				frappe.meta.get_field(doctype, meta.autoname.substr(6));
+			if (autoname_field && autoname_field.read_only && meta.title_field) {
+				// the key field is filled in by the system (read only): the typed text is the title
+				doc[meta.title_field] = frappe.route_options.name_field;
+			} else if (meta.autoname && meta.autoname.indexOf("field:") !== -1) {
 				doc[meta.autoname.substr(6)] = frappe.route_options.name_field;
 			} else if (meta.autoname && meta.autoname === "prompt") {
 				doc.__newname = frappe.route_options.name_field;

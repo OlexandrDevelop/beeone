@@ -601,6 +601,8 @@ export function focus(key, opts = {}) {
 	if (was_min) restore_anim(win, sync);
 	else if (opts.animate === true && win.page) open_anim(win);
 	if (!was_min) sync();
+	// the form of the window is the current form (Ctrl+S, Ctrl+P act on it), also when the router does not re-show the page
+	if (win.page?.frm && !win.parked) window.cur_frm = win.page.frm;
 	beeone.shell.track(win);
 	beeone.shell.save_soon();
 	if (changed) beeone.shell.desk.on_visibility();

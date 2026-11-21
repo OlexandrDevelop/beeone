@@ -127,10 +127,16 @@ frappe.views.HierarchyView = class HierarchyView extends frappe.views.ListView {
 		return super.before_refresh();
 	}
 
+	// filters on what a row is (a group or an item, marked for deletion) do not search the catalog: the
+	// content of the group is shown, narrowed by them
 	is_search_mode() {
 		return super
 			.get_filters_for_args()
-			.some((f) => !this.base_filter_keys.includes(JSON.stringify(f.slice(0, 4))));
+			.some(
+				(f) =>
+					!["is_group", "deletion_mark"].includes(f[1]) &&
+					!this.base_filter_keys.includes(JSON.stringify(f.slice(0, 4)))
+			);
 	}
 
 	get_current_group_node() {
@@ -153,6 +159,9 @@ frappe.views.HierarchyView = class HierarchyView extends frappe.views.ListView {
 			const node = this.get_current_group_node();
 			if (this.current_group && node && node.lft > 0 && node.rgt > 0) {
 				filters.push([dt, "lft", ">", node.lft], [dt, "rgt", "<", node.rgt]);
+			} else if (this.current_group) {
+				// a catalog without the nested set range: the direct content of the group
+				filters.push([dt, this.parent_field, "=", this.current_group]);
 			}
 		}
 		return filters;

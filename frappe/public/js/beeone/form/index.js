@@ -688,8 +688,11 @@ frappe.provide("beeone.form");
 				return frm.save("Update", null, $(el));
 			case "post_close":
 				return frm.save("Submit", () => go_list(), $(el));
-			case "save_close":
-				return frm.save("Save", () => go_list(), $(el));
+			case "save_close": {
+				// a record made from a link field of another form: its window closes, the caller is shown again
+				const from_link = !!frappe._from_link?.field_obj?.frm;
+				return frm.save("Save", () => (from_link ? F.close_window(frm) || go_list() : go_list()), $(el));
+			}
 			case "save":
 				return frm.save("Save", null, $(el));
 			case "post":
@@ -835,6 +838,17 @@ frappe.provide("beeone.form");
 			},
 			{ align: "right" }
 		);
+	};
+
+	F.close_window = function (frm) {
+		const W = beeone.shell.windows;
+		for (const [key, win] of W.wins.map) {
+			if (win.page && win.page.frm === frm) {
+				W.close(key, true);
+				return true;
+			}
+		}
+		return false;
 	};
 
 	F.leave = function (frm, go) {
