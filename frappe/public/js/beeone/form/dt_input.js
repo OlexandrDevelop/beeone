@@ -274,6 +274,9 @@ frappe.provide("beeone.form");
 				control.datepicker = null;
 			}
 			control.make_picker = () => {};
+			control.get_value = function () {
+				return frm.doc[this.df.fieldname];
+			};
 			const refresh = control.refresh.bind(control);
 			control.refresh = function () {
 				const out = refresh(...arguments);

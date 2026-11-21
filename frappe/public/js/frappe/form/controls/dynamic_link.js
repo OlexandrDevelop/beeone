@@ -3,6 +3,8 @@ frappe.ui.form.ControlDynamicLink = class ControlDynamicLink extends frappe.ui.f
 		let options = "";
 		if (this.df.get_options) {
 			options = this.df.get_options(this);
+		} else if (window.frappe?.query_report?.get_filter_value) {
+			options = frappe.query_report.get_filter_value(this.df.options);
 		} else if (this.docname == null && cur_dialog) {
 			//for dialog box
 			options = cur_dialog.get_value(this.df.options);
