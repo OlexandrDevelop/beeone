@@ -423,7 +423,9 @@ export function scroll_parent(element) {
 export function adopt_renamed(key, route) {
 	const name = route.slice(2).join("/");
 	const news = frappe.model.new_names || {};
-	const old = Object.keys(news).find((o) => news[o] === name);
+	// the numbers of different DocTypes can be the same (a person and an employee are both 000000019): the old name is the one
+	// whose window of this DocType is open
+	const old = Object.keys(news).find((o) => news[o] === name && wins.map.has(`Form/${route[1]}/${o}`));
 	if (!old) return;
 	const old_key = `Form/${route[1]}/${old}`;
 	const win = wins.map.get(old_key);
