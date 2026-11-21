@@ -935,11 +935,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					this.prepare_report_data(data);
 					this.chart_options = this.get_chart_options(data);
 
-					this.$chart.empty();
+					this.destroy_chart();
 					if (this.chart_options) {
 						this.render_chart(this.chart_options);
 					} else {
-						this.$chart.empty();
+						this.destroy_chart();
 						if (this.chart_fields) {
 							this.chart_options = frappe.report_utils.make_chart_options(
 								this.columns,
@@ -1416,8 +1416,30 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		return options;
 	}
 
-	render_chart(options) {
+	destroy_chart() {
+		if (this.chart && typeof this.chart.destroy === "function") {
+			try {
+				this.chart.destroy();
+			} catch (e) {
+				// ignore
+			}
+		}
+		this.chart = null;
 		this.$chart.empty();
+	}
+
+	render_chart(options) {
+		if (window.frappe && frappe.Chart && frappe.Chart.prototype && !frappe.Chart.prototype._makeChartArea_safe) {
+			const orig = frappe.Chart.prototype.makeChartArea;
+			frappe.Chart.prototype.makeChartArea = function() {
+				if (this.svg && this.container && this.svg.parentNode !== this.container) {
+					this.svg = null;
+				}
+				return orig.apply(this, arguments);
+			};
+			frappe.Chart.prototype._makeChartArea_safe = true;
+		}
+		this.destroy_chart();
 		this.$chart.show();
 		this.chart = new frappe.Chart(this.$chart[0], options);
 	}
