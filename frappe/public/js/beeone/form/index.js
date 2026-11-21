@@ -473,7 +473,13 @@ frappe.provide("beeone.form");
 		});
 		$tb.children("button").each(function () {
 			const label = decodeURIComponent($(this).attr("data-label") || $(this).text().trim());
-			if (label !== __("Document Movements")) (out[""] = out[""] || []).push({ label, el: this });
+			if (
+				label !== __("Document Movements") &&
+				label !== __("Save and close") &&
+				label !== __("Save and Close") &&
+				label !== "Save and close" &&
+				label !== "Save and Close"
+			) (out[""] = out[""] || []).push({ label, el: this });
 		});
 		return out;
 	};

@@ -1688,6 +1688,7 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			(parseFloat($row_head.css("padding-right")) || 0);
 		// the row keeps its gaps and paddings: only the column widths change
 		const cols = $head.find("> .list-row-col").toArray().filter((el) => el.getBoundingClientRect().width);
+		if (!cols.length) return;
 		const first = cols[0].getBoundingClientRect();
 		const last = cols[cols.length - 1].getBoundingClientRect();
 		const head_box = $head[0].getBoundingClientRect();
