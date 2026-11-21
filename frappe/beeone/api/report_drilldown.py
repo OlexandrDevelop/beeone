@@ -35,7 +35,14 @@ def _js_filters(report) -> dict:
 	if report.is_standard != "Yes" or not report.module:
 		return {}
 	try:
-		folder = os.path.join(get_module_path(report.module), "report", scrub(report.name))
+		name = scrub(report.name)
+		folder = os.path.join(get_module_path(report.module), "report", name)
+		if not os.path.isdir(folder) and "&" in name:
+			for cand in (name.replace("&", "n"), name.replace("&", "_"), name.replace("&", "")):
+				alt_folder = os.path.join(get_module_path(report.module), "report", cand)
+				if os.path.isdir(alt_folder):
+					folder = alt_folder
+					break
 	except Exception:
 		return {}
 	if not os.path.isdir(folder):

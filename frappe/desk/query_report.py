@@ -211,15 +211,23 @@ def get_script(report_name: str):
 
 	# custom modules are virtual modules those exists in DB but not in disk.
 	module_path = "" if is_custom_module else get_module_path(module)
-	report_folder = module_path and os.path.join(module_path, "report", scrub(report.name))
-	script_path = report_folder and os.path.join(report_folder, scrub(report.name) + ".js")
-	print_path = report_folder and os.path.join(report_folder, scrub(report.name) + ".html")
+	name = scrub(report.name)
+	report_folder = module_path and os.path.join(module_path, "report", name)
+	if report_folder and not os.path.exists(report_folder) and "&" in name:
+		for cand in (name.replace("&", "n"), name.replace("&", "_"), name.replace("&", "")):
+			alt_folder = os.path.join(module_path, "report", cand)
+			if os.path.exists(alt_folder):
+				report_folder = alt_folder
+				name = cand
+				break
+	script_path = report_folder and os.path.join(report_folder, name + ".js")
+	print_path = report_folder and os.path.join(report_folder, name + ".html")
 
 	script = None
-	if os.path.exists(script_path):
+	if script_path and os.path.exists(script_path):
 		with open(script_path) as f:
 			script = f.read()
-			script += f"\n\n//# sourceURL={scrub(report.name)}.js"
+			script += f"\n\n//# sourceURL={name}.js"
 
 	html_format = get_html_format(print_path)
 

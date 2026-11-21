@@ -477,14 +477,24 @@ def is_prepared_report_enabled(report):
 
 
 def get_report_module_dotted_path(module, report_name):
+	name = scrub(report_name)
+	if not name.isidentifier():
+		for cand in (name.replace("&", "n"), name.replace("&", "_"), name.replace("&", "")):
+			try:
+				mod_path = frappe.get_module_path(module, "report", cand)
+				if os.path.exists(mod_path):
+					name = cand
+					break
+			except Exception:
+				pass
 	return (
 		frappe.local.module_app[scrub(module)]
 		+ "."
 		+ scrub(module)
 		+ ".report."
-		+ scrub(report_name)
+		+ name
 		+ "."
-		+ scrub(report_name)
+		+ name
 	)
 
 

@@ -67,6 +67,11 @@ def get_file_path(module, dt, dn):
 	dt, dn = scrub_dt_dn(dt, dn)
 
 	path = os.path.join(get_module_path(module), os.path.join(dt, dn, f"{dn}.json"))
+	if not os.path.exists(path) and "&" in dn:
+		for alt in (dn.replace("&", "n"), dn.replace("&", "_"), dn.replace("&", "")):
+			alt_path = os.path.join(get_module_path(module), os.path.join(dt, alt, f"{alt}.json"))
+			if os.path.exists(alt_path):
+				return alt_path
 
 	return path
 
