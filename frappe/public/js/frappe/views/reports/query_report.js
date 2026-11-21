@@ -1736,7 +1736,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		return field ? field.get_value() : null;
 	}
 
-	set_filter_value(fieldname, value) {
+	async set_filter_value(fieldname, value) {
 		let field_value_map = {};
 		if (typeof fieldname === "string") {
 			field_value_map[fieldname] = value;
@@ -1745,19 +1745,17 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		this._no_refresh = true;
-		Object.keys(field_value_map).forEach((fieldname, i, arr) => {
-			const value = field_value_map[fieldname];
-
-			if (i === arr.length - 1) {
-				this._no_refresh = false;
+		try {
+			for (const fieldname of Object.keys(field_value_map)) {
+				const value = field_value_map[fieldname];
+				const filter = this.get_filter(fieldname);
+				if (filter) {
+					await filter.set_value(value);
+				}
 			}
-
-			const filter = this.get_filter(fieldname);
-
-			if (filter) {
-				filter.set_value(value);
-			}
-		});
+		} finally {
+			this._no_refresh = false;
+		}
 	}
 
 	make_access_log(method, file_format) {
