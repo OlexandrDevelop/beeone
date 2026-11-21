@@ -226,7 +226,7 @@ def toggle_deletion_mark(doctype: str, name: str) -> dict:
 	if not doc.has_permission("write"):
 		doc.throw_permission_error()
 	if doc.get("predefined_id") or doc.get("is_predefined"):
-		frappe.throw(_("Предвизначений елемент не можна позначити на видалення"))
+		frappe.throw(_("A predefined item cannot be marked for deletion"))
 	new_mark = 0 if doc.get("deletion_mark") else 1
 	if new_mark:
 		if getattr(doc, "docstatus", 0) == 1:
