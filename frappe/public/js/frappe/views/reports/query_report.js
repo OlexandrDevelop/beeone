@@ -1715,7 +1715,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		raise && this.toggle_message(false);
 
 		return this.filters
-			.filter((f) => f.get_value?.())
+			.filter((f) => {
+                const value = f.get_value?.();
+                // Unchecked checks and numeric zero are explicit selections.
+                return f.df.fieldtype === "Check" || value === 0 || !!value;
+            })
 			.map((f) => {
 				var v = f.get_value();
 				// hidden fields dont have $input
