@@ -21,6 +21,9 @@ frappe.ui.form.ControlDynamicLink = class ControlDynamicLink extends frappe.ui.f
 			options = frappe.model.get_value(this.df.parent, this.docname, this.df.options);
 		}
 
+		if (options === "cash") options = "Cash Box";
+		if (options === "bank") options = "Bank Account";
+
 		if (frappe.model.is_single(options)) {
 			frappe.throw(__("{0} is not a valid DocType for Dynamic Link", [options.bold()]));
 		}

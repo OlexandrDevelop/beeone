@@ -2,7 +2,16 @@
 # License: MIT. See LICENSE
 
 from frappe.beeone.registers.meta import check_direct_write, get_register
-from frappe.beeone.registers.posting import Moment, Movements, document_moment, post, repost, unpost
+from frappe.beeone.registers.posting import (
+	Moment,
+	Movements,
+	document_moment,
+	post,
+	repost,
+	toggle_deletion_mark,
+	unpost,
+	unpost_document,
+)
 from frappe.beeone.registers.query import slice_first, slice_last
 from frappe.beeone.registers.record_set import RecordSet, record_set, register_write
 
@@ -19,5 +28,7 @@ __all__ = [
 	"repost",
 	"slice_first",
 	"slice_last",
+	"toggle_deletion_mark",
 	"unpost",
+	"unpost_document",
 ]

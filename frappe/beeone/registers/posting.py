@@ -198,3 +198,52 @@ def repost(doc) -> None:
 		frappe.throw(_("Only a submitted document can be reposted"))
 	unpost(doc, _check_period=False)
 	post(doc, _check_period=False)
+
+
+@frappe.whitelist()
+def unpost_document(doctype: str, name: str) -> dict:
+	"""Unpost a submitted document back to draft (docstatus = 0) and remove register movements."""
+	doc = frappe.get_doc(doctype, name)
+	doc.check_permission("cancel")
+	check_period_lock(doc)
+	if doc.docstatus != 1:
+		frappe.throw(_("Document is not posted"))
+	doc.run_method("before_cancel")
+	unpost(doc, _check_period=False)
+	doc.db_set("docstatus", 0)
+	for d in doc.get_all_children():
+		d.db_set("docstatus", 0, update_modified=False)
+	doc.db_set("modified", frappe.utils.now())
+	doc.run_method("on_cancel")
+	doc.run_method("on_change")
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+def toggle_deletion_mark(doctype: str, name: str) -> dict:
+	"""Mark or unmark a document/catalog for deletion."""
+	doc = frappe.get_doc(doctype, name)
+	if not doc.has_permission("write"):
+		doc.throw_permission_error()
+	if doc.get("predefined_id") or doc.get("is_predefined"):
+		frappe.throw(_("Предвизначений елемент не можна позначити на видалення"))
+	new_mark = 0 if doc.get("deletion_mark") else 1
+	if new_mark:
+		if getattr(doc, "docstatus", 0) == 1:
+			doc.check_permission("cancel")
+			check_period_lock(doc)
+			doc.run_method("before_cancel")
+			unpost(doc, _check_period=False)
+			doc.db_set("docstatus", 0)
+			for d in doc.get_all_children():
+				d.db_set("docstatus", 0, update_modified=False)
+			doc.run_method("on_cancel")
+		elif period_locked(doc):
+			check_period_lock(doc)
+		doc.db_set("deletion_mark", 1)
+	else:
+		doc.db_set("deletion_mark", 0)
+	doc.db_set("modified", frappe.utils.now())
+	doc.run_method("on_change")
+	return doc.as_dict()
+

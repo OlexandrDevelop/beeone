@@ -732,7 +732,23 @@ frappe.provide("beeone.form");
 			case "post":
 				return frm.save("Submit", null, $(el));
 			case "unpost":
-				return frm.savecancel($(el));
+				frappe.confirm(
+					__("Скасувати проведення {0}?", [frm.doc.name]),
+					() => {
+						frappe.call({
+							method: "frappe.beeone.registers.posting.unpost_document",
+							args: { doctype: frm.doctype, name: frm.doc.name },
+							freeze: true,
+							callback: () => {
+								frm.reload_doc();
+							},
+						});
+					},
+					null,
+					"Так",
+					"Ні"
+				);
+				return;
 			case "amend":
 				return frm.amend_doc();
 			case "print":
@@ -852,6 +868,13 @@ frappe.provide("beeone.form");
 			items.push(`<button class="bo-menu-item" data-a="reload">${icon("refresh")}${esc(__("Reload from the database"))}</button>`);
 			items.push(`<button class="bo-menu-item" data-a="history">${icon("history")}${esc(__("Change history"))}</button>`);
 		}
+		if (!frm.is_new() && (frappe.meta.has_field(frm.doctype, "deletion_mark") || frm.doc.deletion_mark !== undefined)) {
+			items.push(
+				`<button class="bo-menu-item" data-a="toggle_deletion_mark">${icon(frm.doc.deletion_mark ? "check" : "trash")}${esc(
+					frm.doc.deletion_mark ? __("Зняти позначку на видалення") : __("Позначити на видалення")
+				)}</button>`
+			);
+		}
 		if (!frm.is_new() && frm.doc.docstatus !== 1 && perm.delete) {
 			items.push('<div class="bo-menu-sep"></div>');
 			items.push(`<button class="bo-menu-item is-danger" data-a="delete">${icon("trash")}${esc(__("Delete record"))}</button>`);
@@ -866,6 +889,27 @@ frappe.provide("beeone.form");
 				if (a === "copy") frm.copy_doc();
 				if (a === "reload") frm.reload_doc();
 				if (a === "history") $(frm.page.wrapper).find(".form-footer").get(0)?.scrollIntoView({ behavior: "smooth", block: "start" });
+				if (a === "toggle_deletion_mark") {
+					const msg = frm.doc.deletion_mark
+						? __("Зняти позначку на видалення з {0}?", [frm.doc.name])
+						: __("Позначити {0} на видалення?", [frm.doc.name]);
+					frappe.confirm(
+						msg,
+						() => {
+							frappe.call({
+								method: "frappe.beeone.registers.posting.toggle_deletion_mark",
+								args: { doctype: frm.doctype, name: frm.doc.name },
+								freeze: true,
+								callback: () => {
+									frm.reload_doc();
+								},
+							});
+						},
+						null,
+						"Так",
+						"Ні"
+					);
+				}
 				if (a === "delete") {
 					frappe.confirm(__("Delete {0}?", [frm.doc.name]), () => frappe.model.delete_doc(frm.doctype, frm.doc.name, () => frappe.set_route("List", frm.doctype)));
 				}

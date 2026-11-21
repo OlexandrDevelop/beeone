@@ -269,6 +269,11 @@ frappe.provide("beeone.form");
 
 		// the controls refresh on every form refresh and value change: the input follows them
 		[a, b].forEach((control) => {
+			if (control.datepicker) {
+				try { control.datepicker.destroy(); } catch (e) {}
+				control.datepicker = null;
+			}
+			control.make_picker = () => {};
 			const refresh = control.refresh.bind(control);
 			control.refresh = function () {
 				const out = refresh(...arguments);
