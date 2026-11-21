@@ -291,7 +291,16 @@ frappe.provide("beeone.form");
 					return out;
 				};
 			}
+			const refresh_input = control.refresh_input && control.refresh_input.bind(control);
+			if (refresh_input) {
+				control.refresh_input = function () {
+					const out = refresh_input(...arguments);
+					render();
+					return out;
+				};
+			}
 		});
+		if (frm.wrapper) $(frm.wrapper).on("refresh-fields", render);
 		render();
 		return $box;
 	};
