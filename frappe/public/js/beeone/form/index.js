@@ -256,7 +256,8 @@ frappe.provide("beeone.form");
 				F.render_tp(frm);
 			});
 			$tp.on("click", "[data-bf]", function () {
-				F.bf_command(frm, $(this).attr("data-bf"));
+				const current_frm = window.cur_frm && cur_frm.doctype === frm.doctype ? cur_frm : frm;
+				F.bf_command(current_frm, $(this).attr("data-bf"));
 			});
 			$tp.on("focusin", ".grid-row", function () {
 				frm.bf_row = parseInt($(this).attr("data-idx"), 10) || null;
