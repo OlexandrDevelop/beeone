@@ -630,9 +630,10 @@ frappe.provide("beeone.form");
 		} else if (ds === 2 && perm.amend) {
 			left.push(btn("amend", __("Amend"), "pencil", { primary: true }));
 		}
+		const custom = F.custom_buttons(frm);
+		frm.bf_custom = custom;
+		if (!meta.is_submittable && basis_entries(frm).length) mid.push(btn("basis", __("Create on the basis"), "file-plus", { menu: true }));
 		if (meta.is_submittable) {
-			const custom = F.custom_buttons(frm);
-			frm.bf_custom = custom;
 			if (F.group_buttons(frm, "fill").length) mid.push(btn("fill", __("Fill"), "list", { menu: true }));
 			if (F.group_buttons(frm, "status").length) mid.push(btn("status", __("Document status"), "sliders", { menu: true }));
 			if (basis_entries(frm).length) mid.push(btn("basis", __("Create on the basis"), "file-plus", { menu: true }));
@@ -640,6 +641,9 @@ frappe.provide("beeone.form");
 			if (!frm.is_new() && window.beeone?.subordination?.show) mid.push(btn("structure", __("Subordination structure"), "tree"));
 			if (!frm.is_new() && frappe.model.can_print_doc(frm)) mid.push(btn("print", __("Print"), "printer", { menu: true }));
 		}
+		// the commands other scripts add with frm.add_custom_button outside the menus above: single ones are bar buttons,
+		// a named group is a menu (the "Create on basis" group is the «Create on the basis» menu)
+		F.own_buttons(frm).forEach((b) => mid.push(btn(b.cmd, b.label, "list", { menu: !!b.group, label: true })));
 		if (spec.details) mid.push(btn("details", __(spec.details.label), spec.details.icon));
 		((F.COMMANDS[frm.doctype] || []).filter((c) => !c.show || c.show(frm))).forEach((c) =>
 			mid.push(btn("x:" + c.name, c.label, c.icon || "list", { menu: !!c.menu }))
@@ -658,6 +662,19 @@ frappe.provide("beeone.form");
 		if (cmd.startsWith("x:")) {
 			const c = (F.COMMANDS[frm.doctype] || []).find((x) => "x:" + x.name === cmd);
 			return c && c.run(frm, el);
+		}
+		if (cmd.startsWith("cb:") || cmd.startsWith("cg:")) {
+			const own = F.own_buttons(frm).find((x) => x.cmd === cmd);
+			if (!own) return;
+			if (!own.group) return own.items[0].el.click();
+			return ui().menu(
+				el,
+				own.items.map((b, i) => `<button class="bo-menu-item" data-i="${i}">${esc(b.label)}</button>`).join(""),
+				(item) => {
+					const b = own.items[+item.getAttribute("data-i")];
+					if (b) b.el.click();
+				}
+			);
 		}
 		const go_list = () => frappe.set_route("List", frm.doctype);
 		switch (cmd) {
@@ -733,6 +750,19 @@ frappe.provide("beeone.form");
 		return [...names].reduce((acc, g) => acc.concat(custom[g] || []), []);
 	};
 
+	// the custom buttons that no fixed menu takes over: [{cmd, label, group, items}]
+	F.own_buttons = function (frm) {
+		const custom = frm.bf_custom || {};
+		const taken = new Set([__("Create on basis"), "Create on basis"]);
+		["fill", "status"].forEach((k) => (F.GROUPS[k] || []).forEach((g) => (taken.add(g), taken.add(__(g)))));
+		const out = [];
+		(custom[""] || []).forEach((b, i) => out.push({ cmd: "cb:" + i, label: b.label, items: [b] }));
+		Object.keys(custom)
+			.filter((g) => g && !taken.has(g))
+			.forEach((g) => out.push({ cmd: "cg:" + g, label: g, group: g, items: custom[g] }));
+		return out;
+	};
+
 	F.custom_menu = function (frm, el, kind) {
 		const list = F.group_buttons(frm, kind);
 		ui().menu(
@@ -754,7 +784,7 @@ frappe.provide("beeone.form");
 			(item) => {
 				const b = list[+item.getAttribute("data-i")];
 				if (!b) return;
-				if (frm.doc.docstatus !== 1) {
+				if ((b.submitted || b.submit_first) && frm.doc.docstatus !== 1) {
 					ui().toast && ui().toast({ type: "warning", title: __("Post the document first"), text: __("A document on the basis is created from a posted one.") });
 					return;
 				}
