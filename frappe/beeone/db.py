@@ -854,7 +854,7 @@ def select_last(
 	# `restrict` maps a column to (allowed values, empty value allowed): rows outside it are not ranked
 	for k, (values, allow_empty) in (restrict or {}).items():
 		param_names = [f"%(bo_r{counter+i})s" for i in range(len(values))]
-		condition = f"{q(k)} IN ({', '.join(param_names)})"
+		condition = f"{q(k)} IN ({', '.join(param_names)})" if values else "1=0"
 		if allow_empty:
 			condition = f"({dialect().text_key(q(k))} = '' OR {condition})"
 		where.append(condition)
