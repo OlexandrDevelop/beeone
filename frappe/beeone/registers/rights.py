@@ -59,7 +59,7 @@ def allowed_values(doctype: str, user: str | None = None) -> dict[str, list[str]
 			for p in permissions.get(link) or []
 			if not p.get("applicable_for") or p.get("applicable_for") == doctype
 		]
-		result[fieldname] = docs or None
+		result[fieldname] = docs if docs or permissions.get(link) == [] else None
 	return result
 
 
@@ -75,7 +75,7 @@ def restrictions(doctype: str, user: str | None = None) -> dict[str, tuple[list[
 	return {
 		fieldname: (docs, not _strict())
 		for fieldname, docs in allowed_values(doctype, user).items()
-		if docs
+		if docs is not None
 	}
 
 
@@ -83,11 +83,11 @@ def query_conditions(doctype: str, user: str | None = None) -> str:
 	"""SQL condition for `frappe.get_list` that keeps the allowed rows of a register."""
 	conditions = []
 	for fieldname, docs in allowed_values(doctype, user).items():
-		if not docs:
+		if docs is None:
 			continue
 		column = f"{db.quote(f'tab{doctype}')}.{db.quote(fieldname)}"
 		values = ", ".join(frappe.db.escape(d, percent=False) for d in docs)
-		condition = f"{column} in ({values})"
+		condition = f"{column} in ({values})" if docs else "1=0"
 		if not _strict():
 			condition = f"(coalesce({column}, '') = '' or {condition})"
 		conditions.append(condition)
@@ -107,7 +107,7 @@ def has_row_access(doc, user: str | None = None, doctype: str | None = None) -> 
 	if isinstance(doc, str | int):
 		doc = frappe.get_lazy_doc(dt, doc)
 	for fieldname, docs in dims.items():
-		if not docs:
+		if docs is None:
 			continue
 		value = doc.get(fieldname)
 		if value in docs or (value in (None, "") and not _strict()):
@@ -119,7 +119,7 @@ def has_row_access(doc, user: str | None = None, doctype: str | None = None) -> 
 def check_write(doctype: str, rows: list[dict], user: str | None = None):
 	"""Throw PermissionError when a row has a value of a restricting dimension the user may not use."""
 	for fieldname, docs in allowed_values(doctype, user).items():
-		if not docs:
+		if docs is None:
 			continue
 		for row in rows:
 			value = row.get(fieldname)

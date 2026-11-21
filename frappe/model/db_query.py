@@ -1141,6 +1141,13 @@ from {tables}
 
 			user_permission_values = user_permissions.get(df.get("options"), {})
 
+			if df.get("options") in user_permissions and user_permission_values == []:
+				column = cast_name(f"`tab{self.doctype}`.`{df.get('fieldname')}`")
+				condition = "1=0" if df.get("fieldname") == "name" or frappe.get_system_settings("apply_strict_user_permissions") else f"ifnull({column}, '')=''"
+				match_conditions.append(f"({condition})")
+				match_filters[df.get("options")] = []
+				continue
+
 			if user_permission_values:
 				docs = []
 				if frappe.get_system_settings("apply_strict_user_permissions"):

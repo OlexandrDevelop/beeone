@@ -361,15 +361,26 @@ def get_role_permissions(doctype_meta, user=None, is_owner=None, debug=False):
 
 
 def get_user_permissions(user):
-	from frappe.core.doctype.user_permission.user_permission import get_user_permissions
+	"""User permissions, including explicit empty sets supplied by applications.
 
-	return get_user_permissions(user)
+	beeone_empty_user_permissions hooks return linked DocTypes for which the
+	user has no allowed values. Missing keys retain the platform's unrestricted
+	semantics; an explicit [] restricts nonempty values. No synthetic links are stored.
+	"""
+	from frappe.core.doctype.user_permission.user_permission import get_user_permissions as load_permissions
+
+	user = user or frappe.session.user
+	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+		return {}
+	permissions = dict(load_permissions(user) or {})
+	for method in frappe.get_hooks("beeone_empty_user_permissions"):
+		for doctype in frappe.get_attr(method)(user) or []:
+			permissions[doctype] = []
+	return permissions
 
 
 def has_user_permission(doc, user=None, debug=False, *, ptype=None):
 	"""Return True if User is allowed to view considering User Permissions."""
-	from frappe.core.doctype.user_permission.user_permission import get_user_permissions
-
 	user_permissions = get_user_permissions(user)
 
 	if not user_permissions:
@@ -405,7 +416,7 @@ def has_user_permission(doc, user=None, debug=False, *, ptype=None):
 		# if allowed_docs is empty it states that there is no applicable permission under the current doctype
 
 		# only check if allowed_docs is not empty
-		if allowed_docs:
+		if allowed_docs or doctype_up == []:
 			not_permitted = True
 			if doc.meta.is_tree and ptype == "create":
 				if parent := doc.get(doc.nsm_parent_field):
@@ -459,7 +470,7 @@ def has_user_permission(doc, user=None, debug=False, *, ptype=None):
 			# get the list of all allowed values for this link
 			allowed_docs = get_allowed_docs_for_doctype(user_permissions.get(field.options, []), doctype)
 
-			if allowed_docs and str(d.get(field.fieldname)) not in allowed_docs:
+			if (allowed_docs or user_permissions[field.options] == []) and str(d.get(field.fieldname)) not in allowed_docs:
 				# restricted for this link field, and no matching values found
 				# make the right message and exit
 				if d.get("parentfield"):
