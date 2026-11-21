@@ -423,6 +423,24 @@ html[data-theme="dark"] .bf-btn--primary[data-bf-cmd="repost_close"]:hover {
 	visibility: hidden;
 	pointer-events: none;
 }
+/* A tab containing a table has its own scroll area. Other tabs must not
+ * reserve their full field height above the current tab's totals. */
+.bf-grouped-tables .bf-main > .bf-grp.is-off { display: none; }
+.bo-win[data-bw~="lt560"] {
+	.bf-tp-head {
+		flex-wrap: wrap;
+		.bf-tabs { flex: 1 1 100%; min-width: 0; }
+	}
+	.bf-tp-bar {
+		flex: 1 1 100%;
+		max-width: 100%;
+		overflow-x: auto;
+		padding: 4px 0;
+		> * { flex-shrink: 0; }
+	}
+	.bf-foot { flex-wrap: wrap; gap: 6px; }
+	.bf-totals { flex-wrap: wrap; white-space: normal; gap: 6px; margin-left: 0; }
+}
 
 /* the dense grid: 1 column / 2 columns / 3 columns from 1440 px */
 .bf-grid {

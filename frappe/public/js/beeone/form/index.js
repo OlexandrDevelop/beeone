@@ -315,6 +315,7 @@ frappe.provide("beeone.form");
 		});
 
 		$(frm.page.wrapper).addClass("bf-form bf-form--" + spec.kind);
+		$(frm.page.wrapper).toggleClass("bf-grouped-tables", spec.groups.some((g) => g.tables.length));
 		F.watch_fit(frm);
 		F.setup_queries(frm);
 		F.wrap_frm(frm);
