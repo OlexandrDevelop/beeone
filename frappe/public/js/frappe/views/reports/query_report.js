@@ -1332,6 +1332,16 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				datatable_options = this.report_settings.get_datatable_options(datatable_options);
 			}
 			this.datatable = new window.DataTable(this.$report[0], datatable_options);
+			// a window closed while the table is still laying out removes the <style> of the table: its deferred
+			// column styles then have no stylesheet to write to and are dropped instead of throwing
+			const style = this.datatable.style;
+			if (style && !style.__guarded) {
+				for (const method of ["setStyle", "removeStyle"]) {
+					const original = style[method] && style[method].bind(style);
+					if (original) style[method] = (...args) => (style.styleEl && style.styleEl.sheet ? original(...args) : undefined);
+				}
+				style.__guarded = true;
+			}
 		}
 
 		if (typeof this.report_settings.initial_depth == "number") {
