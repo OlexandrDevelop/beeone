@@ -144,6 +144,8 @@ frappe.provide("frappe.beeone_report_structure");
 			});
 			draw();
 			dialog.show();
+			// the tab «Структура» is shown even while it is the only one (the layout hides a single tab)
+			(dialog.tabs || []).forEach((tab) => tab.tab_link && tab.tab_link.removeClass("hide").addClass("show"));
 		});
 	};
 })();
