@@ -1663,12 +1663,14 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 						: frappe.format(value, shown, { for_print: false, always_show_decimals: true }, data);
 				};
 				// beeone: resources «one under another»: the parts of the resource, one line each
-				const stack = column.bo_stack && Array.isArray(value) ? column.bo_stack : null;
+				// (the datatable takes an array value for a cell object, so the parts are read from the row)
+				const parts = column.bo_stack && data && !bo_total ? column.bo_stack.map((p) => data[p.fieldname]) : null;
+				const stack = parts ? column.bo_stack : null;
 				const text = stack
 					? `<span class="bo-stack">${stack
 							.map((part, i) => {
-								const line = as_text(value[i], part);
-								const negative = tones.is_negative(value[i], part.fieldtype);
+								const line = as_text(parts[i], part);
+								const negative = tones.is_negative(parts[i], part.fieldtype);
 								return `<span class="bo-stack-line${negative ? " bo-rt-neg" : ""}">${line}</span>`;
 							})
 							.join("")}</span>`
