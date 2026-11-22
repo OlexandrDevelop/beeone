@@ -144,8 +144,14 @@ frappe.provide("frappe.beeone_report_structure");
 			});
 			draw();
 			dialog.show();
-			// the tab «Структура» is shown even while it is the only one (the layout hides a single tab)
-			(dialog.tabs || []).forEach((tab) => tab.tab_link && tab.tab_link.removeClass("hide").addClass("show"));
+			// the tab «Структура» is shown even while it is the only one (the layout hides a single tab and puts an
+			// empty default tab before it)
+			(dialog.tabs || []).forEach((tab) => {
+				if (!tab.tab_link) return;
+				const ours = tab.df && tab.df.fieldname === "structure_tab";
+				tab.tab_link.toggleClass("hide", !ours).toggleClass("show", ours);
+			});
+			dialog.select_tab && dialog.select_tab("structure_tab");
 		});
 	};
 })();
