@@ -59,6 +59,8 @@ frappe.provide("frappe.beeone_report_structure");
 			}
 			const dialog = new frappe.ui.Dialog({
 				title: __("Report Settings"),
+				// a dialog with a Tab Break needs a doctype: the ids of its tabs are made from it
+				doctype: "Report Variant",
 				fields,
 				primary_action_label: __("Apply"),
 				primary_action(values) {
