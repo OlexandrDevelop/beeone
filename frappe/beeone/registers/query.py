@@ -462,16 +462,19 @@ def balance_and_turnover(
 	return out
 
 
-def current_balance(register: str, filters=None, lock: bool = False, resources=None) -> list[dict]:
+def current_balance(register: str, filters=None, lock: bool = False, resources=None, ignore_permissions: bool = False) -> list[dict]:
 	"""Current balance of the resources from the current totals table.
 
 	When `lock` is True, takes a FOR UPDATE row lock on the matching keys in sorted order.
-	Row-level User Permissions (restrict_rows) are enforced on restricting dimensions.
+	Row-level User Permissions (restrict_rows) are enforced on restricting dimensions, unless `ignore_permissions`:
+	the balance control of a posting is a check of the system, not a reading of the user (a cashier posts a sale
+	without a right to read the stock register).
 	"""
 	reg = get_register(register)
 	if not totals.has_current(reg):
 		frappe.throw(_("Register {0} has no current balance totals").format(reg.name))
-	frappe.has_permission(reg.register_doctype, "read", throw=True)
+	if not ignore_permissions:
+		frappe.has_permission(reg.register_doctype, "read", throw=True)
 	dims = totals.dimensions(reg)
 	res = _resources(reg, resources)
 	table = totals.current_table(reg.name)
@@ -483,7 +486,7 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 
 	from frappe.beeone.registers import rights
 
-	allowed = rights.allowed_values(reg.register_doctype)
+	allowed = {} if ignore_permissions else rights.allowed_values(reg.register_doctype)
 	for fieldname, valid in allowed.items():
 		if valid is None:
 			continue
