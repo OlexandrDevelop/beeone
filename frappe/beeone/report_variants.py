@@ -296,7 +296,7 @@ def report_structure(report, filters=None):
 		return None
 	try:
 		method = doc.get_module_method("get_report_structure")
-	except AttributeError, ImportError:
+	except (AttributeError, ImportError):
 		return None
 	return clean_structure(method(frappe._dict(filters or {})))
 
