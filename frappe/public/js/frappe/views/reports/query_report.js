@@ -1606,10 +1606,6 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	}
 
 	prepare_columns(columns) {
-		let is_query_generated_report =
-			this.report_doc.query &&
-			this.report_doc.query != undefined &&
-			this.report_doc.query != "";
 		return columns.map((column) => {
 			column = frappe.report_utils.prepare_field_from_column(column);
 
@@ -1674,11 +1670,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 
 			return Object.assign(column, {
 				id: column.fieldname,
-				// The column label should have already been translated in the
-				// backend. Translating it again would cause unexpected behaviour.
-
-				// Translating based on condition: when a report is generated through a query, the label is not translated.
-				name: is_query_generated_report ? __(column.label) : column.label,
+				// The label of a script report may come untranslated from the backend: it is translated here
+				// (a label translated already has no message of its own and stays as it is).
+				name: __(column.label),
 				width: parseInt(column.width) || null,
 				editable: column.editable ?? false,
 				compareValue: compareFn,

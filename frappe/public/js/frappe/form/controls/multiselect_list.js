@@ -240,7 +240,7 @@ frappe.ui.form.ControlMultiSelectList = class ControlMultiSelectList extends (
 	}
 
 	get_placeholder_text() {
-		return `<span class="text-extra-muted">${this.df.placeholder || ""}</span>`;
+		return `<span class="text-extra-muted">${__(this.df.placeholder || "")}</span>`;
 	}
 
 	set_status(text) {

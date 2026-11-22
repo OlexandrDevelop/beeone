@@ -41,7 +41,7 @@ beeone.registers.Explorer = class {
 
 	card(register, esc, kind) {
 		const columns = register.columns.slice(0, 5).map((c) => esc(c.label)).join(" · ");
-		return `<article class="beeone-register-card"><div class="beeone-register-card-head"><div><h3>${esc(__(register.register))}</h3><span>${esc(kind(register.kind))}</span></div><span class="beeone-register-mark">${esc(register.doctype)}</span></div>` +
+		return `<article class="beeone-register-card"><div class="beeone-register-card-head"><div><h3>${esc(__(register.register))}</h3><span>${esc(kind(register.kind))}</span></div><span class="beeone-register-mark" title="${esc(register.doctype)}">${esc(__(register.doctype))}</span></div>` +
 			`<p class="beeone-register-fields">${columns}</p><div class="beeone-register-actions"><button class="btn btn-primary btn-sm" data-register-open="${esc(register.doctype)}">${esc(__("Open movements"))}</button>` +
 			(register.balance ? `<button class="btn btn-default btn-sm" data-register-balance="${esc(register.doctype)}">${esc(__("Balance"))}</button>` : "") +
 			(register.turnover ? `<button class="btn btn-default btn-sm" data-register-turnover="${esc(register.doctype)}">${esc(__("Turnovers"))}</button>` : "") +
