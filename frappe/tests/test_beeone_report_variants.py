@@ -41,9 +41,15 @@ class TestReportVariants(IntegrationTestCase):
 		for i in range(2):
 			email = f"variant{i}@example.com"
 			if not frappe.db.exists("User", email):
-				frappe.get_doc({"doctype": "User", "email": email, "first_name": f"V{i}", "send_welcome_email": 0}).insert(
-					ignore_permissions=True
-				)
+				frappe.get_doc(
+					{
+						"doctype": "User",
+						"email": email,
+						"first_name": f"V{i}",
+						"last_name": "Test",
+						"send_welcome_email": 0,
+					}
+				).insert(ignore_permissions=True)
 			self.users.append(email)
 
 	def tearDown(self):
@@ -53,7 +59,9 @@ class TestReportVariants(IntegrationTestCase):
 	def test_variant_belongs_to_its_user(self):
 		a, b = self.users
 		frappe.set_user(a)
-		saved = variants.save_variant(REPORT, "Mine", {"group_by": "month", "format": FORMAT}, is_default=True)
+		saved = variants.save_variant(
+			REPORT, "Mine", {"group_by": "month", "format": FORMAT}, is_default=True
+		)
 		self.assertEqual(saved["user"], a)
 		self.assertEqual(saved["settings"]["group_by"], "month")
 		self.assertEqual([v["title"] for v in variants.list_variants(REPORT)], ["Mine"])
@@ -122,3 +130,202 @@ class TestReportVariants(IntegrationTestCase):
 		self.assertIn("150.50", html)
 		self.assertNotIn("Qty", html)
 		self.assertTrue(export.to_pdf(t).startswith(b"%PDF"))
+
+
+# ---------------------------------------------------------------------------- the tab «Структура» (T-2533)
+STRUCTURE = {
+	"dimensions": [{"key": "warehouse", "label": "Warehouse"}, {"key": "item", "label": "Item"}, "variant"],
+	"default": ["warehouse", "item", "variant"],
+	"max_levels": 3,
+	"resources": [
+		{
+			"key": "opening",
+			"label": "Balance on 01.11.2026",
+			"parts": [{"key": "opening_qty", "label": "Quantity"}, "opening_cost"],
+		},
+		{"key": "receipt", "label": "Receipt", "parts": ["receipt_qty", "receipt_cost"]},
+	],
+}
+ROWS = [
+	{"warehouse": "W1", "item": "A", "variant": None, "opening_qty": 1, "opening_cost": 10},
+	{"warehouse": "W1", "item": "B", "variant": "red", "opening_qty": 2, "opening_cost": 30},
+	{"warehouse": "W2", "item": "A", "variant": None, "opening_qty": -4, "opening_cost": 0},
+]
+
+
+def stock_table():
+	return {
+		"title": "Stock",
+		"columns": [
+			{"key": "name", "label": "Group", "kind": "label"},
+			{"key": "opening_qty", "label": "Opening", "kind": "qty"},
+			{"key": "opening_cost", "label": "Opening cost", "kind": "money"},
+			{"key": "reserve", "label": "Reserved", "kind": "qty"},
+		],
+		"rows": [
+			{"kind": "item", "cells": {"name": "A", "opening_qty": 1.5, "opening_cost": 10, "reserve": 1}},
+			{"kind": "item", "cells": {"name": "B", "opening_qty": -2, "opening_cost": 0, "reserve": 0}},
+		],
+	}
+
+
+class TestReportStructure(IntegrationTestCase):
+	def tearDown(self):
+		frappe.set_user("Administrator")
+		frappe.db.delete("Report Variant", {"report": REPORT})
+
+	def test_settings_keep_the_levels_and_the_layout(self):
+		s = variants.clean_settings(
+			{"groupings": ["item", "warehouse", "item"], "resource_layout": "stacked"}
+		)
+		self.assertEqual((s["groupings"], s["resource_layout"]), (["item", "warehouse"], "stacked"))
+		old = variants.clean_settings({"group_by": "month"})  # a variant saved before T-2533
+		self.assertEqual((old["groupings"], old["resource_layout"]), ([], "columns"))
+		with self.assertRaises(frappe.ValidationError):
+			variants.clean_settings({"resource_layout": "diagonal"})
+
+	def test_the_levels_follow_the_choice_of_the_variant(self):
+		self.assertEqual(variants.resolve_groupings(STRUCTURE, {}), ["warehouse", "item", "variant"])
+		# a level turned off, the order changed, an unknown dimension dropped
+		self.assertEqual(
+			variants.resolve_groupings(STRUCTURE, {"groupings": ["item", "nope", "warehouse"]}),
+			["item", "warehouse"],
+		)
+		self.assertEqual(
+			variants.resolve_groupings({**STRUCTURE, "max_levels": 1}, {"groupings": ["item", "warehouse"]}),
+			["item"],
+		)
+		self.assertEqual(variants.check_groupings(STRUCTURE, ["variant", "item"]), ["variant", "item"])
+		for bad in ([], ["item", "item"], ["nope"], ["warehouse", "item", "variant", "item"]):
+			with self.assertRaises(frappe.ValidationError):
+				variants.check_groupings(STRUCTURE, bad)
+
+	def test_compose_builds_the_chosen_levels(self):
+		from frappe.beeone.report_engine import compose
+
+		levels = variants.resolve_groupings(STRUCTURE, {"groupings": ["item", "warehouse"]})
+		out = compose(ROWS, groupings=levels, measures=["opening_qty"], detail=False)
+		self.assertEqual(
+			[(r["level"], r["label"], r["values"]["opening_qty"]) for r in out if r["kind"] == "group"],
+			[(0, "A", -3), (1, "W1", 1), (1, "W2", -4), (0, "B", 2), (1, "W1", 2)],
+		)
+
+	def test_stacked_columns_of_a_script_report(self):
+		columns = [
+			{"fieldname": "group", "label": "Group", "fieldtype": "Data", "width": 200},
+			{
+				"fieldname": "opening_qty",
+				"label": "Balance on 01.11.2026",
+				"fieldtype": "Float",
+				"precision": 3,
+				"width": 120,
+			},
+			{
+				"fieldname": "receipt_qty",
+				"label": "Receipt",
+				"fieldtype": "Float",
+				"precision": 3,
+				"width": 120,
+			},
+			{
+				"fieldname": "opening_cost",
+				"label": "Cost on 01.11.2026",
+				"fieldtype": "Currency",
+				"precision": 2,
+				"width": 130,
+			},
+		]
+		data = [{"group": "A", "opening_qty": 1.5, "receipt_qty": 2, "opening_cost": 10}]
+		cols, rows = variants.stack_columns(columns, data, STRUCTURE)
+		# receipt has one part shown (no receipt_cost): it stays a column of its own
+		self.assertEqual([c["fieldname"] for c in cols], ["group", "opening", "receipt_qty"])
+		opening = cols[1]
+		self.assertEqual(opening["bo_band"], "Balance on 01.11.2026")
+		self.assertEqual(
+			[(p["fieldname"], p["label"], p["fieldtype"]) for p in opening["bo_stack"]],
+			[("opening_qty", "Quantity", "Float"), ("opening_cost", "Cost on 01.11.2026", "Currency")],
+		)
+		self.assertEqual(opening["width"], 130)
+		self.assertEqual(rows[0]["opening"], [1.5, 10])
+		self.assertEqual(rows[0]["opening_qty"], 1.5)  # the parts stay in the row (drill-down, totals)
+		self.assertEqual(
+			variants.stack_text(opening, None).split("\n"),
+			["Balance on 01.11.2026", "Quantity", "Cost on 01.11.2026"],
+		)
+		self.assertEqual(variants.stack_text(opening, [0, 10]).split("\n"), ["", "10.00"])
+
+	def test_script_report_excel_writes_the_stacked_cell(self):
+		from frappe.desk.query_report import build_xlsx_data
+
+		columns = [
+			{"fieldname": "group", "label": "Group", "fieldtype": "Data"},
+			{"fieldname": "opening_qty", "label": "Opening", "fieldtype": "Float", "precision": 3},
+			{"fieldname": "opening_cost", "label": "Cost", "fieldtype": "Currency", "precision": 2},
+		]
+		cols, rows = variants.stack_columns(
+			columns, [{"group": "A", "opening_qty": 1.5, "opening_cost": 10}], STRUCTURE
+		)
+		result, _w, _s = build_xlsx_data(frappe._dict(columns=cols, result=rows, report_name=REPORT))
+		self.assertEqual(result[0], ["Group", "Balance on 01.11.2026\nQuantity\nCost"])
+		self.assertEqual(result[1][0], "A")
+		self.assertEqual(result[1][1].split("\n"), ["1.500", "10.00"])
+
+	def test_stacked_table_model_on_screen_excel_and_pdf(self):
+		from openpyxl import load_workbook
+
+		t = variants.apply_to_table(stock_table(), {"resource_layout": "stacked"}, STRUCTURE)
+		self.assertEqual([c["key"] for c in t["columns"]], ["name", "opening", "reserve"])
+		self.assertEqual(t["columns"][1]["kind"], "stack")
+		self.assertEqual(t["rows"][0]["cells"]["opening"], [1.5, 10])
+		ws = load_workbook(BytesIO(export.to_xlsx(t))).active
+		head = [c.value for c in ws[3]]
+		self.assertEqual(head, ["Group", "Balance on 01.11.2026\nQuantity\nOpening cost", "Reserved"])
+		self.assertEqual(ws["B4"].value, "1.500\n10.00")
+		self.assertEqual(ws["B5"].value, "-2.000\n")  # a zero cost is an empty line
+		self.assertTrue(ws["B4"].alignment.wrap_text)
+		self.assertEqual(ws["B5"].font.color.rgb[-6:], export._argb(export.tones.NEGATIVE)[-6:])
+		html = export.to_html(t)
+		self.assertIn("Balance on 01.11.2026<br>Quantity<br>Opening cost", html)
+		self.assertIn("1.500<br>10.00", html)
+		self.assertTrue(export.to_pdf(t).startswith(b"%PDF"))
+		# the layout «columns» leaves the table as it is
+		same = variants.apply_to_table(stock_table(), {"resource_layout": "columns"}, STRUCTURE)
+		self.assertEqual(
+			[c["key"] for c in same["columns"]], ["name", "opening_qty", "opening_cost", "reserve"]
+		)
+
+	def test_structure_is_saved_to_the_default_variant_of_the_user(self):
+		from unittest.mock import patch
+
+		user = "variant0@example.com"
+		if not frappe.db.exists("User", user):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": user,
+					"first_name": "V0",
+					"last_name": "Test",
+					"send_welcome_email": 0,
+				}
+			).insert(ignore_permissions=True)
+		frappe.set_user(user)
+		variants.save_variant(
+			REPORT, "Mine", {"group_by": "month", "hidden_columns": ["qty"]}, is_default=True
+		)
+		with patch.object(variants, "report_structure", return_value=variants.clean_structure(STRUCTURE)):
+			saved = variants.save_structure(REPORT, ["item", "warehouse"], "stacked")
+			self.assertEqual(saved["title"], "Mine")
+			s = variants.current_settings(REPORT)
+			self.assertEqual(
+				(s["groupings"], s["resource_layout"], s["group_by"], s["hidden_columns"]),
+				(["item", "warehouse"], "stacked", "month", ["qty"]),
+			)
+			with self.assertRaises(frappe.ValidationError):
+				variants.save_structure(REPORT, ["nope"], "columns")
+			variants.save_structure(REPORT, [], "columns")  # «Скинути»
+			self.assertEqual(
+				variants.resolve_groupings(STRUCTURE, variants.current_settings(REPORT)),
+				["warehouse", "item", "variant"],
+			)
+		frappe.set_user("Administrator")
+		self.assertEqual(variants.current_settings(REPORT)["groupings"], [])  # another user is not affected

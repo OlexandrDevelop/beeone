@@ -13,12 +13,51 @@
 		font-size: var(--bo-report-font);
 	}
 
+	// a long column label wraps onto more lines: the header grows in height, the column keeps its width
+	.dt-row-header {
+		height: auto;
+		align-items: stretch;
+	}
+
+	.dt-cell--header {
+		height: auto !important;
+		min-height: 22px;
+	}
+
 	.dt-cell--header .dt-cell__content {
 		padding: 3px 6px !important;
 		font-weight: 600;
 		text-align: center;
 		white-space: normal;
+		overflow: visible;
+		text-overflow: clip;
+		overflow-wrap: break-word;
+		height: auto;
 		line-height: 15px;
+	}
+
+	// resources «one under another»: the parts of a resource (quantity, cost) one under another in a cell
+	.dt-body .dt-row {
+		height: auto;
+	}
+
+	.bo-stack {
+		display: block;
+		text-align: right;
+	}
+
+	.bo-stack-line {
+		display: block;
+		min-height: 17px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.bo-stack-head .bo-stack-line {
+		text-align: center;
+		white-space: normal;
+		overflow: visible;
 	}
 
 	.dt-tree-node {
@@ -42,9 +81,9 @@
 		padding: 3px 6px;
 		font-weight: 600;
 		text-align: center;
-		white-space: nowrap;
+		white-space: normal;
+		overflow-wrap: break-word;
 		overflow: hidden;
-		text-overflow: ellipsis;
 		border-right: 1px solid var(--dt-border-color, var(--border-color));
 		line-height: 15px;
 	}

@@ -728,7 +728,13 @@ def build_xlsx_data(
 			metadata.column_map[column_idx] = column
 			column_idx += 1
 
-		column_data.append(_(column.get("label")))
+		# beeone: a column of resources «one under another» has the labels of its parts under its own
+		if column.get("bo_stack"):
+			from frappe.beeone.report_variants import stack_text
+
+			column_data.append(stack_text(column, None))
+		else:
+			column_data.append(_(column.get("label")))
 		column_width = cint(column.get("width", 0))
 		# to convert into scale accepted by xlsxwriter
 		column_width /= 10
@@ -764,6 +770,11 @@ def build_xlsx_data(
 			label = column.get("label")
 			fieldname = column.get("fieldname")
 			cell_value = row.get(fieldname, row.get(label, "")) if row_is_dict else row[col_idx]
+
+			if column.get("bo_stack") and isinstance(cell_value, list | tuple):
+				from frappe.beeone.report_variants import stack_text
+
+				cell_value = stack_text(column, cell_value)
 
 			if not isinstance(cell_value, EXCEL_TYPES):
 				cell_value = cstr(cell_value)

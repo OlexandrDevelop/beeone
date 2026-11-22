@@ -9,6 +9,9 @@ The table model is what the screen draws:
 	 "rows": [{"kind", "level", "bold", "cells": {key: value}, "format": {key: style}}], "message"}
 
 Columns need a `label`; when a report keeps the labels in a `header` row, `table_labels` takes them from there.
+A column of `kind` stack (resources «one under another», `report_variants.apply_stacked`) has `parts`
+[{key, label, kind}]; its cell is the list of the part values, written one under another in the cell, and its
+header is the label of the resource with the labels of the parts under it.
 The files write the cell values as they are: no number is recomputed, so a file equals the screen.
 """
 
@@ -32,20 +35,34 @@ SUMMARY_KINDS = ("total", "open", "close")
 
 
 def table_labels(table):
-	"""Column labels: `label` of the column, else the cells of the single header row in column order."""
+	"""Column labels: `label` of the column, else the cells of the single header row in column order. A stacked
+	column has the labels of its parts on the lines under its own."""
 	header = table.get("header") or []
 	labels = []
 	for i, col in enumerate(table["columns"]):
 		label = col.get("label")
 		if label is None and len(header) == 1 and i < len(header[0]):
 			label = header[0][i].get("label")
-		labels.append(label if label is not None else col["key"])
+		label = label if label is not None else col["key"]
+		if col.get("kind") == "stack":
+			label = "\n".join([str(label), *(str(p.get("label") or p["key"]) for p in col["parts"])])
+		labels.append(label)
 	return labels
+
+
+def _number(value, kind):
+	if isinstance(value, (int, float)) and not isinstance(value, bool) and kind in NUMBER_KINDS:
+		# as in 1C, a zero is an empty cell
+		return f"{flt(value, NUMBER_KINDS[kind]):,.{NUMBER_KINDS[kind]}f}".replace(",", " ") if value else ""
+	return "" if value in (None, "") else str(value)
 
 
 def _value(row, col):
 	value = row["cells"].get(col["key"])
-	if isinstance(value, (list, tuple)):
+	if col.get("kind") == "stack" and isinstance(value, (list, tuple)):
+		lines = [_number(v, p.get("kind")) for p, v in zip(col["parts"], value, strict=False)]
+		value = "\n".join(lines) if any(lines) else None
+	elif isinstance(value, (list, tuple)):
 		value = "\n".join(str(v) for v in value)
 	return None if value in (None, "") else value
 
@@ -68,7 +85,11 @@ def _tone(row, depth):
 	return None
 
 
-def _negative(value):
+def _negative(value, row=None, col=None):
+	"""A negative number; in a stacked cell, a negative part."""
+	if row is not None and col.get("kind") == "stack":
+		raw = row["cells"].get(col["key"])
+		return isinstance(raw, (list, tuple)) and any(tones.is_negative(v) for v in raw)
 	return tones.is_negative(value)
 
 
@@ -101,7 +122,7 @@ def to_xlsx(table):
 			style = fmt.get(col["key"]) or {}
 			c.border = Border(left=THIN, right=THIN, top=TOP_THICK if summary else THIN, bottom=THIN)
 			color = style.get("color")
-			color = _argb(color) if color else (_argb(tones.NEGATIVE) if _negative(value) else None)
+			color = _argb(color) if color else (_argb(tones.NEGATIVE) if _negative(value, row, col) else None)
 			c.font = Font(bold=bool(row.get("bold") or style.get("bold") or summary), color=color)
 			if style.get("background"):
 				c.fill = PatternFill("solid", fgColor=_argb(style["background"]))
@@ -114,15 +135,24 @@ def to_xlsx(table):
 			elif kind == "qty":
 				c.number_format = QTY
 				c.alignment = Alignment(horizontal="right")
+			elif kind == "stack":
+				c.alignment = Alignment(horizontal="right", vertical="top", wrap_text=True)
 			elif kind == "label":
 				c.alignment = Alignment(indent=row.get("level", 0), vertical="top")
 			else:
-				c.alignment = Alignment(horizontal=col.get("align", "left"), vertical="top", wrap_text=kind == "lines")
+				c.alignment = Alignment(
+					horizontal=col.get("align", "left"), vertical="top", wrap_text=kind == "lines"
+				)
 		r += 1
 	if table.get("message"):
 		ws.cell(r + 1, 1, table["message"])
 	for i, col in enumerate(table["columns"], start=1):
-		ws.column_dimensions[get_column_letter(i)].width = {"label": 46, "money": 16, "qty": 13}.get(col.get("kind"), 20)
+		ws.column_dimensions[get_column_letter(i)].width = {
+			"label": 46,
+			"money": 16,
+			"qty": 13,
+			"stack": 16,
+		}.get(col.get("kind"), 20)
 	ws.sheet_view.showGridLines = False
 	ws.page_setup.orientation = "landscape"
 	out = BytesIO()
@@ -145,7 +175,7 @@ def _html_cell(row, col, style, depth=1):
 		css.append("font-weight:bold")
 	if style.get("color"):
 		css.append(f"color:{style['color']}")
-	elif _negative(value):
+	elif _negative(value, row, col):
 		css.append(f"color:{tones.NEGATIVE}")
 	if style.get("background"):
 		css.append(f"background:{style['background']}")
@@ -153,7 +183,7 @@ def _html_cell(row, col, style, depth=1):
 		css.append(f"background:{tone}")
 	if summary:
 		css.append("border-top:2px solid #000")
-	if kind in NUMBER_KINDS:
+	if kind in NUMBER_KINDS or kind == "stack":
 		css.append("text-align:right")
 	elif kind == "label":
 		css.append(f"padding-left:{4 + 10 * row.get('level', 0)}px")
@@ -162,7 +192,7 @@ def _html_cell(row, col, style, depth=1):
 
 def _html_head(table):
 	header = table.get("header") or []
-	if len(header) > 1 or (header and len(header[0]) == len(table["columns"])):
+	if len(header) > 1:
 		return "".join(
 			"<tr>"
 			+ "".join(
@@ -172,7 +202,13 @@ def _html_head(table):
 			+ "</tr>"
 			for hrow in header
 		)
-	return "<tr>" + "".join(f"<th>{escape_html(str(label))}</th>" for label in table_labels(table)) + "</tr>"
+	return (
+		"<tr>"
+		+ "".join(
+			f"<th>{escape_html(str(label)).replace(chr(10), '<br>')}</th>" for label in table_labels(table)
+		)
+		+ "</tr>"
+	)
 
 
 def to_html(table):
@@ -180,7 +216,11 @@ def to_html(table):
 	depth = _depth(table)
 	for row in table["rows"]:
 		fmt = row.get("format") or {}
-		body.append("<tr>" + "".join(_html_cell(row, col, fmt.get(col["key"]) or {}, depth) for col in table["columns"]) + "</tr>")
+		body.append(
+			"<tr>"
+			+ "".join(_html_cell(row, col, fmt.get(col["key"]) or {}, depth) for col in table["columns"])
+			+ "</tr>"
+		)
 	lines = "".join(f"<div>{escape_html(str(line))}</div>" for line in table.get("lines") or [])
 	message = f"<p>{escape_html(table['message'])}</p>" if table.get("message") else ""
 	return (

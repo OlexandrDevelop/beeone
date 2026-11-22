@@ -184,6 +184,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			() => this.refresh_report(route_options),
 			() => this.add_chart_buttons_to_toolbar(true),
 			() => this.add_card_button_to_toolbar(true),
+			// beeone: Actions → Settings (the tab «Структура») of a report that declares its structure
+			() => frappe.beeone_report_structure && frappe.beeone_report_structure.setup(this),
 		]);
 	}
 
@@ -1181,7 +1183,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		if (!this.tree_report || this.bo_tree_depth < 2) return null;
 		const levels = this.columns.filter((c) => !c.hidden).slice(0, this.bo_tree_depth);
 		const numeric = frappe.beeone_report_tones.NUMERIC;
-		if (levels.length < 2 || levels.some((c) => numeric.includes(c.fieldtype))) return null;
+		if (levels.length < 2 || levels.some((c) => numeric.includes(c.fieldtype) || c.bo_stack)) return null;
 		return levels;
 	}
 
@@ -1302,10 +1304,14 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		this.$report.show();
+		// beeone: resources «one under another» need a line of the row for every part of a resource
+		const bo_lines = Math.max(1, ...columns.map((c) => (c.bo_stack ? c.bo_stack.length : 1)));
+		const bo_cell_height = 22 + 17 * (bo_lines - 1);
 		if (
 			this.datatable &&
 			this.datatable.options &&
-			this.datatable.options.showTotalRow === this.raw_data.add_total_row
+			this.datatable.options.showTotalRow === this.raw_data.add_total_row &&
+			this.datatable.options.cellHeight === bo_cell_height
 		) {
 			this.datatable.options.treeView = this.tree_report;
 			this.datatable.refresh(data, columns);
@@ -1320,7 +1326,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				translations: frappe.utils.datatable.get_translations(),
 				treeView: this.tree_report,
 				layout: "fixed",
-				cellHeight: 22,
+				cellHeight: bo_cell_height,
 				showTotalRow: this.raw_data.add_total_row && !this.report_settings.tree,
 				direction: frappe.utils.is_rtl() ? "rtl" : "ltr",
 				hooks: {
@@ -1646,24 +1652,34 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				// beeone: tone of the hierarchy level and red negatives (WCAG AA palette)
 				const tones = frappe.beeone_report_tones;
 				// beeone: as in 1C, a zero is an empty cell and a sum has no currency sign
-				const numeric = tones.NUMERIC.includes(column.fieldtype);
-				const empty = numeric && !flt(value);
-				const shown =
-					column.fieldtype === "Currency"
-						? { ...column, fieldtype: "Float", precision: column.precision || 2 }
-						: column;
-				const level = data && !bo_total ? cint(data.indent) : 0;
-				return tones.wrap(
-					empty
+				const as_text = (value, column) => {
+					const numeric = tones.NUMERIC.includes(column.fieldtype);
+					const shown =
+						column.fieldtype === "Currency"
+							? { ...column, fieldtype: "Float", precision: column.precision || 2 }
+							: column;
+					return numeric && !flt(value)
 						? ""
-						: frappe.format(value, shown, { for_print: false, always_show_decimals: true }, data),
-					{
-						step: bo_total ? 0 : tones.step(data && data.indent, this.bo_tree_depth || 1),
-						total: bo_total,
-						negative: tones.is_negative(value, column.fieldtype),
-						group: !bo_total && this.tree_report && level < (this.bo_tree_depth || 1) - 1,
-					}
-				);
+						: frappe.format(value, shown, { for_print: false, always_show_decimals: true }, data);
+				};
+				// beeone: resources «one under another»: the parts of the resource, one line each
+				const stack = column.bo_stack && Array.isArray(value) ? column.bo_stack : null;
+				const text = stack
+					? `<span class="bo-stack">${stack
+							.map((part, i) => {
+								const line = as_text(value[i], part);
+								const negative = tones.is_negative(value[i], part.fieldtype);
+								return `<span class="bo-stack-line${negative ? " bo-rt-neg" : ""}">${line}</span>`;
+							})
+							.join("")}</span>`
+					: as_text(value, column);
+				const level = data && !bo_total ? cint(data.indent) : 0;
+				return tones.wrap(text, {
+					step: bo_total ? 0 : tones.step(data && data.indent, this.bo_tree_depth || 1),
+					total: bo_total,
+					negative: !stack && tones.is_negative(value, column.fieldtype),
+					group: !bo_total && this.tree_report && level < (this.bo_tree_depth || 1) - 1,
+				});
 			};
 
 			let compareFn = null;
@@ -1682,7 +1698,12 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				id: column.fieldname,
 				// The label of a script report may come untranslated from the backend: it is translated here
 				// (a label translated already has no message of its own and stays as it is).
-				name: __(column.label),
+				// beeone: the header of resources «one under another» shows the labels of the parts one under another
+				name: column.bo_stack
+					? `<span class="bo-stack bo-stack-head">${column.bo_stack
+							.map((p) => `<span class="bo-stack-line">${frappe.utils.escape_html(__(p.label || ""))}</span>`)
+							.join("")}</span>`
+					: __(column.label),
 				width: parseInt(column.width) || null,
 				editable: column.editable ?? false,
 				compareValue: compareFn,

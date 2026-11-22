@@ -6,10 +6,20 @@
 A variant is a named set of settings of one report, kept per user (`Report Variant`):
 
 	{"filters": {...}, "group_by": "", "hidden_columns": [key, ...],
+	 "groupings": [dimension key, ...], "resource_layout": "columns" | "stacked",
 	 "format": [{"column": key, "op": ">", "value": 100, "kinds": ["item", "group", "total"],
 	             "style": {"bold": true, "color": "#b00020", "background": "#fde8e8"}}]}
 
 `filters` and `group_by` are given back to the report as they are; the report decides what they mean.
+`groupings` and `resource_layout` are the tab «Структура» of the report settings: the levels of the rows, in order,
+chosen from the dimensions the report declares (empty = the default of the report), and the resources as separate
+columns or «one under another» (the parts of a resource, e.g. quantity and cost, in one column, two lines a cell).
+
+The structure a report declares (`clean_structure`):
+
+	{"dimensions": [{"key", "label"}], "default": [key, ...], "max_levels": n,
+	 "resources": [{"key", "label", "parts": [{"key", "label"}]}]}
+
 `apply_to_table` works on the table model (`columns`, `header`, `rows` with `cells`) that the screen draws and
 the exporters write, so the screen, Excel and PDF show the same columns, numbers and styles.
 """
@@ -23,6 +33,7 @@ from frappe.utils import cint, flt
 DOCTYPE = "Report Variant"
 OPS = ("=", "!=", ">", ">=", "<", "<=", "between", "in", "not in", "is set", "is not set")
 KINDS = ("group", "item", "total")
+LAYOUTS = ("columns", "stacked")
 COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -70,12 +81,142 @@ def clean_rule(rule):
 
 def clean_settings(settings):
 	s = _parse(settings)
+	layout = s.get("resource_layout") or "columns"
+	if layout not in LAYOUTS:
+		frappe.throw(_("Unknown resource layout {0}").format(layout))
 	return {
 		"filters": s.get("filters") or {},
 		"group_by": s.get("group_by") or "",
 		"hidden_columns": [str(k) for k in (s.get("hidden_columns") or [])],
+		"groupings": list(dict.fromkeys(str(k) for k in (s.get("groupings") or []))),
+		"resource_layout": layout,
 		"format": [clean_rule(r) for r in (s.get("format") or [])],
 	}
+
+
+# ------------------------------------------------------------------ the structure of a report (tab «Структура»)
+def _item(value):
+	return (
+		{"key": value, "label": None}
+		if isinstance(value, str)
+		else {"key": value["key"], "label": value.get("label")}
+	)
+
+
+def clean_structure(structure):
+	"""The dimensions and the resources a report declares, in the full form (see the module docstring)."""
+	structure = structure or {}
+	dimensions = [
+		{**d, "label": d["label"] or d["key"]} for d in map(_item, structure.get("dimensions") or [])
+	]
+	keys = [d["key"] for d in dimensions]
+	default = [k for k in structure.get("default") or keys if k in keys]
+	resources = []
+	for res in structure.get("resources") or []:
+		parts = [_item(p) for p in res.get("parts") or []]
+		resources.append({"key": res["key"], "label": res.get("label") or res["key"], "parts": parts})
+	return {
+		"dimensions": dimensions,
+		"default": default,
+		"max_levels": cint(structure.get("max_levels")) or len(dimensions),
+		"resources": resources,
+	}
+
+
+def resolve_groupings(structure, settings):
+	"""The levels of the rows: the dimensions chosen in the variant that the report has, in their order, at most
+	`max_levels`; the default of the report when none is chosen."""
+	s = clean_structure(structure)
+	keys = {d["key"] for d in s["dimensions"]}
+	chosen = [k for k in clean_settings(settings)["groupings"] if k in keys][: s["max_levels"]]
+	return chosen or list(s["default"])
+
+
+def check_groupings(structure, groupings):
+	"""A choice to save: known dimensions, no repeats, at least one and at most `max_levels` levels."""
+	s = clean_structure(structure)
+	keys = {d["key"] for d in s["dimensions"]}
+	groupings = [str(k) for k in groupings or []]
+	if not groupings:
+		frappe.throw(_("Choose at least one grouping"))
+	if any(k not in keys for k in groupings) or len(set(groupings)) != len(groupings):
+		frappe.throw(_("The report has no such grouping"))
+	if len(groupings) > s["max_levels"]:
+		frappe.throw(_("At most {0} grouping levels").format(s["max_levels"]))
+	return groupings
+
+
+def _present(res, have):
+	return [p for p in res["parts"] if p["key"] in have]
+
+
+def stack_columns(columns, data, structure):
+	"""Resources «one under another» for a script report (columns as dicts, rows as dicts): the parts of a
+	resource found among the columns become one column `<resource key>` at the place of its first part. Its value
+	in a row is the list of the part values; `bo_stack` keeps the parts (fieldname, label, fieldtype, precision)
+	and `bo_band` the label of the resource. A resource with fewer than two parts shown stays as it is."""
+	s = clean_structure(structure)
+	by_name = {c.get("fieldname"): c for c in columns if isinstance(c, dict)}
+	stacked = {}
+	for res in s["resources"]:
+		parts = _present(res, by_name)
+		if len(parts) < 2:
+			continue
+		column = {
+			"fieldname": res["key"],
+			"label": res["label"],
+			"fieldtype": "Data",
+			"bo_band": res["label"],
+			"bo_stack": [
+				{
+					"fieldname": p["key"],
+					"label": p["label"] or by_name[p["key"]].get("label"),
+					"fieldtype": by_name[p["key"]].get("fieldtype") or "Float",
+					"precision": by_name[p["key"]].get("precision"),
+				}
+				for p in parts
+			],
+			"width": max(cint(by_name[p["key"]].get("width")) for p in parts) or None,
+		}
+		for p in parts:
+			stacked[p["key"]] = (parts[0]["key"], column)
+	if not stacked:
+		return columns, data
+	out = []
+	for col in columns:
+		name = col.get("fieldname") if isinstance(col, dict) else None
+		if name not in stacked:
+			out.append(col)
+		elif stacked[name][0] == name:
+			out.append(stacked[name][1])
+	merged = [c for c in out if isinstance(c, dict) and c.get("bo_stack")]
+	for row in data:
+		if isinstance(row, dict):
+			for column in merged:
+				row[column["fieldname"]] = [row.get(p["fieldname"]) for p in column["bo_stack"]]
+	return out, data
+
+
+def stack_text(column, value):
+	"""A stacked cell (or, with no value, the header) of a file as lines of text: as in 1C, a zero is empty."""
+	parts = column["bo_stack"]
+	if value is None:
+		return "\n".join(
+			[column.get("bo_band") or column.get("label") or "", *[_(p["label"] or "") for p in parts]]
+		)
+	lines = []
+	for part, v in zip(parts, value, strict=False):
+		if isinstance(v, (int, float)) and not isinstance(v, bool):
+			precision = part.get("precision")
+			precision = (
+				cint(precision)
+				if precision not in (None, "")
+				else (2 if part.get("fieldtype") == "Currency" else 3)
+			)
+			lines.append(f"{flt(v, precision):,.{precision}f}".replace(",", " ") if v else "")
+		else:
+			lines.append("" if v in (None, "") else str(v))
+	return "\n".join(lines)
 
 
 # ------------------------------------------------------------------ storage (one user)
@@ -141,6 +282,46 @@ def get_variant(report, title=None, name=None, user=None):
 	return None
 
 
+def current_settings(report, user=None):
+	"""The settings of the default variant of the user (the one the report is built with), cleaned."""
+	variant = get_variant(report, user=user)
+	return clean_settings(variant["settings"] if variant else {})
+
+
+def report_structure(report, filters=None):
+	"""The structure a standard script report declares in its module (`get_report_structure(filters)`), cleaned;
+	None when it declares none."""
+	doc = frappe.get_cached_doc("Report", report)
+	if doc.is_standard != "Yes" or doc.report_type != "Script Report":
+		return None
+	try:
+		method = doc.get_module_method("get_report_structure")
+	except AttributeError, ImportError:
+		return None
+	return clean_structure(method(frappe._dict(filters or {})))
+
+
+def save_structure(report, groupings, resource_layout, user=None):
+	"""The tab «Структура»: the levels and the resource layout go to the default variant of the user (a new
+	variant «Main» when the user has none); the other settings of the variant stay. Empty `groupings` is the
+	default of the report."""
+	structure = report_structure(report)
+	if structure is None:
+		frappe.throw(_("The report has no structure settings"))
+	groupings = check_groupings(structure, groupings) if groupings else []
+	user = user or frappe.session.user
+	variant = get_variant(report, user=user)
+	title = variant["title"] if variant and variant["user"] == user else "Main"
+	settings = {
+		**clean_settings(variant["settings"] if variant else {}),
+		"groupings": groupings,
+		"resource_layout": resource_layout,
+	}
+	return save_variant(
+		report, title, settings, user=user, is_default=True, is_shared=variant["is_shared"] if variant else 0
+	)
+
+
 def delete_variant(name, user=None):
 	user = user or frappe.session.user
 	owner = frappe.db.get_value(DOCTYPE, name, "user")
@@ -171,7 +352,14 @@ def matches(value, op, expected):
 		found = conv(value) in [conv(v) for v in expected]
 		return found if op == "in" else not found
 	left, right = conv(value), conv(expected)
-	return {"=": left == right, "!=": left != right, ">": left > right, ">=": left >= right, "<": left < right, "<=": left <= right}[op]
+	return {
+		"=": left == right,
+		"!=": left != right,
+		">": left > right,
+		">=": left >= right,
+		"<": left < right,
+		"<=": left <= right,
+	}[op]
 
 
 def apply_format(table, rules):
@@ -200,8 +388,76 @@ def apply_hidden(table, hidden):
 	return table
 
 
-def apply_to_table(table, settings):
-	"""The table model as the variant wants it (columns, formatting); the numbers are never changed."""
+def apply_stacked(table, structure):
+	"""Resources «one under another» in the table model: the parts of a resource among the columns become one
+	column (`kind` stack, `parts` [{key, label, kind}]) at the place of its first part, a cell is the list of the
+	part values and its style the styles of the parts. A multi-row header cannot be rebuilt, so then nothing changes."""
+	if len(table.get("header") or []) > 1:
+		return table
+	s = clean_structure(structure)
+	by_key = {c["key"]: c for c in table["columns"]}
+	stacked = {}
+	for res in s["resources"]:
+		parts = _present(res, by_key)
+		if len(parts) < 2:
+			continue
+		column = {
+			"key": res["key"],
+			"label": res["label"],
+			"kind": "stack",
+			"parts": [
+				{
+					"key": p["key"],
+					"label": p["label"] or by_key[p["key"]].get("label"),
+					"kind": by_key[p["key"]].get("kind"),
+				}
+				for p in parts
+			],
+		}
+		for p in parts:
+			stacked[p["key"]] = (parts[0]["key"], column)
+	if not stacked:
+		return table
+	keep, columns = [], []
+	for i, col in enumerate(table["columns"]):
+		if col["key"] not in stacked:
+			keep.append(i)
+			columns.append(col)
+		elif stacked[col["key"]][0] == col["key"]:
+			keep.append(i)
+			columns.append(stacked[col["key"]][1])
+	if table.get("header"):
+		head = table["header"][0]
+		table["header"] = [
+			[
+				{**head[i], "label": c["label"]} if c.get("kind") == "stack" else head[i]
+				for i, c in zip(keep, columns, strict=False)
+				if i < len(head)
+			]
+		]
+	table["columns"] = columns
+	merged = [c for c in columns if c.get("kind") == "stack"]
+	for row in table["rows"]:
+		fmt = row.get("format") or {}
+		for column in merged:
+			row["cells"][column["key"]] = [row["cells"].get(p["key"]) for p in column["parts"]]
+			style = {}
+			for p in column["parts"]:
+				style.update(fmt.get(p["key"]) or {})
+			if style:
+				fmt[column["key"]] = style
+		if fmt:
+			row["format"] = fmt
+	return table
+
+
+def apply_to_table(table, settings, structure=None):
+	"""The table model as the variant wants it (columns, formatting, the resource layout of the `structure` the
+	report declares); the numbers are never changed. The levels of the rows (`resolve_groupings`) are given to
+	`report_engine.compose` by the report before the table is built."""
 	s = clean_settings(settings)
 	apply_format(table, s["format"])
-	return apply_hidden(table, s["hidden_columns"])
+	apply_hidden(table, s["hidden_columns"])
+	if structure and s["resource_layout"] == "stacked":
+		apply_stacked(table, structure)
+	return table

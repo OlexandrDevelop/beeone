@@ -12,6 +12,9 @@
 <style>
 	.bo-rt-neg, .bo-rt-neg * { color: #a50e0e; }
 	td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	.bo-stack { display: block; text-align: right; }
+	.bo-stack-head { text-align: center; }
+	.bo-stack-line { display: block; white-space: nowrap; }
 </style>
 {% var bo_t = frappe.beeone_report_tones; var bo_depth = bo_t ? bo_t.depth(data) : 1; %}
 
@@ -31,7 +34,7 @@
 					class="text-right"
 				{% endif %}
 			>
-				{{ __(col.name) }}</th>
+				{% if (col.bo_band) { %}{{ __(col.bo_band) }}<br>{% } %}{{ __(col.name) }}</th>
 			{% endif %}
 		{% endfor %}
 		</tr>
