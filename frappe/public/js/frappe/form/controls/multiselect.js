@@ -40,11 +40,12 @@ frappe.ui.form.ControlMultiSelect = class ControlMultiSelect extends (
 		let options = this.get_parsed_options();
 
 		// find value of label from option list and return actual value string
+		// (the input shows the labels; a value typed or set as is stays a value)
 		if (options && options.length && options[0].label != undefined) {
-			data = data.split(",").map((op) => op.trim());
+			data = (data || "").split(",").map((op) => op.trim());
 			data = data
 				.map((val) => {
-					let option = options.find((op) => op.label === val);
+					let option = options.find((op) => op.label === val) || options.find((op) => op.value === val);
 					return option ? option.value : null;
 				})
 				.filter((n) => n != null)
@@ -108,13 +109,15 @@ frappe.ui.form.ControlMultiSelect = class ControlMultiSelect extends (
 		}
 
 		let valid_values = this.awesomplete._list.map((d) => d.value);
+		// the labels of the options are valid too (the input shows them)
+		valid_values = valid_values.concat(this.awesomplete._list.map((d) => d.label).filter((d) => d));
 
 		if (!valid_values.length) {
 			return value;
 		}
 
-		// remove last comma and convert into array
-		let value_arr = value.replace(/,\s*$/, "").split(",");
+		// remove last comma and convert into array; the parts go separated by a comma with or without spaces
+		let value_arr = (value || "").replace(/,\s*$/, "").split(",").map((val) => val.trim()).filter((val) => val);
 		let include_all_values = value_arr.every((val) => valid_values.includes(val));
 
 		if (include_all_values) {

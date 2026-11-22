@@ -783,8 +783,10 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	refresh(have_filters_changed) {
         // Missing required filters are a normal state when a report opens.
         // Display guidance without throwing an unhandled browser exception.
+        // An empty list (MultiSelect, MultiSelectList, Table MultiSelect) is a missing value too.
+        const is_empty = (value) => !value || (Array.isArray(value) && !value.length);
         if (!this.prepared_report_name && (this.filters || []).some(
-            (f) => (f.df.reqd || f.df.mandatory) && !f.get_value()
+            (f) => (f.df.reqd || f.df.mandatory) && is_empty(f.get_value())
         )) {
             this.is_loading = false;
             this.hide_loading_screen();
