@@ -232,11 +232,25 @@ frappe.ui.form.ControlMultiSelectList = class ControlMultiSelectList extends (
 		} else if (this.values.length === 1) {
 			let val = this.values[0];
 			let option = this._options.find((opt) => opt.value === val);
-			text = option ? option.label : val;
+			text = option ? option.label : this.bo_title(val);
 		} else {
 			text = __("{0} values selected", [this.values.length]);
 		}
 		this.set_status(text);
+	}
+
+	// beeone: a value set before the options are loaded (a default of a report filter) shows the title of its
+	// record, not its name ("Віп", not "fiasn3dvin")
+	bo_title(value) {
+		const doctype = this.df.options;
+		if (!doctype || typeof doctype !== "string" || !frappe.boot.user.can_read?.includes(doctype)) return value;
+		const title = frappe.utils.get_link_title(doctype, value);
+		if (title) return frappe.utils.escape_html(title);
+		frappe.utils.fetch_link_title(doctype, value).then((fetched) => {
+			if (fetched && this.values.length === 1 && this.values[0] === value)
+				this.set_status(frappe.utils.escape_html(fetched));
+		});
+		return value;
 	}
 
 	get_placeholder_text() {
