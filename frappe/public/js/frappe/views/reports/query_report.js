@@ -123,8 +123,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				actions
 			);
 		}
+		// not in a report (user 2026-11-23): the report form, auto email and user permissions are set elsewhere
+		const hidden = [__("Edit"), __("Setup Auto Email"), __("User Permissions")];
 		(this.menu_items || []).forEach((item) => {
 			if (item.class === "visible-xs" || (item.condition && item.condition() === false)) return;
+			if (hidden.includes(item.label)) return;
 			this.page.add_inner_button(item.label, item.action, actions);
 		});
 	}
@@ -279,16 +282,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		});
 	}
 
-	add_card_button_to_toolbar() {
-		if (!frappe.model.can_create("Number Card")) return;
-		this.page.add_inner_button(
-			__("Create Card"),
-			() => {
-				this.add_card_to_dashboard();
-			},
-			__("Actions")
-		);
-	}
+	// beeone: no "Create Card" in a report (user 2026-11-23)
+	add_card_button_to_toolbar() {}
 
 	add_chart_buttons_to_toolbar(show) {
 		if (!frappe.model.can_create("Dashboard Chart")) return;
@@ -2365,14 +2360,13 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				label: __("From Document Type"),
 				options: this.linked_doctypes?.map((df) => ({
 					// beeone: translated names, the label of the report column of the link
-					label:
-						__(df.doctype) +
-						" (" +
-						__(
-							((this.columns || []).find((c) => c.fieldname === df.fieldname) || {}).label ||
-								frappe.unscrub(df.fieldname)
-						) +
-						")",
+					label: (() => {
+						const column = (this.columns || []).find((c) => c.fieldname === df.fieldname);
+						const label = (column && column.label) || df.label;
+						return label && __(label) !== __(df.doctype)
+							? __(df.doctype) + " (" + __(label) + ")"
+							: __(df.doctype);
+					})(),
 					value: JSON.stringify({ doctype: df.doctype, fieldname: df.fieldname }),
 				})),
 				change: () => {
@@ -2419,9 +2413,10 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		const { doctype, fieldname } = JSON.parse(values.column_doctype);
 		const field = values.column_field;
 		const df = frappe.meta.get_docfield(doctype, field);
-		const insert_after_index = this.columns.findIndex(
-			(column) => column.fieldname === values.column_insert_after
-		);
+		// no place chosen: after the first column (the group or the name of a row)
+		const insert_after_index = values.column_insert_after
+			? this.columns.findIndex((column) => column.fieldname === values.column_insert_after)
+			: 0;
 		const names = this.doctype_field_map[doctype][fieldname].names;
 		const custom_columns = [
 			{
@@ -2503,6 +2498,33 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					fieldname: df.fieldname,
 				});
 			}
+		});
+
+		// beeone: the links a report keeps in its rows without a Link column (the group reports of HiveFirm:
+		// `item`, `drill_item`, `drill_warehouse` ...): a key that names a DocType the user can read, with the
+		// `drill_` prefix dropped, is a link too ("drill_item" → Item); its values are the names of the records
+		const readable = new Set(frappe.boot.user.can_read || []);
+		const seen = new Set(doctypes.map((d) => d.fieldname).concat(this.columns.map((c) => c.fieldname)));
+		const row_keys = new Set();
+		(this.data || []).slice(0, 500).forEach((row) => {
+			Object.keys(row || {}).forEach((key) => {
+				if (typeof row[key] === "string" && row[key]) row_keys.add(key);
+			});
+		});
+		// the DocType of a key: the filter of the report with that fieldname (warehouse → Business Unit), else the
+		// DocType the key names
+		const by_filter = {};
+		(this.filters || []).forEach((f) => {
+			const df = f.df || {};
+			if (["Link", "MultiSelectList", "Table MultiSelect"].includes(df.fieldtype) && df.options)
+				by_filter[df.fieldname] = { doctype: df.options, label: df.label };
+		});
+		row_keys.forEach((key) => {
+			const name = key.replace(/^drill_/, "");
+			const doctype = (by_filter[name] || {}).doctype || frappe.unscrub(name);
+			if (seen.has(key) || !readable.has(doctype) || frappe.model.is_single(doctype)) return;
+			if (doctypes.some((d) => d.doctype === doctype)) return;
+			doctypes.push({ doctype, fieldname: key, label: (by_filter[name] || {}).label });
 		});
 
 		this.data.forEach((row) => {
