@@ -2506,6 +2506,15 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		const readable = new Set(frappe.boot.user.can_read || []);
 		const seen = new Set(doctypes.map((d) => d.fieldname).concat(this.columns.map((c) => c.fieldname)));
 		const row_keys = new Set();
+		(this.data || []).forEach((row) => {
+			// a drill-down kept as {filters: {item: ...}} (Sales Report): its values as drill_<key> of the row
+			const nested = row && row.drill && row.drill.filters;
+			if (nested && typeof nested === "object") {
+				Object.entries(nested).forEach(([key, value]) => {
+					if (typeof value === "string" && row["drill_" + key] === undefined) row["drill_" + key] = value;
+				});
+			}
+		});
 		(this.data || []).slice(0, 500).forEach((row) => {
 			Object.keys(row || {}).forEach((key) => {
 				if (typeof row[key] === "string" && row[key]) row_keys.add(key);
