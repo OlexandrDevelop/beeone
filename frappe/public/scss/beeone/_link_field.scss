@@ -1,0 +1,144 @@
+// The actions of a Link field (user 2026-11-23): one group on the end of the field, the same 24 px buttons.
+// «Select from list» stays on the edge, muted; «Open» and «Clear» come in beside it on hover / focus: a fade, a few
+// pixels of travel and a little scale, the second one 30 ms later. A soft edge over the text instead of a cut.
+// No motion with prefers-reduced-motion (the tokens set the durations to 0).
+body.bo-shell {
+	.link-field {
+		--bo-act: 24px;
+	}
+
+	.link-field .btn-link-select,
+	.link-field .link-btn a {
+		width: var(--bo-act);
+		min-width: var(--bo-act);
+		height: var(--bo-act);
+		padding: 0;
+		display: inline-grid !important;
+		place-items: center;
+		border-radius: 6px;
+		color: var(--bo-text-3, var(--text-muted));
+		background: transparent;
+		transition:
+			color var(--bo-dur-fast) ease,
+			background-color var(--bo-dur-fast) ease,
+			transform var(--bo-dur-fast) var(--bo-ease-out);
+
+		svg {
+			width: 14px;
+			height: 14px;
+			transition: transform var(--bo-dur-base) var(--bo-ease-out);
+		}
+
+		&:hover {
+			color: var(--bo-accent, var(--primary));
+			background: var(--bo-accent-soft, var(--control-bg));
+		}
+
+		&:active {
+			transform: scale(0.9);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--bo-accent, var(--primary));
+			outline-offset: -1px;
+		}
+	}
+
+	// the text never runs under the «Select from list» button (the table cells reset the padding of the input)
+	.link-field.has-link-select input.form-control {
+		padding-inline-end: 32px !important;
+	}
+
+	// the edge of the field, centred on its height
+	.link-field .btn-link-select {
+		background: var(--bo-surface, var(--control-bg));
+		top: 50%;
+		height: var(--bo-act);
+		inset-inline-end: 4px;
+		transform: translateY(-50%);
+
+		&:active {
+			transform: translateY(-50%) scale(0.9);
+		}
+
+		&:hover {
+			background: color-mix(in srgb, var(--bo-accent, #2f54eb) 12%, var(--bo-surface, #fff));
+		}
+
+		&:hover svg {
+			transform: translateY(-1px);
+		}
+	}
+
+	.link-field .link-btn {
+		top: 50%;
+		height: var(--bo-act);
+		padding: 0;
+		gap: 2px;
+		right: 4px;
+		align-items: center;
+		background: transparent;
+		transform: translateY(-50%);
+
+		// a soft edge over the text under the buttons instead of a hard cut
+		&::before {
+			content: "";
+			position: absolute;
+			inset: 0 0 0 -16px;
+			z-index: -1;
+			border-radius: 6px;
+			background: linear-gradient(
+				to right,
+				transparent,
+				var(--bo-surface, var(--control-bg)) 16px
+			);
+		}
+
+		a {
+			animation: bo-link-act-in var(--bo-dur-base) var(--bo-ease-out) both;
+		}
+
+		a + a {
+			animation-delay: 30ms;
+		}
+
+		.btn-open:hover svg {
+			transform: translate(1px, -1px);
+		}
+
+		.btn-clear:hover {
+			color: var(--error-color);
+			background: color-mix(in srgb, var(--error-color) 10%, transparent);
+		}
+	}
+
+	.link-field.has-link-select .link-btn {
+		right: 30px;
+	}
+
+	[dir="rtl"] .link-field .link-btn {
+		right: auto;
+		left: 4px;
+	}
+
+	[dir="rtl"] .link-field.has-link-select .link-btn {
+		right: auto;
+		left: 30px;
+	}
+
+	// jQuery shows the group with an inline `display: inline`; the buttons stand in a row
+	.link-field .link-btn[style*="inline"] {
+		display: inline-flex !important;
+	}
+}
+
+@keyframes bo-link-act-in {
+	from {
+		opacity: 0;
+		transform: translateX(6px) scale(0.85);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}

@@ -291,10 +291,15 @@ select.form-control {
 			padding-inline-end: 30px;
 		}
 
+		// beside the «Select from list» button; `right: auto` after `inset-inline-end` dropped it onto the text
 		.link-btn {
-			inset-inline-end: 28px;
-			right: auto;
+			right: 28px;
 		}
+	}
+
+	[dir="rtl"] .link-field.has-link-select .link-btn {
+		right: auto;
+		left: 28px;
 	}
 }
 

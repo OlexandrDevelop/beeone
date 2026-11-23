@@ -19,7 +19,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlDat
 					${frappe.utils.icon("x", "xs")}
 				</a>
 				<a class="btn-open" style="display: inline-flex;" title="${__("Open Link")}">
-					${frappe.utils.icon("arrow-right", "xs")}
+					${frappe.utils.icon("arrow-up-right", "xs")}
 				</a>
 			</span>
 			<button type="button" class="btn-link-select hide" aria-haspopup="dialog"
