@@ -1,30 +1,66 @@
-// Report tones: grey fills of the hierarchy levels and red negatives (T-880).
-// Values equal frappe/beeone/report_tones.py (test_beeone_report_tones). Step 8 = top level, deepest level = no fill.
-// WCAG 2.2 AA: red on every fill of its theme is >= 4.5.
+// Report tones "Indigo Slate": a cool grey tinted with the accent fills the hierarchy levels, red negatives (T-880,
+// T-2541). Values equal frappe/beeone/report_tones.py (test_beeone_report_tones). Step 8 = top level, deepest
+// level = no fill. A group row has a 3 px bar in its first column: the accent on the top level, --bo-rt-bar below.
+// WCAG 2.2 AA: text and red on every fill of its theme are >= 4.5 (the total row has its own red).
 :root {
-	--bo-rt-1: #f8f8f8;
-	--bo-rt-2: #f1f1f1;
-	--bo-rt-3: #eaeaea;
-	--bo-rt-4: #e4e4e4;
-	--bo-rt-5: #dddddd;
-	--bo-rt-6: #d6d6d6;
-	--bo-rt-7: #cfcfcf;
-	--bo-rt-8: #c8c8c8;
-	--bo-rt-neg: #a50e0e;
-	--bo-rt-total-border: #6b6b6b;
+	--bo-rt-1: #f5f7fd;
+	--bo-rt-2: #f2f4fd;
+	--bo-rt-3: #eef2fc;
+	--bo-rt-4: #ebeffc;
+	--bo-rt-5: #e8edfc;
+	--bo-rt-6: #e5eafc;
+	--bo-rt-7: #e2e8fb;
+	--bo-rt-8: #dfe5fb;
+	--bo-rt-total: #d3dcfa;
+	--bo-rt-bar: #9fb0f5;
+	--bo-rt-neg: #c0262d;
+	--bo-rt-neg-total: #ba252c;
 }
 
 html[data-theme="dark"] {
-	--bo-rt-1: #1d1d1d;
-	--bo-rt-2: #212121;
-	--bo-rt-3: #262626;
-	--bo-rt-4: #2b2b2b;
-	--bo-rt-5: #2f2f2f;
-	--bo-rt-6: #343434;
-	--bo-rt-7: #383838;
-	--bo-rt-8: #3d3d3d;
+	--bo-rt-1: #191f31;
+	--bo-rt-2: #1b2236;
+	--bo-rt-3: #1d243b;
+	--bo-rt-4: #1f2740;
+	--bo-rt-5: #212944;
+	--bo-rt-6: #232c48;
+	--bo-rt-7: #242e4b;
+	--bo-rt-8: #26304f;
+	--bo-rt-total: #2c3860;
+	--bo-rt-bar: #3c4f99;
 	--bo-rt-neg: #ff8a80;
-	--bo-rt-total-border: #9a9a9a;
+	--bo-rt-neg-total: #ff8a80;
+}
+
+// Another accent of the user (teal): the same tones mixed from that accent. With the cobalt accent these mixes give
+// the palette above within 3 units of a channel (test_beeone_report_tones).
+body.bo-shell[data-bo-accent]:not([data-bo-accent="cobalt"]) {
+	--bo-rt-1: color-mix(in srgb, var(--bo-accent) 5%, #ffffff);
+	--bo-rt-2: color-mix(in srgb, var(--bo-accent) 6%, #ffffff);
+	--bo-rt-3: color-mix(in srgb, var(--bo-accent) 8%, #ffffff);
+	--bo-rt-4: color-mix(in srgb, var(--bo-accent) 9%, #ffffff);
+	--bo-rt-5: color-mix(in srgb, var(--bo-accent) 11%, #ffffff);
+	--bo-rt-6: color-mix(in srgb, var(--bo-accent) 12%, #ffffff);
+	--bo-rt-7: color-mix(in srgb, var(--bo-accent) 14%, #ffffff);
+	--bo-rt-8: color-mix(in srgb, var(--bo-accent) 15%, #ffffff);
+	--bo-rt-total: color-mix(in srgb, var(--bo-accent) 21%, #ffffff);
+	--bo-rt-bar: color-mix(in srgb, var(--bo-accent) 46%, #ffffff);
+	--bo-rt-neg-total: #ba252c;
+}
+
+html[data-theme="dark"] body.bo-shell[data-bo-accent]:not([data-bo-accent="cobalt"]) {
+	--bo-rt-1: color-mix(in oklab, var(--bo-accent) 10%, #12151d);
+	--bo-rt-2: color-mix(in oklab, var(--bo-accent) 13%, #12151d);
+	--bo-rt-3: color-mix(in oklab, var(--bo-accent) 15%, #12151d);
+	--bo-rt-4: color-mix(in oklab, var(--bo-accent) 18%, #12151d);
+	--bo-rt-5: color-mix(in oklab, var(--bo-accent) 20%, #12151d);
+	--bo-rt-6: color-mix(in oklab, var(--bo-accent) 23%, #12151d);
+	--bo-rt-7: color-mix(in oklab, var(--bo-accent) 24%, #12151d);
+	--bo-rt-8: color-mix(in oklab, var(--bo-accent) 26%, #12151d);
+	--bo-rt-total: color-mix(in oklab, var(--bo-accent) 34%, #12151d);
+	--bo-rt-bar: color-mix(in oklab, var(--bo-accent) 59%, #12151d);
+	// a light accent (teal #2ec4a9) gives a lighter total: a lighter red keeps 4.5:1
+	--bo-rt-neg-total: #ff968e;
 }
 
 .dt-cell:has(.bo-rt-1) {
@@ -59,13 +95,27 @@ html[data-theme="dark"] {
 	background: var(--bo-rt-8);
 }
 
+.dt-cell:has(.bo-rt-lead) {
+	box-shadow: inset 3px 0 0 var(--bo-rt-bar);
+}
+
+.dt-cell:has(.bo-rt-lead.bo-rt-8) {
+	box-shadow: inset 3px 0 0 var(--bo-accent, #2f54eb);
+}
+
 .dt-cell:has(.bo-rt-total) {
-	background: var(--bo-rt-8);
-	font-weight: 600;
-	border-top: 2px solid var(--bo-rt-total-border);
+	background: var(--bo-rt-total);
+	font-weight: 700;
+	border-top: 2px solid var(--bo-accent, #2f54eb);
 }
 
 .bo-rt-neg,
 .bo-rt-neg * {
 	color: var(--bo-rt-neg);
+}
+
+// #c0262d on the total tone is below 4.5:1: the total row takes a slightly darker red
+.bo-rt-neg.bo-rt-total,
+.bo-rt-neg.bo-rt-total * {
+	color: var(--bo-rt-neg-total);
 }

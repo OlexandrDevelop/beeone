@@ -10,7 +10,8 @@
 {% endif %}
 
 <style>
-	.bo-rt-neg, .bo-rt-neg * { color: #a50e0e; }
+	.bo-rt-neg, .bo-rt-neg * { color: #c0262d; }
+	.bo-rt-neg.bo-rt-total, .bo-rt-neg.bo-rt-total * { color: #ba252c; }
 	td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 	.bo-stack { display: block; text-align: right; }
 	.bo-stack-head { text-align: center; }
@@ -45,8 +46,9 @@
 			<tr style="height: 30px">
 
 			{% var bo_style = ""; %}
-			{% if (bo_t) { var bo_fill = row.is_total_row ? bo_t.fill(bo_t.STEPS) : bo_t.fill(bo_t.step(row.indent, bo_depth)); bo_style = (bo_fill ? "background:" + bo_fill + ";" : "") + (row.is_total_row ? "font-weight:bold;border-top:2px solid #6b6b6b;" : ""); } %}
-			<td style="{%= bo_style %}{% if (row.bold == 1) { %}font-weight: bold{% } %}">
+			{% var bo_lead = ""; %}
+			{% if (bo_t) { var bo_step = row.is_total_row ? 0 : bo_t.step(row.indent, bo_depth); var bo_fill = row.is_total_row ? bo_t.TOTAL_FILL : bo_t.fill(bo_step); var bo_bar = bo_t.bar(bo_step); bo_style = (bo_fill ? "background:" + bo_fill + ";" : "") + (row.is_total_row ? "font-weight:bold;border-top:2px solid " + bo_t.ACCENT + ";" : ""); bo_lead = bo_bar ? "border-left:3px solid " + bo_bar + ";" : ""; } %}
+			<td style="{%= bo_style %}{%= bo_lead %}{% if (row.bold == 1) { %}font-weight: bold{% } %}">
 				<span> {{ row._index + 1 }} </span>
 			</td>
 

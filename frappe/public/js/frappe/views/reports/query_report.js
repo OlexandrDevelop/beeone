@@ -1174,6 +1174,9 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.tree_report = this.data.some((d) => "indent" in d);
 		// beeone: depth of the tree, the shades of the levels follow it
 		this.bo_tree_depth = this.tree_report ? frappe.beeone_report_tones.depth(this.data) : 1;
+		// beeone: the first data column (after a checkbox column) carries the bar of a group row
+		const bo_options = this.report_settings?.get_datatable_options?.({});
+		this.bo_lead_col = bo_options && bo_options.checkboxColumn ? 1 : 0;
 		this.bo_levels = this.bo_hierarchy_levels();
 	}
 
@@ -1681,6 +1684,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 					total: bo_total,
 					negative: !stack && tones.is_negative(value, column.fieldtype),
 					group: !bo_total && this.tree_report && level < (this.bo_tree_depth || 1) - 1,
+					lead: column.colIndex === (this.bo_lead_col || 0),
 				});
 			};
 

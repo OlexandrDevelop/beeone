@@ -28,7 +28,7 @@ QTY = "#,##0.000;-#,##0.000;;"
 THIN = Side(style="thin", color="999999")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 HEAD_FILL = PatternFill("solid", fgColor="E8E8E8")
-TOP_THICK = Side(style="medium", color="000000")
+TOP_THICK = Side(style="medium", color=tones.ACCENT.lstrip("#").upper())
 LEVEL_KINDS = ("group", "item")
 NUMBER_KINDS = {"money": 2, "qty": 3}
 SUMMARY_KINDS = ("total", "open", "close")
@@ -85,6 +85,13 @@ def _tone(row, depth):
 	return None
 
 
+def _bar(row, depth):
+	"""Colour `#rrggbb` of the bar of a group row in its first column (None for a detail or summary row)."""
+	if row.get("kind") in LEVEL_KINDS:
+		return tones.bar(tones.step(row.get("level", 0), depth))
+	return None
+
+
 def _negative(value, row=None, col=None):
 	"""A negative number; in a stacked cell, a negative part."""
 	if row is not None and col.get("kind") == "stack":
@@ -116,13 +123,16 @@ def to_xlsx(table):
 		fmt = row.get("format") or {}
 		summary = row.get("kind") in SUMMARY_KINDS
 		tone = _tone(row, depth)
+		bar = _bar(row, depth)
 		for i, col in enumerate(table["columns"], start=1):
 			value = _value(row, col)
 			c = ws.cell(r, i, value)
 			style = fmt.get(col["key"]) or {}
-			c.border = Border(left=THIN, right=THIN, top=TOP_THICK if summary else THIN, bottom=THIN)
+			left = Side(style="thick", color=_argb(bar)) if bar and i == 1 else THIN
+			c.border = Border(left=left, right=THIN, top=TOP_THICK if summary else THIN, bottom=THIN)
 			color = style.get("color")
-			color = _argb(color) if color else (_argb(tones.NEGATIVE) if _negative(value, row, col) else None)
+			negative = tones.NEGATIVE_TOTAL if summary else tones.NEGATIVE
+			color = _argb(color) if color else (_argb(negative) if _negative(value, row, col) else None)
 			c.font = Font(bold=bool(row.get("bold") or style.get("bold") or summary), color=color)
 			if style.get("background"):
 				c.fill = PatternFill("solid", fgColor=_argb(style["background"]))
@@ -160,7 +170,7 @@ def to_xlsx(table):
 	return out.getvalue()
 
 
-def _html_cell(row, col, style, depth=1):
+def _html_cell(row, col, style, depth=1, lead=False):
 	value = _value(row, col)
 	kind = col.get("kind")
 	if value is None:
@@ -176,13 +186,15 @@ def _html_cell(row, col, style, depth=1):
 	if style.get("color"):
 		css.append(f"color:{style['color']}")
 	elif _negative(value, row, col):
-		css.append(f"color:{tones.NEGATIVE}")
+		css.append(f"color:{tones.NEGATIVE_TOTAL if summary else tones.NEGATIVE}")
 	if style.get("background"):
 		css.append(f"background:{style['background']}")
 	elif tone := _tone(row, depth):
 		css.append(f"background:{tone}")
 	if summary:
-		css.append("border-top:2px solid #000")
+		css.append(f"border-top:2px solid {tones.ACCENT}")
+	if lead and (bar := _bar(row, depth)):
+		css.append(f"border-left:3px solid {bar}")
 	if kind in NUMBER_KINDS or kind == "stack":
 		css.append("text-align:right")
 	elif kind == "label":
@@ -218,7 +230,10 @@ def to_html(table):
 		fmt = row.get("format") or {}
 		body.append(
 			"<tr>"
-			+ "".join(_html_cell(row, col, fmt.get(col["key"]) or {}, depth) for col in table["columns"])
+			+ "".join(
+				_html_cell(row, col, fmt.get(col["key"]) or {}, depth, i == 0)
+				for i, col in enumerate(table["columns"])
+			)
 			+ "</tr>"
 		)
 	lines = "".join(f"<div>{escape_html(str(line))}</div>" for line in table.get("lines") or [])

@@ -283,7 +283,7 @@ class XLSXStyleBuilder:
 		return self
 
 	def apply_report_tones(self):
-		"""Fill rows by hierarchy level (darkest on top), style the total row, colour negatives red.
+		"""Fill rows by hierarchy level (strongest on top), bar group rows, style the total row, colour negatives red.
 
 		The formula and the palette are in `frappe.beeone.report_tones`; the cells get their own styles because
 		`make_xlsx` writes a cell without a format when it has no cell style.
@@ -308,20 +308,24 @@ class XLSXStyleBuilder:
 		field_index_get = self.field_index_map.get
 
 		@functools.cache
-		def tone_style(fill: str | None, total: bool, negative: bool) -> int:
+		def tone_style(fill: str | None, total: bool, negative: bool, bar: str | None = None) -> int:
 			style = {}
 			if fill:
 				style.update({"bg_color": fill, "pattern": 1})
 			if total:
-				style.update({"bold": True, "top": 2})
+				style.update({"bold": True, "top": 2, "top_color": tones.ACCENT})
+			if bar:
+				style.update({"left": 5, "left_color": bar})
 			if negative:
-				style["font_color"] = tones.NEGATIVE
+				style["font_color"] = tones.NEGATIVE_TOTAL if total else tones.NEGATIVE
 			return self.register_style(style)
 
 		for row_idx, row in row_map.items():
 			is_dict = isinstance(row, dict)
 			total = bool(has_total and row_idx == last_row_index) or bool(is_dict and row.get("is_total_row"))
-			fill = tones.TOTAL_FILL if total else tones.fill(tones.step(row.get("indent"), depth) if is_dict else 0)
+			step = 0 if total or not is_dict else tones.step(row.get("indent"), depth)
+			fill = tones.TOTAL_FILL if total else tones.fill(step)
+			bar = tones.bar(step)
 
 			negatives = set()
 			for idx, fieldname in numeric_cols:
@@ -338,7 +342,8 @@ class XLSXStyleBuilder:
 
 			for idx in col_indexes:
 				if fill or total or idx in negatives:
-					self.style_cell(row_idx, idx, tone_style(fill, total, idx in negatives))
+					lead = bar if idx == col_indexes[0] else None
+					self.style_cell(row_idx, idx, tone_style(fill, total, idx in negatives, lead))
 
 		return self
 
