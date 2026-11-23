@@ -193,3 +193,35 @@
 		margin-left: auto;
 	}
 }
+
+// The report's filter checkboxes in the accent blue, not the black --primary of the desk (user 2026-11-23).
+.bo-report-page .page-form input[type="checkbox"] {
+	border-color: var(--bo-border-strong, var(--gray-500));
+
+	&:hover {
+		border-color: var(--bo-accent, #2f54eb);
+	}
+
+	&:checked:not(:disabled) {
+		background-color: var(--bo-accent, #2f54eb);
+		background-image:
+			url("data:image/svg+xml, <svg viewBox='0 0 8 7' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M1 4.00001L2.66667 5.80001L7 1.20001' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+		background-size: 57%;
+	}
+
+	&:focus-visible {
+		box-shadow: 0 0 0 2px var(--bo-accent-soft, rgb(47 84 235 / 0.2));
+	}
+}
+
+// The column labels of a report darker than the list header: #1e293b on the header band (user 2026-11-23).
+body.bo-shell .bo-report .dt-header .dt-cell,
+body.bo-shell .bo-report .dt-header .dt-cell__content,
+body.bo-shell .bo-report .bo-band {
+	color: #1e293b;
+}
+html[data-theme="dark"] body.bo-shell .bo-report .dt-header .dt-cell,
+html[data-theme="dark"] body.bo-shell .bo-report .dt-header .dt-cell__content,
+html[data-theme="dark"] body.bo-shell .bo-report .bo-band {
+	color: #e2e8f0;
+}
