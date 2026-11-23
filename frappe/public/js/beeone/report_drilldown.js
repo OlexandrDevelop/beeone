@@ -33,6 +33,12 @@ frappe.provide("beeone.drill");
 		Object.entries((row && row._links) || {}).forEach(([doctype, value]) => {
 			if (value) out.push({ doctype, value: String(value), fieldname: null, label: __(doctype) });
 		});
+		// a row that stands for a document (a group «Документ-реєстратор»): `bo_document: {doctype, name, title}`; a double
+		// click on its group cell offers «Open: <the document>»
+		const d = row && row.bo_document;
+		if (d && d.doctype && d.name) {
+			out.push({ doctype: d.doctype, value: String(d.name), title: d.title, fieldname: d.field || "group", label: __(d.doctype) });
+		}
 		(report.columns || []).forEach((c) => {
 			const value = row && row[c.fieldname];
 			if (!value || typeof value !== "string") return;
@@ -214,7 +220,7 @@ frappe.provide("beeone.drill");
 				items.push({
 					kind: "open",
 					icon: "external-link",
-					label: `${__("Open")}: ${frappe.utils.get_link_title(l.doctype, l.value) || l.value}`,
+					label: `${__("Open")}: ${l.title || frappe.utils.get_link_title(l.doctype, l.value) || l.value}`,
 					hint: __(l.doctype),
 					run: () => frappe.set_route("Form", l.doctype, l.value),
 				});
