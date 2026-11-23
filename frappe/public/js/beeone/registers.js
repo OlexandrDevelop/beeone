@@ -28,6 +28,8 @@ beeone.registers.link = function (value, column, row) {
 beeone.registers.format = function (value, column, row) {
 	if (value === null || value === undefined || value === "") return "";
 	if (["Link", "Dynamic Link"].includes(column.fieldtype)) return beeone.registers.link(value, column, row);
+	// a Select value (debt, advance ...) by its translated name
+	if (column.fieldtype === "Select") return esc(__(String(value)));
 	if (!FORMATTED.includes(column.fieldtype)) return esc(value);
 	const df = { fieldtype: column.fieldtype, options: column.options, fieldname: column.fieldname };
 	return frappe.format(value, df, { inline: true }, row);
