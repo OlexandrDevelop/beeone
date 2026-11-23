@@ -94,8 +94,24 @@ def clean_settings(settings):
 		"groupings": list(dict.fromkeys(str(k) for k in (s.get("groupings") or []))),
 		"resource_layout": layout,
 		"hidden_resources": list(dict.fromkeys(str(k) for k in (s.get("hidden_resources") or []))),
+		"dimension_fields": clean_dimension_fields(s.get("dimension_fields")),
 		"format": [clean_rule(r) for r in (s.get("format") or [])],
 	}
+
+
+def clean_dimension_fields(fields):
+	"""The fields of the dimensions shown as columns (the tab «Колонки»): [{"dimension", "doctype", "field"}], no
+	repeats, in the order chosen."""
+	out, seen = [], set()
+	for f in fields or []:
+		if not isinstance(f, dict) or not (f.get("dimension") and f.get("doctype") and f.get("field")):
+			continue
+		key = (str(f["dimension"]), str(f["field"]))
+		if key in seen:
+			continue
+		seen.add(key)
+		out.append({"dimension": key[0], "doctype": str(f["doctype"]), "field": key[1]})
+	return out
 
 
 # ------------------------------------------------------------------ the structure of a report (tab «Структура»)
@@ -103,7 +119,7 @@ def _item(value):
 	return (
 		{"key": value, "label": None}
 		if isinstance(value, str)
-		else {"key": value["key"], "label": value.get("label")}
+		else {"key": value["key"], "label": value.get("label"), **({"doctype": value["doctype"]} if value.get("doctype") else {})}
 	)
 
 
@@ -323,7 +339,7 @@ def report_structure(report, filters=None):
 	return clean_structure(method(frappe._dict(filters or {})))
 
 
-def save_structure(report, groupings, resource_layout, user=None, hidden_resources=None):
+def save_structure(report, groupings, resource_layout, user=None, hidden_resources=None, dimension_fields=None):
 	"""The tab «Структура»: the levels, the resource layout and the resources turned off go to the default variant of the user (a new
 	variant «Main» when the user has none); the other settings of the variant stay. Empty `groupings` is the
 	default of the report."""
@@ -345,10 +361,115 @@ def save_structure(report, groupings, resource_layout, user=None, hidden_resourc
 		"groupings": groupings,
 		"resource_layout": resource_layout or DEFAULT_LAYOUT,
 		"hidden_resources": hidden,
+		"dimension_fields": check_dimension_fields(structure, dimension_fields),
 	}
 	return save_variant(
 		report, title, settings, user=user, is_default=True, is_shared=variant["is_shared"] if variant else 0
 	)
+
+
+def check_dimension_fields(structure, fields):
+	"""A choice to save: fields of known dimensions, of a DocType that is not a table, a single or a virtual one."""
+	keys = {d["key"] for d in structure["dimensions"]}
+	out = clean_dimension_fields(fields)
+	for f in out:
+		if f["dimension"] not in keys:
+			frappe.throw(_("The report has no such grouping"))
+		meta = frappe.get_meta(f["doctype"]) if frappe.db.exists("DocType", f["doctype"]) else None
+		if not meta or meta.istable or meta.issingle or meta.is_virtual:
+			frappe.throw(_("{0} is not a document type").format(f["doctype"]))
+		if f["field"] != "name" and not meta.get_field(f["field"]):
+			frappe.throw(_("{0} has no field {1}").format(_(f["doctype"]), f["field"]))
+	return out
+
+
+# ------------------------------------------------------------------ the fields of the dimensions as columns
+def row_dimension(row, key):
+	"""The value of a dimension in a report row: `bo_dims` (set by the grouping helpers) first, then the keys the
+	reports keep for the drill-down: `<key>`, `drill_<key>`, `drill.filters.<key>`. None when the row has none
+	(a group row above the level of the dimension)."""
+	if not isinstance(row, dict):
+		return None
+	dims = row.get("bo_dims")
+	if isinstance(dims, dict) and dims.get(key):
+		return dims[key]
+	for value in (
+		row.get(key),
+		row.get(f"drill_{key}"),
+		((row.get("drill") or {}).get("filters") or {}).get(key) if isinstance(row.get("drill"), dict) else None,
+	):
+		if isinstance(value, str) and value:
+			return value
+	return None
+
+
+def _column_of(meta, field, label):
+	if field == "name":
+		return {"fieldtype": "Data", "label": label or _("ID")}
+	df = meta.get_field(field)
+	column = {"fieldtype": df.fieldtype, "label": _(df.label or field), "options": df.options}
+	if df.fieldtype in ("Text Editor", "Small Text", "Text", "Long Text", "HTML Editor", "Code", "JSON"):
+		column["fieldtype"] = "Data"
+	return column
+
+
+def apply_dimension_fields(columns, data, structure, settings):
+	"""The fields of the dimensions the user chose (tab «Колонки») as columns after the first one, for the levels
+	that are turned on: the value of a row is the field of the record of that dimension in the row (empty on the
+	rows above its level). The records are read with the rights of the user; a field the user may not read is
+	not shown. The numbers of the report are not changed."""
+	s = clean_settings(settings)
+	if not s["dimension_fields"] or not structure:
+		return columns, data
+	clean = clean_structure(structure)
+	levels = set(resolve_groupings(clean, s))
+	labels = {d["key"]: d["label"] for d in clean["dimensions"]}
+	chosen = [f for f in s["dimension_fields"] if f["dimension"] in levels]
+	if not chosen:
+		return columns, data
+	from frappe.model import get_permitted_fields
+
+	added, values = [], {}
+	by_doctype = {}
+	for f in chosen:
+		by_doctype.setdefault((f["dimension"], f["doctype"]), []).append(f["field"])
+	for (dimension, doctype), fields in by_doctype.items():
+		if not frappe.db.exists("DocType", doctype) or not frappe.has_permission(doctype, "read"):
+			continue
+		meta = frappe.get_meta(doctype)
+		permitted = set(get_permitted_fields(doctype, ignore_virtual=True)) | {"name"}
+		fields = [f for f in fields if f in permitted and (f == "name" or meta.get_field(f))]
+		names = {row_dimension(r, dimension) for r in data} - {None}
+		records = {}
+		if names and fields:
+			for rec in frappe.get_list(
+				doctype, filters={"name": ["in", list(names)]}, fields=["name", *fields], limit_page_length=0
+			):
+				records[rec.name] = rec
+		for field in fields:
+			fieldname = f"bo_dim__{dimension}__{field}"
+			column = {**_column_of(meta, field, labels.get(dimension)), "fieldname": fieldname, "width": 140}
+			column["bo_dimension"] = dimension
+			added.append(column)
+			select = column["fieldtype"] == "Select"
+			values[fieldname] = (dimension, field, records, select)
+	if not added:
+		return columns, data
+	# a label used twice (Name of the item and Name of the counterparty) names its dimension
+	counts = {}
+	for c in added:
+		counts[c["label"]] = counts.get(c["label"], 0) + 1
+	for c in added:
+		if counts[c["label"]] > 1:
+			c["label"] = f"{_(labels.get(c['bo_dimension']) or '')}.{c['label']}"
+	for row in data:
+		if not isinstance(row, dict):
+			continue
+		for fieldname, (dimension, field, records, select) in values.items():
+			rec = records.get(row_dimension(row, dimension))
+			value = rec.get(field) if rec else None
+			row[fieldname] = _(value) if select and value else value
+	return [*columns[:1], *added, *columns[1:]], data
 
 
 def delete_variant(name, user=None):

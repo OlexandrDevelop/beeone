@@ -323,6 +323,28 @@ class TestReportStructure(IntegrationTestCase):
 		t = variants.apply_to_table(stock_table(), {"hidden_resources": ["opening"]}, STRUCTURE)
 		self.assertEqual([c["key"] for c in t["columns"]], ["name", "reserve"])
 
+	def test_fields_of_the_grouping_dimensions_as_columns(self):
+		"""Tab «Колонки» (user 2026-11-23): a field of a dimension that is a level is a column after the first one,
+		filled on the rows of that level and below; a dimension turned off gives no column."""
+		structure = {"dimensions": [{"key": "user", "label": "User", "doctype": "User"}, "month"], "default": ["user"]}
+		columns = [{"fieldname": "group", "label": "Group"}, {"fieldname": "amount", "label": "Amount"}]
+		rows = [
+			{"group": "All", "indent": 0},
+			{"group": "Admin", "indent": 1, "bo_dims": {"user": "Administrator"}},
+			{"group": "Guest", "indent": 1, "drill_user": "Guest"},
+		]
+		settings = {"dimension_fields": [{"dimension": "user", "doctype": "User", "field": "first_name"}]}
+		cols, data = variants.apply_dimension_fields(list(columns), [dict(r) for r in rows], structure, settings)
+		self.assertEqual([c["fieldname"] for c in cols], ["group", "bo_dim__user__first_name", "amount"])
+		values = [r.get("bo_dim__user__first_name") for r in data]
+		self.assertIsNone(values[0])  # above the level of the dimension
+		self.assertEqual(values[1], frappe.db.get_value("User", "Administrator", "first_name"))
+		self.assertEqual(values[2], frappe.db.get_value("User", "Guest", "first_name"))
+		# the dimension is not a level: no column
+		off = {**settings, "groupings": ["month"]}
+		cols, _data = variants.apply_dimension_fields(list(columns), [dict(r) for r in rows], structure, off)
+		self.assertEqual([c["fieldname"] for c in cols], ["group", "amount"])
+
 	def test_structure_is_saved_to_the_default_variant_of_the_user(self):
 		from unittest.mock import patch
 

@@ -102,6 +102,18 @@ def get_report_result(report, filters):
 
 
 @frappe.read_only()
+def _dimension_fields(report, columns, result):
+	from frappe.beeone import report_variants
+
+	if report.report_type != "Script Report" or report.is_standard != "Yes" or not result:
+		return columns, result
+	settings = report_variants.current_settings(report.name)
+	if not settings["dimension_fields"]:
+		return columns, result
+	structure = report_variants.report_structure(report.name)
+	return report_variants.apply_dimension_fields(columns, result, structure, settings)
+
+
 def generate_report_result(
 	report,
 	filters=None,
@@ -124,6 +136,8 @@ def generate_report_result(
 	# convert to list of dicts
 
 	result = normalize_result(result, columns)
+	# beeone: the fields of the grouping dimensions the user chose as columns (report settings, tab «Колонки»)
+	columns, result = _dimension_fields(report, columns, result)
 
 	if report.get("custom_columns"):
 		# keep saved columns still returned by this run, plus user-added

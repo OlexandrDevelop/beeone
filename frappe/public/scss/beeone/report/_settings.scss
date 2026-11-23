@@ -221,4 +221,74 @@
 	.is-on .bo-rs-pic i {
 		background: var(--bo-accent, #2f54eb);
 	}
+
+	// the tab «Колонки»: the chosen fields as chips, a card of fields for every grouping turned on
+	.bo-rs-columns {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		.bo-rs-hint {
+			margin: 0;
+		}
+	}
+
+	.bo-rs-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.bo-rs-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 4px 3px 10px;
+		border-radius: 14px;
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--bo-accent, #2f54eb);
+		background: var(--bo-accent-soft, rgb(47 84 235 / 0.12));
+
+		button {
+			display: inline-grid;
+			place-items: center;
+			width: 18px;
+			height: 18px;
+			padding: 0;
+			border: 0;
+			border-radius: 9px;
+			background: transparent;
+			color: inherit;
+			font-size: 14px;
+			line-height: 1;
+
+			&:hover {
+				background: color-mix(in srgb, var(--bo-accent, #2f54eb) 20%, transparent);
+			}
+		}
+	}
+
+	.bo-rs-search {
+		height: 30px;
+		margin: 8px 0;
+		font-size: 12px;
+	}
+
+	.bo-rs-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		max-height: 260px;
+		overflow-y: auto;
+	}
+
+	.bo-rs-field {
+		padding: 4px 6px;
+		border-radius: 6px;
+
+		&:hover {
+			background: var(--bo-surface-2, var(--subtle-fg));
+		}
+	}
 }

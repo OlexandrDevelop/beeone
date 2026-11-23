@@ -4,7 +4,10 @@
 // dragging), the resources turned on and off, and their layout: «one under another» (the default: quantity and cost
 // of a resource in one column, two lines a cell) or separate columns. The choice is kept in the default variant of
 // the user; the report is built with it on the screen, in Excel and in PDF.
-// «Колонки»: a field of a document the report links to, as a new column (once the menu item "Add Column").
+// «Колонки»: any field of a grouping dimension that is turned on (Item → SKU, Counterparty → tax id ...), as a column:
+// kept in the variant like the structure, filled on the server (frappe.desk.query_report, report_variants
+// .apply_dimension_fields) on the screen, in Excel and PDF. A report without a structure: a field of a document a
+// column links to, until the next run (once the menu item "Add Column").
 frappe.provide("frappe.beeone_report_structure");
 
 (function () {
@@ -41,25 +44,37 @@ frappe.provide("frappe.beeone_report_structure");
 			levels: S.levels(structure, info.groupings),
 			hidden: new Set(info.hidden_resources || []),
 			layout: info.resource_layout || "stacked",
+			// the fields of the dimensions as columns: [{dimension, doctype, field}]
+			fields: (info.dimension_fields || []).slice(),
 		};
 		let dialog;
 		const fields = [];
 		if (structure) {
 			fields.push(
 				{ fieldtype: "Tab Break", fieldname: "structure_tab", label: __("Structure") },
-				{ fieldtype: "HTML", fieldname: "structure" }
+				{ fieldtype: "HTML", fieldname: "structure" },
+				{ fieldtype: "Tab Break", fieldname: "columns_tab", label: __("Columns") },
+				{ fieldtype: "HTML", fieldname: "dimension_fields" }
+			);
+		} else {
+			// a report without a structure: a field of a document a column links to (until the next run)
+			fields.push(
+				{ fieldtype: "Tab Break", fieldname: "columns_tab", label: __("Columns") },
+				{ fieldtype: "HTML", fieldname: "columns_intro" },
+				...report.add_column_fields(() => dialog),
+				{ fieldtype: "Button", fieldname: "column_add", label: __("Add Column") }
 			);
 		}
-		fields.push(
-			{ fieldtype: "Tab Break", fieldname: "columns_tab", label: __("Columns") },
-			{ fieldtype: "HTML", fieldname: "columns_intro" },
-			...report.add_column_fields(() => dialog),
-			{ fieldtype: "Button", fieldname: "column_add", label: __("Add Column") }
-		);
 
-		const save = (groupings, resource_layout, hidden_resources) =>
+		const save = (groupings, resource_layout, hidden_resources, dimension_fields) =>
 			frappe
-				.xcall(`${API}.save_structure`, { report: name, groupings, resource_layout, hidden_resources })
+				.xcall(`${API}.save_structure`, {
+					report: name,
+					groupings,
+					resource_layout,
+					hidden_resources,
+					dimension_fields,
+				})
 				.then(() => {
 					dialog.hide();
 					report.refresh();
@@ -79,16 +94,22 @@ frappe.provide("frappe.beeone_report_structure");
 							frappe.msgprint(__("Choose at least one grouping"));
 							return;
 						}
-						save(groupings, state.layout, [...state.hidden]);
+						save(groupings, state.layout, [...state.hidden], state.fields);
 				  }
 				: null,
 			secondary_action_label: structure ? __("Reset") : null,
-			secondary_action: structure ? () => save([], "stacked", []) : null,
+			secondary_action: structure ? () => save([], "stacked", [], []) : null,
 		});
 		dialog.$wrapper.addClass("bo-report-settings");
 
-		if (structure) S.draw_structure(dialog.fields_dict.structure.$wrapper, structure, state);
-		S.setup_columns(dialog, report);
+		if (structure) {
+			const $cols = dialog.fields_dict.dimension_fields.$wrapper;
+			const redraw_columns = () => S.draw_dimension_fields($cols, report, structure, state);
+			S.draw_structure(dialog.fields_dict.structure.$wrapper, structure, state, redraw_columns);
+			redraw_columns();
+		} else {
+			S.setup_columns(dialog, report);
+		}
 		dialog.show();
 
 		// only our tabs (the layout puts an empty default tab first and hides a single tab)
@@ -99,6 +120,126 @@ frappe.provide("frappe.beeone_report_structure");
 			tab.tab_link.toggleClass("hide", !show).toggleClass("show", show);
 		});
 		dialog.select_tab && dialog.select_tab(structure ? "structure_tab" : "columns_tab");
+	};
+
+	// the DocType of a dimension: declared by the report, else the filter of the report with the same fieldname
+	// (warehouse → Business Unit), else the DocType the key names (item → Item); null for a period, a kind ...
+	S.dimension_doctype = function (report, dimension) {
+		if (dimension.doctype) return dimension.doctype;
+		const filter = (report.filters || []).find((f) => f.df && f.df.fieldname === dimension.key);
+		const df = filter && filter.df;
+		if (df && ["Link", "MultiSelectList", "Table MultiSelect"].includes(df.fieldtype) && df.options)
+			return df.options;
+		const doctype = frappe.unscrub(dimension.key);
+		return (frappe.boot.user.can_read || []).includes(doctype) ? doctype : null;
+	};
+
+	const SKIP_TYPES = [
+		"Password", "Attach", "Attach Image", "Signature", "Geolocation", "JSON", "Code", "HTML Editor",
+		"Text Editor", "Markdown Editor", "Button", "Image", "Barcode",
+	];
+
+	S.doctype_fields = function (doctype) {
+		return frappe.meta
+			.get_docfields(doctype)
+			.filter((df) => frappe.model.is_value_type(df) && !SKIP_TYPES.includes(df.fieldtype) && !df.hidden)
+			.map((df) => ({ field: df.fieldname, label: __(df.label || df.fieldname, null, doctype) }))
+			.sort((a, b) => a.label.localeCompare(b.label));
+	};
+
+	// the tab «Колонки»: the fields of every dimension that is a level now, ticks; the chosen ones on top as chips
+	S.draw_dimension_fields = function ($wrap, report, structure, state) {
+		const on = state.levels.filter((l) => l.on);
+		const dims = on
+			.map((l) => ({ ...l, doctype: S.dimension_doctype(report, l) }))
+			.filter((d) => d.doctype);
+		const off = state.levels.filter((l) => !l.on && S.dimension_doctype(report, l));
+		$wrap.data("bo-search", $wrap.data("bo-search") || {});
+		Promise.all(dims.map((d) => new Promise((ok) => frappe.model.with_doctype(d.doctype, ok)))).then(() => {
+			const search = $wrap.data("bo-search");
+			const chosen = (d, f) => state.fields.some((x) => x.dimension === d.key && x.field === f);
+			const label_of = (x) => {
+				const d = dims.find((d) => d.key === x.dimension);
+				const f = d && S.doctype_fields(d.doctype).find((f) => f.field === x.field);
+				return `${__(d ? d.label : x.dimension)}.${f ? f.label : x.field}`;
+			};
+			const visible = state.fields.filter((x) => dims.some((d) => d.key === x.dimension));
+			const chips = visible.length
+				? `<div class="bo-rs-chips">${visible
+						.map(
+							(x) => `<span class="bo-rs-chip">${esc(label_of(x))}<button data-drop="${esc(
+								x.dimension
+							)}" data-field="${esc(x.field)}" title="${esc(__("Remove"))}">×</button></span>`
+						)
+						.join("")}</div>`
+				: `<div class="bo-rs-hint">${esc(__("No columns chosen yet"))}</div>`;
+			const cards = dims
+				.map((d) => {
+					const q = (search[d.key] || "").toLowerCase();
+					const items = S.doctype_fields(d.doctype).filter((f) => !q || f.label.toLowerCase().includes(q));
+					return `<section class="bo-rs-card bo-rs-dim">
+						<div class="bo-rs-title">${esc(__(d.label))}</div>
+						<input type="search" class="form-control bo-rs-search" data-search="${esc(d.key)}"
+							placeholder="${esc(__("Find a field"))}" value="${esc(search[d.key] || "")}">
+						<div class="bo-rs-fields">${items
+							.map(
+								(f) => `<label class="bo-rs-check bo-rs-field">
+									<input type="checkbox" data-dim="${esc(d.key)}" data-doctype="${esc(
+									d.doctype
+								)}" data-field="${esc(f.field)}" ${chosen(d, f.field) ? "checked" : ""}>
+									<span>${esc(f.label)}</span>
+								</label>`
+							)
+							.join("") || `<div class="bo-rs-hint">${esc(__("Nothing found"))}</div>`}</div>
+					</section>`;
+				})
+				.join("");
+			$wrap.html(`<div class="bo-rs-columns">
+				<div class="bo-rs-hint">${esc(
+					__(
+						"Any field of a grouping turned on, as a column: it is filled on the rows of that level and below"
+					)
+				)}</div>
+				${chips}
+				<div class="bo-rs">${
+					cards || `<div class="bo-rs-hint">${esc(__("No grouping turned on has fields to add"))}</div>`
+				}</div>
+				${
+					off.length
+						? `<div class="bo-rs-hint">${esc(
+								__("The fields of {0} appear when the grouping is turned on in «Structure»", [
+									off.map((l) => __(l.label)).join(", "),
+								])
+						  )}</div>`
+						: ""
+				}
+			</div>`);
+		});
+		$wrap.off(".bo-cols");
+		$wrap.on("change.bo-cols", "input[data-field][data-dim]", function () {
+			const x = { dimension: this.dataset.dim, doctype: this.dataset.doctype, field: this.dataset.field };
+			state.fields = state.fields.filter((f) => !(f.dimension === x.dimension && f.field === x.field));
+			if (this.checked) state.fields.push(x);
+			S.draw_dimension_fields($wrap, report, structure, state);
+		});
+		$wrap.on("click.bo-cols", "[data-drop]", function (e) {
+			e.preventDefault();
+			const dim = this.dataset.drop;
+			const field = this.dataset.field;
+			state.fields = state.fields.filter((f) => !(f.dimension === dim && f.field === field));
+			S.draw_dimension_fields($wrap, report, structure, state);
+		});
+		$wrap.on("input.bo-cols", "input[data-search]", function () {
+			const key = this.dataset.search;
+			$wrap.data("bo-search")[key] = this.value;
+			const q = this.value.toLowerCase();
+			$(this)
+				.closest(".bo-rs-dim")
+				.find(".bo-rs-field")
+				.each(function () {
+					$(this).toggle(!q || $(this).text().toLowerCase().includes(q));
+				});
+		});
 	};
 
 	S.setup_columns = function (dialog, report) {
@@ -125,7 +266,7 @@ frappe.provide("frappe.beeone_report_structure");
 			);
 	};
 
-	S.draw_structure = function ($wrap, structure, state) {
+	S.draw_structure = function ($wrap, structure, state, on_change) {
 		const max = structure.max_levels;
 		const levels_card = () =>
 			structure.dimensions.length
@@ -188,6 +329,7 @@ frappe.provide("frappe.beeone_report_structure");
 
 		const draw = () => {
 			$wrap.html(`<div class="bo-rs">${levels_card()}${resources_card()}</div>`);
+			on_change && on_change();
 			const list = $wrap.find(".bo-rs-levels")[0];
 			if (window.Sortable && list) {
 				Sortable.create(list, {
