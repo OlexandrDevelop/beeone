@@ -1201,9 +1201,15 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 	// column: a row shows only the value of its own level, under the header "Level 1 / Level 2 / ...".
 	bo_hierarchy_levels() {
 		if (!this.tree_report || this.bo_tree_depth < 2) return null;
-		const levels = this.columns.filter((c) => !c.hidden).slice(0, this.bo_tree_depth);
+		// the fields of the dimensions the user added (tab «Колонки») are never a level
+		const levels = this.columns.filter((c) => !c.hidden && !c.bo_dimension).slice(0, this.bo_tree_depth);
 		const numeric = frappe.beeone_report_tones.NUMERIC;
 		if (levels.length < 2 || levels.some((c) => numeric.includes(c.fieldtype) || c.bo_stack)) return null;
+		// a column per level only when the first one holds the upper level alone; a report that writes every level
+		// to one group column (its deeper rows have the first column filled) keeps its columns as they are
+		const first = levels[0].fieldname;
+		const empty = (v) => v === null || v === undefined || v === "";
+		if (this.data.some((row) => cint(row.indent) > 0 && !empty(row[first]))) return null;
 		return levels;
 	}
 

@@ -449,6 +449,8 @@ def apply_dimension_fields(columns, data, structure, settings):
 		for field in fields:
 			fieldname = f"bo_dim__{dimension}__{field}"
 			column = {**_column_of(meta, field, labels.get(dimension)), "fieldname": fieldname, "width": 140}
+			if column["fieldtype"] not in ("Int", "Float", "Currency", "Percent"):
+				column["align"] = "left"
 			column["bo_dimension"] = dimension
 			added.append(column)
 			select = column["fieldtype"] == "Select"
