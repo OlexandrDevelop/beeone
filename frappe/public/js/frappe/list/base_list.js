@@ -1136,7 +1136,9 @@ class FilterArea {
 	remove(fieldname) {
 		const fields_dict = this.list_view.page.fields_dict;
 
-		if (fieldname in fields_dict) {
+		// beeone: an empty field is not set again: its change handler (a list that calls remove() from it, as the
+		// quick filters of the documents do) would fire on null -> "" and call remove() again, without end
+		if (fieldname in fields_dict && !is_null(fields_dict[fieldname].get_value())) {
 			fields_dict[fieldname].set_value("");
 		}
 
