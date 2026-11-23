@@ -6,14 +6,16 @@
 A variant is a named set of settings of one report, kept per user (`Report Variant`):
 
 	{"filters": {...}, "group_by": "", "hidden_columns": [key, ...],
-	 "groupings": [dimension key, ...], "resource_layout": "columns" | "stacked",
+	 "groupings": [dimension key, ...], "resource_layout": "columns" | "stacked", "hidden_resources": [key, ...],
 	 "format": [{"column": key, "op": ">", "value": 100, "kinds": ["item", "group", "total"],
 	             "style": {"bold": true, "color": "#b00020", "background": "#fde8e8"}}]}
 
 `filters` and `group_by` are given back to the report as they are; the report decides what they mean.
 `groupings` and `resource_layout` are the tab «Структура» of the report settings: the levels of the rows, in order,
 chosen from the dimensions the report declares (empty = the default of the report), and the resources as separate
-columns or «one under another» (the parts of a resource, e.g. quantity and cost, in one column, two lines a cell).
+columns or «one under another» (the parts of a resource, e.g. quantity and cost, in one column, two lines a cell;
+the default of every report, user 2026-11-23); `hidden_resources` are the resources the user turned off: the columns
+of their parts are not shown.
 
 The structure a report declares (`clean_structure`):
 
@@ -34,6 +36,7 @@ DOCTYPE = "Report Variant"
 OPS = ("=", "!=", ">", ">=", "<", "<=", "between", "in", "not in", "is set", "is not set")
 KINDS = ("group", "item", "total")
 LAYOUTS = ("columns", "stacked")
+DEFAULT_LAYOUT = "stacked"
 COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
@@ -81,7 +84,7 @@ def clean_rule(rule):
 
 def clean_settings(settings):
 	s = _parse(settings)
-	layout = s.get("resource_layout") or "columns"
+	layout = s.get("resource_layout") or DEFAULT_LAYOUT
 	if layout not in LAYOUTS:
 		frappe.throw(_("Unknown resource layout {0}").format(layout))
 	return {
@@ -90,6 +93,7 @@ def clean_settings(settings):
 		"hidden_columns": [str(k) for k in (s.get("hidden_columns") or [])],
 		"groupings": list(dict.fromkeys(str(k) for k in (s.get("groupings") or []))),
 		"resource_layout": layout,
+		"hidden_resources": list(dict.fromkeys(str(k) for k in (s.get("hidden_resources") or []))),
 		"format": [clean_rule(r) for r in (s.get("format") or [])],
 	}
 
@@ -197,6 +201,24 @@ def stack_columns(columns, data, structure):
 	return out, data
 
 
+def hidden_parts(structure, settings):
+	"""The column keys of the parts of the resources the user turned off."""
+	hidden = set(clean_settings(settings)["hidden_resources"])
+	return {p["key"] for r in clean_structure(structure)["resources"] if r["key"] in hidden for p in r["parts"]}
+
+
+def apply_structure(columns, data, structure, settings):
+	"""The resources of a script report as the user chose on the tab «Структура»: the resources turned off are
+	dropped (their columns; the values stay in the rows), the others stand «one under another» or in columns."""
+	s = clean_settings(settings)
+	drop = hidden_parts(structure, s)
+	if drop:
+		columns = [c for c in columns if not (isinstance(c, dict) and c.get("fieldname") in drop)]
+	if s["resource_layout"] == "stacked" and clean_structure(structure)["resources"]:
+		columns, data = stack_columns(columns, data, structure)
+	return columns, data
+
+
 def stack_text(column, value):
 	"""A stacked cell (or, with no value, the header) of a file as lines of text: as in 1C, a zero is empty."""
 	parts = column["bo_stack"]
@@ -301,21 +323,28 @@ def report_structure(report, filters=None):
 	return clean_structure(method(frappe._dict(filters or {})))
 
 
-def save_structure(report, groupings, resource_layout, user=None):
-	"""The tab «Структура»: the levels and the resource layout go to the default variant of the user (a new
+def save_structure(report, groupings, resource_layout, user=None, hidden_resources=None):
+	"""The tab «Структура»: the levels, the resource layout and the resources turned off go to the default variant of the user (a new
 	variant «Main» when the user has none); the other settings of the variant stay. Empty `groupings` is the
 	default of the report."""
 	structure = report_structure(report)
 	if structure is None:
 		frappe.throw(_("The report has no structure settings"))
 	groupings = check_groupings(structure, groupings) if groupings else []
+	resources = {r["key"] for r in structure["resources"]}
+	hidden = [str(k) for k in hidden_resources or []]
+	if any(k not in resources for k in hidden):
+		frappe.throw(_("The report has no such resource"))
+	if resources and set(hidden) >= resources:
+		frappe.throw(_("Leave at least one resource"))
 	user = user or frappe.session.user
 	variant = get_variant(report, user=user)
 	title = variant["title"] if variant and variant["user"] == user else "Main"
 	settings = {
 		**clean_settings(variant["settings"] if variant else {}),
 		"groupings": groupings,
-		"resource_layout": resource_layout,
+		"resource_layout": resource_layout or DEFAULT_LAYOUT,
+		"hidden_resources": hidden,
 	}
 	return save_variant(
 		report, title, settings, user=user, is_default=True, is_shared=variant["is_shared"] if variant else 0
@@ -457,7 +486,7 @@ def apply_to_table(table, settings, structure=None):
 	`report_engine.compose` by the report before the table is built."""
 	s = clean_settings(settings)
 	apply_format(table, s["format"])
-	apply_hidden(table, s["hidden_columns"])
+	apply_hidden(table, [*s["hidden_columns"], *(hidden_parts(structure, s) if structure else ())])
 	if structure and s["resource_layout"] == "stacked":
 		apply_stacked(table, structure)
 	return table

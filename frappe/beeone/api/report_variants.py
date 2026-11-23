@@ -35,13 +35,19 @@ def get_structure(report):
 		"structure": structure,
 		"groupings": variants.resolve_groupings(structure, settings),
 		"resource_layout": settings["resource_layout"],
+		"hidden_resources": settings["hidden_resources"],
 	}
 
 
 @frappe.whitelist()
-def save_structure(report, groupings=None, resource_layout="columns"):
+def save_structure(report, groupings=None, resource_layout=None, hidden_resources=None):
 	if not frappe.get_cached_doc("Report", report).is_permitted():
 		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
 	return variants.save_structure(
-		report, frappe.parse_json(groupings) if isinstance(groupings, str) else groupings, resource_layout
+		report,
+		frappe.parse_json(groupings) if isinstance(groupings, str) else groupings,
+		resource_layout,
+		hidden_resources=frappe.parse_json(hidden_resources)
+		if isinstance(hidden_resources, str)
+		else hidden_resources,
 	)

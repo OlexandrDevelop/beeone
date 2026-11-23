@@ -180,7 +180,10 @@ class TestReportStructure(IntegrationTestCase):
 		)
 		self.assertEqual((s["groupings"], s["resource_layout"]), (["item", "warehouse"], "stacked"))
 		old = variants.clean_settings({"group_by": "month"})  # a variant saved before T-2533
-		self.assertEqual((old["groupings"], old["resource_layout"]), ([], "columns"))
+		# «one under another» is the default of every report (user 2026-11-23)
+		self.assertEqual(
+			(old["groupings"], old["resource_layout"], old["hidden_resources"]), ([], "stacked", [])
+		)
 		with self.assertRaises(frappe.ValidationError):
 			variants.clean_settings({"resource_layout": "diagonal"})
 
@@ -294,6 +297,32 @@ class TestReportStructure(IntegrationTestCase):
 			[c["key"] for c in same["columns"]], ["name", "opening_qty", "opening_cost", "reserve"]
 		)
 
+	def test_resources_turned_off_drop_their_columns(self):
+		columns = [
+			{"fieldname": "group", "label": "Group", "fieldtype": "Data"},
+			{"fieldname": "opening_qty", "label": "Opening", "fieldtype": "Float"},
+			{"fieldname": "opening_cost", "label": "Cost", "fieldtype": "Currency"},
+			{"fieldname": "receipt_qty", "label": "Receipt", "fieldtype": "Float"},
+			{"fieldname": "receipt_cost", "label": "Receipt cost", "fieldtype": "Currency"},
+		]
+		rows = [{"group": "A", "opening_qty": 1, "opening_cost": 10, "receipt_qty": 2, "receipt_cost": 20}]
+		# the default: every resource «one under another»
+		cols, data = variants.apply_structure(list(columns), [dict(r) for r in rows], STRUCTURE, {})
+		self.assertEqual([c["fieldname"] for c in cols], ["group", "opening", "receipt"])
+		self.assertEqual(data[0]["receipt"], [2, 20])
+		# «Receipt» turned off, separate columns
+		cols, data = variants.apply_structure(
+			list(columns),
+			[dict(r) for r in rows],
+			STRUCTURE,
+			{"resource_layout": "columns", "hidden_resources": ["receipt"]},
+		)
+		self.assertEqual([c["fieldname"] for c in cols], ["group", "opening_qty", "opening_cost"])
+		self.assertEqual(data[0]["receipt_qty"], 2)  # the values stay in the rows
+		# the table model (Excel, PDF) drops them too
+		t = variants.apply_to_table(stock_table(), {"hidden_resources": ["opening"]}, STRUCTURE)
+		self.assertEqual([c["key"] for c in t["columns"]], ["name", "reserve"])
+
 	def test_structure_is_saved_to_the_default_variant_of_the_user(self):
 		from unittest.mock import patch
 
@@ -322,7 +351,16 @@ class TestReportStructure(IntegrationTestCase):
 			)
 			with self.assertRaises(frappe.ValidationError):
 				variants.save_structure(REPORT, ["nope"], "columns")
-			variants.save_structure(REPORT, [], "columns")  # «Скинути»
+			with self.assertRaises(frappe.ValidationError):
+				variants.save_structure(REPORT, [], "stacked", hidden_resources=["nope"])
+			with self.assertRaises(frappe.ValidationError):  # at least one resource stays
+				variants.save_structure(REPORT, [], "stacked", hidden_resources=["opening", "receipt"])
+			variants.save_structure(REPORT, ["item"], "columns", hidden_resources=["receipt"])
+			s = variants.current_settings(REPORT)
+			self.assertEqual((s["resource_layout"], s["hidden_resources"]), ("columns", ["receipt"]))
+			variants.save_structure(REPORT, [], None)  # «Скинути»
+			s = variants.current_settings(REPORT)
+			self.assertEqual((s["resource_layout"], s["hidden_resources"]), ("stacked", []))
 			self.assertEqual(
 				variants.resolve_groupings(STRUCTURE, variants.current_settings(REPORT)),
 				["warehouse", "item", "variant"],

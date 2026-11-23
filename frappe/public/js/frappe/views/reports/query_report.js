@@ -107,6 +107,28 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		);
 	}
 
+	// beeone: one menu, «Дії» (user 2026-11-23). Settings (the tabs «Структура» and «Колонки») come first, then the
+	// items of the former menu "..."; that menu keeps only the copies for a narrow screen and is hidden on a wide one.
+	set_menu_items() {
+		this.set_default_secondary_action();
+		this.set_actions();
+	}
+
+	set_actions() {
+		const actions = __("Actions");
+		if (frappe.beeone_report_structure) {
+			this.page.add_inner_button(
+				__("Settings..."),
+				() => frappe.beeone_report_structure.open(this),
+				actions
+			);
+		}
+		(this.menu_items || []).forEach((item) => {
+			if (item.class === "visible-xs" || (item.condition && item.condition() === false)) return;
+			this.page.add_inner_button(item.label, item.action, actions);
+		});
+	}
+
 	get_no_result_message() {
 		return frappe.ui.empty_state({ icon: "sheet", title: __("Nothing to show") })[0].outerHTML;
 	}
@@ -184,8 +206,6 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			() => this.refresh_report(route_options),
 			() => this.add_chart_buttons_to_toolbar(true),
 			() => this.add_card_button_to_toolbar(true),
-			// beeone: Actions → Settings (the tab «Структура») of a report that declares its structure
-			() => frappe.beeone_report_structure && frappe.beeone_report_structure.setup(this),
 		]);
 	}
 
@@ -482,6 +502,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			() => (this._no_refresh = true),
 			() => this.set_route_filters(route_options),
 			() => this.page.clear_custom_actions(),
+			// beeone: the items of «Дії» first, the buttons of the report (onload) after them
+			() => this.set_actions(),
 			() => this.report_settings.onload && this.report_settings.onload(this),
 			() => (this._no_refresh = false),
 			() => this.refresh(),
@@ -2280,136 +2302,6 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				standard: true,
 			},
 			{
-				label: __("Add Column"),
-				action: () => {
-					let d = new frappe.ui.Dialog({
-						title: __("Add Column"),
-						fields: [
-							{
-								fieldtype: "Select",
-								fieldname: "doctype",
-								label: __("From Document Type"),
-								reqd: 1,
-								options: this.linked_doctypes?.map((df) => ({
-									// beeone: translated names, the label of the report column of the link
-									label:
-										__(df.doctype) +
-										" (" +
-										__(
-											(this.columns.find((c) => c.fieldname === df.fieldname) || {})
-												.label || frappe.unscrub(df.fieldname)
-										) +
-										")",
-									value: JSON.stringify({
-										doctype: df.doctype,
-										fieldname: df.fieldname,
-									}),
-								})),
-								change: () => {
-									const { doctype, fieldname } = JSON.parse(
-										d.get_value("doctype")
-									);
-									frappe.model.with_doctype(doctype, () => {
-										let options = frappe.meta
-											.get_docfields(doctype)
-											.filter(frappe.model.is_value_type)
-											.map((df) => ({
-												label: df.label,
-												value: df.fieldname,
-											}));
-
-										options = options.sort(function (a, b) {
-											if (a.label < b.label) {
-												return -1;
-											}
-											if (a.label > b.label) {
-												return 1;
-											}
-											return 0;
-										});
-
-										d.set_df_property("field", "options", options);
-										d.get_field("field")?.set_data(options);
-										d.set_value("field", "");
-									});
-								},
-							},
-							{
-								fieldtype: "Autocomplete",
-								label: __("Field"),
-								fieldname: "field",
-								reqd: 1,
-								options: [],
-							},
-							{
-								fieldtype: "Autocomplete",
-								label: __("Insert After"),
-								fieldname: "insert_after",
-								options: this.columns.map((col) => ({
-									label: col.name || col.label,
-									value: col.fieldname,
-								})),
-							},
-						],
-						primary_action_label: __("Add"),
-						primary_action: (values) => {
-							const custom_columns = [];
-							const { doctype, fieldname } = JSON.parse(values.doctype);
-							Object.assign(values, { doctype, fieldname });
-							let df = frappe.meta.get_docfield(values.doctype, values.field);
-							const insert_after_index = this.columns.findIndex(
-								(column) => column.fieldname === values.insert_after
-							);
-
-							custom_columns.push({
-								fieldname: this.columns
-									.map((column) => column.fieldname)
-									.includes(df.fieldname)
-									? df.fieldname + "-" + frappe.scrub(values.doctype)
-									: df.fieldname,
-								fieldtype: df.fieldtype,
-								label: df.label,
-								insert_after_index: insert_after_index,
-								link_field: {
-									fieldname: values.fieldname,
-									names: this.doctype_field_map[values.doctype][values.fieldname]
-										.names,
-								},
-								doctype: values.doctype,
-								options: df.options,
-								width: 100,
-							});
-							this.custom_columns = this.custom_columns.concat(custom_columns);
-							frappe.call({
-								method: "frappe.desk.query_report.get_data_for_custom_field",
-								args: {
-									field: values.field,
-									doctype: values.doctype,
-									names: Array.from(
-										this.doctype_field_map[values.doctype][values.fieldname]
-											.names
-									),
-								},
-								callback: (r) => {
-									const custom_data = r.message;
-									this.add_custom_column(
-										custom_columns,
-										custom_data,
-										values,
-										insert_after_index
-									);
-									d.hide();
-								},
-							});
-							this.set_menu_items();
-						},
-					});
-
-					d.show();
-				},
-				standard: true,
-			},
-			{
 				label: __("User Permissions"),
 				action: () =>
 					frappe.set_route("List", "User Permission", {
@@ -2461,6 +2353,105 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		return items;
+	}
+
+	// beeone: the tab «Колонки» of the report settings (Actions → Settings), once the menu item "Add Column": a field
+	// of a document the report links to, as a new column. `get_dialog()` gives the dialog the fields are in.
+	add_column_fields(get_dialog) {
+		return [
+			{
+				fieldtype: "Select",
+				fieldname: "column_doctype",
+				label: __("From Document Type"),
+				options: this.linked_doctypes?.map((df) => ({
+					// beeone: translated names, the label of the report column of the link
+					label:
+						__(df.doctype) +
+						" (" +
+						__(
+							((this.columns || []).find((c) => c.fieldname === df.fieldname) || {}).label ||
+								frappe.unscrub(df.fieldname)
+						) +
+						")",
+					value: JSON.stringify({ doctype: df.doctype, fieldname: df.fieldname }),
+				})),
+				change: () => {
+					const d = get_dialog();
+					const value = d.get_value("column_doctype");
+					if (!value) return;
+					const { doctype } = JSON.parse(value);
+					frappe.model.with_doctype(doctype, () => {
+						const options = frappe.meta
+							.get_docfields(doctype)
+							.filter(frappe.model.is_value_type)
+							.map((df) => ({ label: __(df.label), value: df.fieldname }))
+							.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+						d.set_df_property("column_field", "options", options);
+						d.get_field("column_field")?.set_data(options);
+						d.set_value("column_field", "");
+					});
+				},
+			},
+			{
+				fieldtype: "Autocomplete",
+				label: __("Field"),
+				fieldname: "column_field",
+				options: [],
+			},
+			{
+				fieldtype: "Autocomplete",
+				label: __("Insert After"),
+				fieldname: "column_insert_after",
+				options: (this.columns || []).map((col) => ({
+					label: col.name || col.label,
+					value: col.fieldname,
+				})),
+			},
+		];
+	}
+
+	// the column chosen on the tab «Колонки»; a promise, resolved when the column is in the table
+	add_column(values) {
+		if (!values.column_doctype || !values.column_field) {
+			frappe.msgprint(__("Choose the document type and the field of the new column"));
+			return Promise.reject();
+		}
+		const { doctype, fieldname } = JSON.parse(values.column_doctype);
+		const field = values.column_field;
+		const df = frappe.meta.get_docfield(doctype, field);
+		const insert_after_index = this.columns.findIndex(
+			(column) => column.fieldname === values.column_insert_after
+		);
+		const names = this.doctype_field_map[doctype][fieldname].names;
+		const custom_columns = [
+			{
+				fieldname: this.columns.map((column) => column.fieldname).includes(df.fieldname)
+					? df.fieldname + "-" + frappe.scrub(doctype)
+					: df.fieldname,
+				fieldtype: df.fieldtype,
+				label: df.label,
+				insert_after_index: insert_after_index,
+				link_field: { fieldname, names },
+				doctype,
+				options: df.options,
+				width: 100,
+			},
+		];
+		this.custom_columns = this.custom_columns.concat(custom_columns);
+		return frappe
+			.xcall("frappe.desk.query_report.get_data_for_custom_field", {
+				field,
+				doctype,
+				names: Array.from(names),
+			})
+			.then((custom_data) =>
+				this.add_custom_column(
+					custom_columns,
+					custom_data,
+					{ doctype, fieldname, field },
+					insert_after_index
+				)
+			);
 	}
 
 	add_portrait_warning(dialog) {

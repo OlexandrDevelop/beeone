@@ -1,0 +1,224 @@
+// Report settings (Actions → Settings, report_structure.js): the tabs «Структура» and «Колонки» (user 2026-11-23).
+// Two cards side by side on a wide dialog: the groupings of the rows; the resources and their layout.
+.bo-report-settings {
+	.bo-rs {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 16px;
+		align-items: start;
+	}
+
+	.bo-rs-card {
+		padding: 14px 16px 16px;
+		border: 1px solid var(--bo-border, var(--border-color));
+		border-radius: 10px;
+		background: var(--bo-surface, var(--card-bg));
+	}
+
+	.bo-rs-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--bo-text, var(--text-color));
+	}
+
+	.bo-rs-gap {
+		margin-top: 18px;
+	}
+
+	.bo-rs-hint {
+		margin: 2px 0 10px;
+		font-size: 12px;
+		color: var(--bo-text-3, var(--text-muted));
+	}
+
+	.bo-rs-list {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.bo-rs-item {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 34px;
+		padding: 4px 8px;
+		border: 1px solid var(--bo-border, var(--border-color));
+		border-radius: 8px;
+		background: var(--bo-surface-2, var(--subtle-fg));
+		transition:
+			background 0.12s,
+			border-color 0.12s;
+
+		&.is-on {
+			border-color: color-mix(in srgb, var(--bo-accent, #2f54eb) 35%, transparent);
+			background: color-mix(in srgb, var(--bo-accent, #2f54eb) 6%, var(--bo-surface, #fff));
+		}
+
+		&.sortable-ghost {
+			opacity: 0.4;
+		}
+	}
+
+	.bo-rs-drag {
+		display: inline-flex;
+		color: var(--bo-text-3, var(--text-muted));
+		cursor: grab;
+	}
+
+	.bo-rs-check {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 8px;
+		margin: 0;
+		font-size: 13px;
+		color: var(--bo-text, var(--text-color));
+		cursor: pointer;
+
+		input[type="checkbox"] {
+			flex: none;
+			margin: 0 !important;
+			border-color: var(--bo-border-strong, var(--gray-500));
+		}
+
+		input[type="checkbox"]:checked {
+			background-color: var(--bo-accent, #2f54eb);
+			background-image: url("data:image/svg+xml, <svg viewBox='0 0 8 7' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M1 4.00001L2.66667 5.80001L7 1.20001' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+			background-size: 57%;
+		}
+	}
+
+	// the place of a level: 1 the outer one
+	.bo-rs-order {
+		min-width: 20px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 10px;
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 20px;
+		text-align: center;
+		color: var(--bo-accent, #2f54eb);
+		background: var(--bo-accent-soft, rgb(47 84 235 / 0.12));
+
+		&:empty {
+			visibility: hidden;
+		}
+	}
+
+	.bo-rs-move {
+		display: inline-grid;
+		place-items: center;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: var(--bo-text-2, var(--text-muted));
+
+		&:hover:not(:disabled) {
+			background: var(--bo-accent-soft, rgb(47 84 235 / 0.12));
+			color: var(--bo-accent, #2f54eb);
+		}
+
+		&:disabled {
+			opacity: 0.3;
+		}
+	}
+
+	.bo-rs-parts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		justify-content: flex-end;
+	}
+
+	.bo-rs-part {
+		padding: 1px 8px;
+		border-radius: 10px;
+		font-size: 11px;
+		color: var(--bo-text-2, var(--text-muted));
+		background: var(--bo-surface, #fff);
+		border: 1px solid var(--bo-border, var(--border-color));
+	}
+
+	.bo-rs-layouts {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 6px;
+		margin-top: 8px;
+	}
+
+	.bo-rs-layout {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		border: 1.5px solid var(--bo-border, var(--border-color));
+		border-radius: 10px;
+		background: var(--bo-surface, #fff);
+		text-align: left;
+		color: var(--bo-text, var(--text-color));
+		transition:
+			border-color 0.12s,
+			background 0.12s;
+
+		&:hover {
+			border-color: color-mix(in srgb, var(--bo-accent, #2f54eb) 50%, transparent);
+		}
+
+		&.is-on {
+			border-color: var(--bo-accent, #2f54eb);
+			background: color-mix(in srgb, var(--bo-accent, #2f54eb) 7%, var(--bo-surface, #fff));
+			box-shadow: 0 0 0 3px var(--bo-accent-soft, rgb(47 84 235 / 0.12));
+		}
+
+		b {
+			display: block;
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		small {
+			display: block;
+			margin-top: 1px;
+			font-size: 11px;
+			line-height: 14px;
+			color: var(--bo-text-3, var(--text-muted));
+		}
+	}
+
+	// a small picture of the layout: two bars one under another, or side by side
+	.bo-rs-pic {
+		display: grid;
+		flex: none;
+		gap: 3px;
+		width: 30px;
+		height: 30px;
+		padding: 5px;
+		border-radius: 6px;
+		background: var(--bo-surface-2, var(--subtle-fg));
+
+		i {
+			border-radius: 2px;
+			background: color-mix(in srgb, var(--bo-accent, #2f54eb) 45%, transparent);
+		}
+	}
+
+	.bo-rs-pic-stacked {
+		grid-template-rows: 1fr 1fr;
+	}
+
+	.bo-rs-pic-columns {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.is-on .bo-rs-pic i {
+		background: var(--bo-accent, #2f54eb);
+	}
+}
