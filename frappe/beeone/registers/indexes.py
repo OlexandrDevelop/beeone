@@ -9,7 +9,10 @@ The reports read the movements in three ways, and each gets an index:
   information register (the latest row of a key on a date) filters by dimensions and `date <=`:
   index (dimensions..., date);
 - a report of one period without dimension filters (turnovers of a month): index (date);
-- the card of a document, the check and the delete of its movements: index (recorder type, recorder).
+- the card of a document, the check and the delete of its movements: index (recorder type, recorder);
+- the state of one document a movement refers to (the shipped and paid part of a customer order, the settlements of
+  an invoice): a dimension that links to a submittable DocType and is not the first dimension gets index
+  (dimension, date) — the index of the dimensions serves only a filter that starts with the first dimensions.
 
 The partitions are by the year of the date field. A query with a date range reads only the partitions of its
 years. They are an opt-in step for big registers (`bench beeone partition-register`): the table is rebuilt.
@@ -36,7 +39,26 @@ def index_plan(reg) -> dict[str, list[str]]:
 	recorder = [f for f in (reg.registrar_type_field, reg.registrar_field) if f]
 	if recorder:
 		plan["recorder"] = recorder
+	all_dims = totals.dimensions(reg)
+	for field in document_dimensions(reg):
+		if all_dims and field == all_dims[0]:
+			continue
+		plan[f"doc_{field}"] = [field, reg.date_field] if reg.date_field else [field]
 	return plan
+
+
+def document_dimensions(reg) -> list[str]:
+	"""The dimensions that link to a submittable DocType (a customer order, a sales document): a register is often
+	read for one such document alone."""
+	meta = frappe.get_meta(reg.register_doctype)
+	out = []
+	for field in totals.dimensions(reg):
+		df = meta.get_field(field)
+		if not (df and df.fieldtype == "Link" and df.options):
+			continue
+		if frappe.db.exists("DocType", df.options) and frappe.get_meta(df.options).is_submittable:
+			out.append(field)
+	return out
 
 
 def ensure_register_indexes(reg):
@@ -45,6 +67,9 @@ def ensure_register_indexes(reg):
 	if not db.table_exists(table):
 		return
 	for tag, columns in index_plan(reg).items():
+		# an index of a document dimension is not doubled when one already starts with that dimension
+		if tag.startswith("doc_") and db.dialect().index_on(table, columns[:1]):
+			continue
 		db.ensure_index(table, tag, columns)
 
 
