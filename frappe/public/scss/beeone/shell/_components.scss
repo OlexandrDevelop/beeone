@@ -1132,6 +1132,11 @@ tr:focus-within .bo-row-actions {
 }
 
 /* ---------- tooltip ---------- */
+/* no tooltips in the application (user 2026-11-23): the tip of the shell is not shown */
+[data-bo-tip]::after,
+[data-bo-tip]::before {
+	display: none !important;
+}
 [data-bo-tip] {
 	position: relative;
 }
