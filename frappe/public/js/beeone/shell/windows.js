@@ -185,6 +185,15 @@ function clamp(win) {
 	win.y = Math.max(0, Math.min(win.y, Math.max(0, h - 44)));
 }
 
+// the desk changed its size: a maximized window takes the new size, a normal one shrinks to the desk and comes back into it
+export function relayout() {
+	wins.map.forEach((w) => {
+		clamp(w);
+		fit(w);
+		place(w);
+	});
+}
+
 // a newly opened window lies wholly inside the desk, so its buttons are never cut off (clamp lets a dragged one hang out)
 function fit(win) {
 	const { w, h } = desk_size();
@@ -869,12 +878,20 @@ export function init_pointer() {
 		if (win) refresh_title(win);
 	});
 	window.addEventListener("resize", () => {
-		wins.map.forEach((w) => {
-			clamp(w);
-			place(w);
-		});
+		relayout();
 		document.body.classList.toggle("bo-compact", window.innerWidth < 900 || window.innerHeight < 560);
 	});
+	// the desk also changes without a resize of the browser window (the sections bar folded or unfolded): one observer on the
+	// desk (not on every window, see tell_size) lays the windows out again
+	if (window.ResizeObserver) {
+		let last = desk_size();
+		new ResizeObserver(() => {
+			const now = desk_size();
+			if (now.w === last.w && now.h === last.h) return;
+			last = now;
+			relayout();
+		}).observe(desk_el());
+	}
 }
 
 function mark_dirty(e) {
