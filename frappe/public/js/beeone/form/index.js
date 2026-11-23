@@ -305,7 +305,9 @@ frappe.provide("beeone.form");
 		$(frm.layout.wrapper).find(".form-tabs-list").addClass("bf-gone");
 		if (spec.comment && frm.fields_dict[spec.comment]) $(frm.fields_dict[spec.comment].$wrapper).addClass("bf-gone");
 
-		$main.on("click", ".bf-tab", function () {
+		// the tabs of the groups only: the tabs of a table part placed in a group (Товари, послуги → Запаси |
+		// Застосовані знижки) are inside $main too, and a click on them hid every group (no data-grp)
+		$main.on("click", ".bf-tab[data-grp]", function () {
 			F.show_group(frm, $(this).attr("data-grp"), true);
 		});
 		$tabs.on("keydown", (e) => {
