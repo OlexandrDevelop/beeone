@@ -989,3 +989,70 @@ body .bf-details-dlg .bf-grid {
 body .bf-details-dlg .bo-dialog {
 	width: min(640px, 100%);
 }
+
+/* The row form of a table part (frappe .grid-row-open .form-in-grid) is a modal of the window: a dimmed window behind
+ * it, a centred card with a frame and a shadow, its own scroll (user 2026-11-24: it hung over the form unstyled). The
+ * window is the containing block of the fixed form (it is transformed), so the dim covers the window only. */
+.bo-win .grid-row-open .form-in-grid,
+.bf-form .grid-row-open .form-in-grid {
+	top: 8%;
+	width: min(900px, 94%);
+	max-width: none;
+	padding: 0;
+	border: 1px solid var(--bo-border, var(--border-color));
+	border-radius: 14px;
+	background: var(--bo-surface, var(--card-bg));
+	box-shadow: 0 0 0 100vmax rgb(15 23 42 / 0.38), 0 24px 60px rgb(15 23 42 / 0.28);
+	z-index: 40;
+	overflow: visible;
+	animation: bf-row-form-in 0.16s ease-out;
+	.grid-form-heading {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: nowrap;
+		padding: 12px 16px;
+		border-bottom: 1px solid var(--bo-border, var(--border-color));
+		background: var(--bo-surface, var(--card-bg));
+		border-radius: 14px 14px 0 0;
+	}
+	.grid-form-heading .grid-header-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+	}
+	.grid-form-heading .panel-title {
+		white-space: nowrap;
+		font-size: 15px;
+		font-weight: 600;
+	}
+	.grid-form-heading .row-actions {
+		margin-left: auto;
+		display: flex;
+		flex-direction: row-reverse;
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		gap: 4px;
+		min-width: 0;
+		.btn { float: none !important; margin: 0 !important; padding: 3px 9px !important; font-size: 12px !important;
+			line-height: 18px !important; height: auto !important; white-space: nowrap; }
+	}
+	/* the list of a link field drops below the card: no scroll box of its own unless the form is taller than the window */
+	.grid-form-body {
+		max-height: none;
+		overflow: visible;
+		padding: 14px 18px 8px;
+	}
+	.form-in-grid-shortcuts, .grid-shortcuts {
+		padding: 8px 18px 12px;
+		color: var(--bo-text-2, var(--text-muted));
+	}
+}
+@keyframes bf-row-form-in {
+	from { opacity: 0; transform: translate(-50%, 8px); }
+	to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.bo-win .grid-row-open .form-in-grid, .bf-form .grid-row-open .form-in-grid { animation: none; }
+}
