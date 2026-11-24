@@ -1008,7 +1008,15 @@ frappe.provide("beeone.form");
 		const dens_btn =
 			`<button type="button" class="bf-btn bf-btn--sm bf-btn--ghost bf-btn--icon bf-density" data-bf="density" aria-pressed="${dense}" ` +
 			`title="${esc(dens_label)}" aria-label="${esc(dens_label)}">${icon("menu")}</button>`;
+		// the commands of the document for this table (grid.add_custom_button: «Підбір», «Заповнити»…) — labelled buttons
+		const own = editable && grid
+			? Object.keys(grid.custom_buttons || {})
+				.filter((label) => !grid.custom_buttons[label].hasClass("hidden"))
+				.map((label) => `<button type="button" class="bf-btn bf-btn--sm" data-bf="custom:${esc(label)}">${esc(label)}</button>`)
+				.join("")
+			: "";
 		$tp.find(".bf-tp-bar").html(
+			(own ? own + '<span class="bf-sep"></span>' : "") +
 			(editable
 				? b("add", __("Add"), "plus", { icon_only: true, tip: __("Add · Ins") }) +
 				  b("copy", __("Copy"), "copy", { icon_only: true, tip: __("Copy · F9") }) +
@@ -1083,6 +1091,11 @@ frappe.provide("beeone.form");
 		}
 		const grid = F.grid(frm);
 		if (!grid) return;
+		if (cmd.startsWith("custom:")) {
+			const $btn = (grid.custom_buttons || {})[cmd.slice(7)];
+			if ($btn) $btn.trigger("click");
+			return;
+		}
 		if (cmd === "add") F.add_row(frm, grid);
 		else if (cmd === "copy") F.copy_rows(frm, grid);
 		else if (cmd === "up" || cmd === "down") F.move_rows(frm, grid, cmd === "up" ? -1 : 1);
