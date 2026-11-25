@@ -4,7 +4,9 @@
 """Server side of the desktop shell: sections, saved layout and widget data.
 
 Apps add sections with the hook `beeone_sections` and widgets with `beeone_widgets`
-(docs/platform/SHELL.md). The core has no section and no widget source of its own.
+(docs/platform/SHELL.md). The core has no section of its own; without a widget source of an app the desktop offers
+the document lists of the sections of the user (`_auto_sources`: a shortcut with the count, the recent documents and,
+when the document has a date and an amount, the number of the period).
 """
 
 import json
@@ -28,6 +30,10 @@ MAX_WIDGETS = 16
 MAX_LIST = 40
 RECENT_ROWS = 4
 REPORT_ROWS = 5
+AUTO_CACHE_SECONDS = 600
+# the date and the amount of a document for the widget «Число» (the first field the document has)
+AUTO_DATE_FIELDS = ("posting_date", "transaction_date", "document_date", "date")
+AUTO_AMOUNT_FIELDS = ("document_amount", "grand_total", "total_amount", "amount_total", "total", "amount")
 
 
 # --------------------------------------------------------------------------- sections
@@ -241,9 +247,60 @@ def get_sections(user: str | None = None) -> list[dict]:
 # --------------------------------------------------------------------------- widget sources
 
 
+def _number_config(doctype: str) -> dict | None:
+	"""{field, date_field, currency, filters} of the widget «Число» of a document, or None without a date or an amount."""
+	meta = frappe.get_meta(doctype)
+	date_field = next((f for f in AUTO_DATE_FIELDS if (meta.get_field(f) or {}).get("fieldtype") in ("Date", "Datetime")), None)
+	amount = next((f for f in AUTO_AMOUNT_FIELDS if (meta.get_field(f) or {}).get("fieldtype") in ("Currency", "Float")), None)
+	if not (date_field and amount):
+		return None
+	return {
+		"field": amount,
+		"date_field": date_field,
+		"currency": meta.get_field(amount).fieldtype == "Currency",
+		# the posted documents only, when the document is posted at all
+		"filters": [[doctype, "docstatus", "=", 1]] if meta.is_submittable else [],
+	}
+
+
+def _auto_sources(user: str) -> list[dict]:
+	"""Widget sources made of the document commands of the sections of the user (cached per user)."""
+	key = f"beeone_widget_auto:{user}"
+	cached = frappe.cache.get_value(key)
+	if cached is not None:
+		return cached
+	sources, seen = [], set()
+	for section in get_sections(user):
+		for command in section["commands"]:
+			doctype = command.get("target")
+			if command.get("type") != "doctype" or doctype in seen or not frappe.db.exists("DocType", doctype):
+				continue
+			meta = frappe.get_meta(doctype)
+			if meta.issingle or meta.istable:
+				continue
+			seen.add(doctype)
+			types = ["beeone.count", "beeone.recent"]
+			number = _number_config(doctype)
+			if number:
+				types.insert(1, "beeone.number")
+			sources.append({
+				"id": f"doctype:{doctype}",
+				"label": f"{section['label']} · {command.get('label') or _(doctype)}",
+				"doctype": doctype,
+				"types": types,
+				"number": number,
+			})
+	frappe.cache.set_value(key, sources, expires_in_sec=AUTO_CACHE_SECONDS)
+	return sources
+
+
 def _widget_config(user: str) -> dict:
-	"""Merged hook data: sources by id, own types by name, defaults by role."""
+	"""Merged hook data: sources by id, own types by name, defaults by role; the automatic sources of the sections
+	of the user complete them (a source of an app with the same id wins)."""
 	sources, types, defaults = {}, {}, {}
+	if user and user != "Guest":
+		for source in _auto_sources(user):
+			sources[source["id"]] = source
 	for result in _call_hooks("beeone_widgets"):
 		result = result or {}
 		for source in result.get("sources") or []:
@@ -547,7 +604,10 @@ def _number(source: dict, period: str) -> dict:
 	def total(shift):
 		start, end = _period_range(period, shift)
 		extra = [source["doctype"], date_field, "between", [str(start), str(end)]]
-		rows = frappe.get_list(source["doctype"], filters=[*_filters(source), extra], fields=[expr], limit_page_length=0, order_by=None)
+		rows = frappe.get_list(
+			source["doctype"], filters=[*_filters(source), *(cfg.get("filters") or []), extra], fields=[expr],
+			limit_page_length=0, order_by=None,
+		)
 		return float(rows[0]["total"] or 0) if rows else 0.0
 
 	current, previous = total(0), total(-1)

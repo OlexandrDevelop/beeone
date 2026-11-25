@@ -11,7 +11,7 @@ const MAX_WIDGETS = 16;
 
 const CORE_TYPES = () => [
 	{ type: "beeone.count", label: __("Shortcut"), sizes: ["s", "m"], icon: "list" },
-	{ type: "beeone.number", label: __("Number"), sizes: ["m", "s"], icon: "trending" },
+	{ type: "beeone.number", label: __("Period total"), sizes: ["m", "s"], icon: "trending" },
 	{ type: "beeone.report", label: __("Mini report"), sizes: ["l"], icon: "chart" },
 	{ type: "beeone.recent", label: __("Recent documents"), sizes: ["l"], icon: "history" },
 ];
@@ -166,6 +166,11 @@ export const desk = {
 		});
 		const body = dlg.box.querySelector(".bo-wd");
 		const paint = () => {
+			if (!types.length) {
+				// no app declares a widget source and the sections of the user have no document lists
+				body.innerHTML = `<p class="bo-wd-empty">${esc(__("There is no data for widgets yet: no document list is available to you."))}</p>`;
+				return;
+			}
 			const sources = cat.sources.filter((s) => s.types.includes(cur.type));
 			const t = types.find((x) => x.type === cur.type) || {};
 			const sizes = t.sizes || ["s", "m", "l"];
