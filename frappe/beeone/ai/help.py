@@ -147,6 +147,7 @@ def search(query, limit=6, doctype=None):
 		if per_page[d["page"]] >= 2:
 			continue
 		per_page[d["page"]] += 1
+		distinct = set(terms)
 		out.append(
 			{
 				"page": d["page"],
@@ -155,6 +156,8 @@ def search(query, limit=6, doctype=None):
 				"kind": d["kind"],
 				"text": d["text"],
 				"score": round(score, 2),
+				# the share of the words of the question the section has: a high score of one common word is not a match
+				"coverage": round(sum(1 for t in distinct if d["tf"].get(t)) / len(distinct), 2) if distinct else 0,
 			}
 		)
 		if len(out) >= limit:

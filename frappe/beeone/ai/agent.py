@@ -35,6 +35,7 @@ CACHE_SECONDS = 86400
 QUESTION_CHARS = 2000
 COUNTED = ("Answered", "Error")
 OFFLINE_CHARS = 2400
+MIN_COVERAGE = 0.5
 # the headings of the guide sections with the steps, and of the ones not worth showing alone (uk and en)
 STEPS_HEADINGS = ("кроки", "steps")
 SKIP_HEADINGS = ("пов'язане", "повʼязане", "пов’язане", "related", "де знайти", "where to find")
@@ -160,8 +161,10 @@ def suggest_checks(question, tools):
 
 
 def offline_answer(question, reason, found, tools):
-	"""Without the model: the steps of the best user guide, else the first lines of the help sections."""
+	"""Without the model: the steps of the best user guide, else the first lines of the help sections; only the sections
+	that have at least half of the words of the question (one shared word is not an answer)."""
 	lines = [_(OFFLINE_NOTE[reason])]
+	found = [f for f in found if f.get("coverage", 1) >= MIN_COVERAGE]
 	guide = next((s for s in found if s["kind"] == "guide"), None)
 	if guide:
 		sections = ai_help.split_sections(ai_help.index()["pages"].get(guide["page"]) or {})
@@ -211,7 +214,7 @@ def ask(question, history=None, context=None):
 	s = settings()
 	tools = ai_tools.all_tools(allow_data=bool(s.allow_data))
 	found = ai_help.search(question, limit=PREFETCH_SECTIONS, doctype=doctype_of(context))
-	result = {"sources": sources_of(found), "checks": suggest_checks(question, tools), "actions": [], "steps": []}
+	result = {"sources": sources_of([f for f in found if f.get("coverage", 1) >= MIN_COVERAGE]), "checks": suggest_checks(question, tools), "actions": [], "steps": []}
 	log = {"question": question, "route": "/".join(map(cstr, context.get("route") or []))[:250], "model": MODEL_LABEL}
 
 	if not s.ready:
