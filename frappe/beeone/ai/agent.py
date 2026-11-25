@@ -11,6 +11,7 @@ usually takes one call of the model (the free quotas are small).
 
 import hashlib
 import json
+import re
 import time
 
 import frappe
@@ -25,9 +26,9 @@ SETTINGS = "AI Assistant Settings"
 LOG = "AI Assistant Log"
 HISTORY_TURNS = 6
 HISTORY_CHARS = 2000
-PREFETCH_SECTIONS = 4
-PREFETCH_CHARS = 1600
-GUIDE_CHARS = 7000
+PREFETCH_SECTIONS = 2
+PREFETCH_CHARS = 1200
+GUIDE_CHARS = 5000
 MAX_ROLES = 20
 MAX_CALLS_PER_STEP = 4
 MAX_RESULT_CHARS = 14000
@@ -39,6 +40,11 @@ MIN_COVERAGE = 0.5
 # the headings of the guide sections with the steps, and of the ones not worth showing alone (uk and en)
 STEPS_HEADINGS = ("кроки", "steps")
 SKIP_HEADINGS = ("пов'язане", "повʼязане", "пов’язане", "related", "де знайти", "where to find")
+HELP_PREFIX_RE = re.compile(r"^\s*(?:як\b|де\b|навіщо\b|що\s+(?:означа|таке)\b|чому\s+не\b|how\s|where\s|what\s+(?:is|does)\b|why\s+does|explain\b)", re.I)
+DATA_HINT_RE = re.compile(
+	r"(?:^|\s)(?:покаж\w*|скільки|кому|хто|які|який|яка|розраху\w*|пораху\w*|знайд\w*|спрогнозу\w*|порівня\w*|перевір\w*|сформу\w*|топ[-\s]?\d*|понад\b|більше\b|менше\b|show\b|list\b|how\s+many\b|how\s+much\b|which\b|who\b|calculate\b|forecast\b|compare\b|check\b|find\b|top\b)",
+	re.I,
+)
 
 SYSTEM = """You are the assistant built into {brand}, an accounting and business management program.
 Today is {today}. The user is {user}; roles: {roles}.
@@ -46,7 +52,7 @@ Today is {today}. The user is {user}; roles: {roles}.
 How to answer:
 - Answer in the language of the question (Ukrainian by default). Be short and practical: steps as a numbered list, names of sections, documents, fields and buttons in «quotes» exactly as the help names them.
 - Questions about using the program: answer from the help excerpts below or from search_help. The help is written for developers: name things by their labels, not by system identifiers (`code`, `Sales Shipment`); do not mention 1C unless asked. If the help does not cover the question, say so and do not invent menu items or buttons.
-- Questions about the data: use the tools. Never invent or estimate a number: every number, name and date in the answer must come from a tool result. To verify something, prefer a check_* tool. To find which document type or report the user means, use find_objects.
+- Questions about the data: use the tools. Never invent or estimate a number: every number, name and date in the answer must come from a tool result. To verify something, prefer a check_* tool. For open-ended analytical questions (rankings, trends, forecasts, comparisons across tables), use specialized tools or query_data (read-only SQL) after checking table fields with describe_doctype if needed. To find which document type or report the user means, use find_objects.
 - Link documents with markdown links to their `_link` values, e.g. [ПН-000123](/desk/purchase-invoice/ПН-000123).
 - You only read. When the user wants a document created, call propose_document: the user gets a button to open it filled and saves it themselves.
 - Values like ⟦P1⟧ are hidden personal data: copy them as they are.
@@ -120,8 +126,23 @@ def doctype_of(context):
 	return None
 
 
+def should_include_help(question, found, allow_data=True):
+	"""Include help excerpts for how-to questions so they finish in one call, skip them for data/analytics queries."""
+	relevant = [s for s in (found or []) if s.get("coverage", 1) >= MIN_COVERAGE]
+	if not relevant:
+		return False
+	if not allow_data:
+		return True
+	if HELP_PREFIX_RE.match(question or ""):
+		return any(s["kind"] == "guide" for s in relevant)
+	if DATA_HINT_RE.search(question or ""):
+		return False
+	return any(s["kind"] == "guide" for s in relevant)
+
+
 def help_excerpts(found):
-	"""The sections found; the best user guide goes whole (it is short and its steps may not match the words)."""
+	"""The relevant sections found; at most one guide and one extra section so system stays lean."""
+	found = [s for s in (found or []) if s.get("coverage", 1) >= MIN_COVERAGE]
 	if not found:
 		return ""
 	parts = ["Help excerpts that may answer the question:"]
@@ -129,11 +150,10 @@ def help_excerpts(found):
 	if guide:
 		page = ai_help.index()["pages"].get(guide["page"]) or {}
 		parts.append(f"### {guide['title']}\n{(page.get('text') or guide['text'])[:GUIDE_CHARS]}")
-	for s in found:
-		if guide and s["page"] == guide["page"]:
-			continue
-		head = s["title"] + (f" — {s['section']}" if s["section"] else "")
-		parts.append(f"### {head}\n{s['text'][:PREFETCH_CHARS]}")
+	extra = next((s for s in found if not (guide and s["page"] == guide["page"])), None)
+	if extra:
+		head = extra["title"] + (f" — {extra['section']}" if extra["section"] else "")
+		parts.append(f"### {head}\n{extra['text'][:PREFETCH_CHARS]}")
 	return "\n\n".join(parts)
 
 
@@ -239,8 +259,10 @@ def ask(question, history=None, context=None):
 		roles=", ".join([r for r in frappe.get_roles() if r not in ("All", "Guest")][:MAX_ROLES]),
 		context=context_text(context),
 	)
-	if found:
-		system += "\n\n" + help_excerpts(found)
+	if should_include_help(question, found, bool(s.allow_data)):
+		excerpts = help_excerpts(found)
+		if excerpts:
+			system += "\n\n" + excerpts
 	messages = history + [{"role": "user", "text": question}]
 	declarations = [{"name": t["name"], "description": t["description"], "parameters": t["parameters"]} for t in tools.values()]
 	provider = get_provider()
@@ -306,6 +328,7 @@ TOOL_LABELS = {
 	"describe_doctype": "Read the structure of a document",
 	"list_documents": "Read a list of documents",
 	"aggregate": "Counted totals",
+	"query_data": "Queried the database",
 	"get_document": "Read a document",
 	"report_filters": "Read the filters of a report",
 	"run_report": "Ran a report",

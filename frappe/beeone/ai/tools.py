@@ -187,20 +187,56 @@ def list_documents(doctype, filters=None, fields=None, order_by=None, limit=20):
 	return {"doctype": doctype, "total": total[0]["n"] if total else len(rows), "shown": len(rows), "rows": [{k: _short(v) for k, v in r.items()} for r in rows]}
 
 
-def aggregate(doctype, group_by=None, sum_fields=None, filters=None):
+def aggregate(doctype, group_by=None, sum_fields=None, filters=None, date_field=None, date_group=None, order_by=None, limit=20):
 	meta = _readable(doctype)
 	sums = _fields(meta, sum_fields or []) if sum_fields else []
 	for f in sums:
 		df = meta.get_field(f)
 		if not df or df.fieldtype not in ("Currency", "Float", "Int", "Percent"):
 			frappe.throw(_("{0} is not a number field").format(f))
+	limit = max(1, min(cint(limit) or 20, MAX_ROWS))
+	flt = _filters(meta, filters)
+	if date_group:
+		if not date_field:
+			frappe.throw(_("date_field is required with date_group"))
+		if date_group not in ("day", "month", "year"):
+			frappe.throw(_("date_group must be day, month, or year"))
+		_fields(meta, [date_field])
+		if group_by:
+			_fields(meta, [group_by])
+		pull = [date_field] + ([group_by] if group_by else []) + sums
+		raw = frappe.get_list(doctype, filters=flt, fields=pull, order_by="", limit_page_length=2000)
+		buckets = {}
+		cut = {"year": 4, "month": 7, "day": 10}[date_group]
+		for r in raw:
+			period = cstr(r.get(date_field))[:cut]
+			key = (period, r.get(group_by)) if group_by else period
+			entry = buckets.get(key)
+			if entry is None:
+				entry = {"period": period, "count": 0, **{f: 0.0 for f in sums}}
+				if group_by:
+					entry[group_by] = r.get(group_by)
+				buckets[key] = entry
+			entry["count"] += 1
+			for f in sums:
+				entry[f] += float(r.get(f) or 0)
+		rows = list(buckets.values())
+		if order_by == "sum" and sums:
+			rows.sort(key=lambda r: -(r.get(sums[0]) or 0))
+		elif order_by == "count":
+			rows.sort(key=lambda r: -(r.get("count") or 0))
+		else:
+			rows.sort(key=lambda r: r["period"])
+		return {"doctype": doctype, "date_group": date_group, "group_by": group_by, "rows": rows[:limit]}
+
 	fields = [{"COUNT": "*", "as": "count"}] + [{"SUM": f, "as": f} for f in sums]
 	if group_by:
 		_fields(meta, [group_by])
 		fields.insert(0, group_by)
-	rows = frappe.get_list(doctype, filters=_filters(meta, filters), fields=fields, group_by=group_by, limit_page_length=MAX_ROWS)
-	rows.sort(key=lambda r: -(r.get("count") or 0))
-	return {"doctype": doctype, "group_by": group_by, "rows": rows}
+	rows = frappe.get_list(doctype, filters=flt, fields=fields, group_by=group_by, limit_page_length=MAX_ROWS)
+	sort_key = sums[0] if order_by == "sum" and sums else "count"
+	rows.sort(key=lambda r: -(r.get(sort_key) or 0))
+	return {"doctype": doctype, "group_by": group_by, "rows": rows[:limit]}
 
 
 def get_document(doctype, name):
@@ -293,6 +329,8 @@ FILTERS = {
 
 
 def platform_tools():
+	from frappe.beeone.ai.sql import query_data
+
 	return [
 		{
 			"name": "search_help",
@@ -334,17 +372,28 @@ def platform_tools():
 		},
 		{
 			"name": "aggregate",
-			"description": "Count documents and sum number fields, optionally grouped by a field (e.g. sales by customer).",
+			"description": "Count documents and sum number fields, optionally grouped by a field or a date period (day/month/year).",
 			"parameters": _schema(
 				{
 					"doctype": {"type": "string"},
 					"group_by": {"type": "string"},
 					"sum_fields": {"type": "array", "items": {"type": "string"}},
 					"filters": FILTERS,
+					"date_field": {"type": "string", "description": "Date field when date_group is used"},
+					"date_group": {"type": "string", "enum": ["day", "month", "year"]},
+					"order_by": {"type": "string", "enum": ["sum", "count"]},
+					"limit": {"type": "integer"},
 				},
 				["doctype"],
 			),
 			"fn": aggregate,
+			"data": True,
+		},
+		{
+			"name": "query_data",
+			"description": "Run a read-only SQL SELECT (PostgreSQL) over DocType tables (`tab<DocType>`) or analytical views (`v_*`) with user permissions. Always include filters (organization, dates, docstatus=1 for posted docs) and a small LIMIT (<= 50).",
+			"parameters": _schema({"sql": {"type": "string", "description": "A single SELECT or WITH ... SELECT statement"}}, ["sql"]),
+			"fn": query_data,
 			"data": True,
 		},
 		{

@@ -53,6 +53,14 @@ def check_tool():
 	]
 
 
+_guard_calls = []
+
+
+def _record_guard(stmt, tables, dialect):
+	_guard_calls.append(sorted(tables))
+	return stmt
+
+
 def hooks(**extra):
 	"""The AI hooks of this test; every other hook stays as it is."""
 	real = frappe.get_hooks
@@ -241,6 +249,118 @@ class TestBeeoneAI(IntegrationTestCase):
 		frappe.get_doc({"doctype": "ToDo", "description": "beeone ai a", "status": "Open"}).insert()
 		out = ai_tools.aggregate("ToDo", group_by="status")
 		self.assertTrue(any(r["status"] == "Open" and r["count"] >= 1 for r in out["rows"]))
+		by_day = ai_tools.aggregate("ToDo", date_field="creation", date_group="day", order_by="count")
+		self.assertTrue(by_day["rows"] and len(by_day["rows"][0]["period"]) == 10)
+
+	def test_analytics_questions_skip_help_excerpts_while_how_to_keeps_them(self):
+		m_data = FakeModel([Reply(text="5")])
+		self.ask(m_data, "Show how many salaries are unpaid")
+		self.assertNotIn("Press «Fill»", m_data.sent[0]["system"])
+		m_uk = FakeModel([Reply(text="Ось")])
+		self.ask(m_uk, "Покажи зарплату за місяць")
+		self.assertNotIn("Press «Fill»", m_uk.sent[0]["system"])
+		m_help = FakeModel([Reply(text="1. Open")])
+		self.ask(m_help, "Як нарахувати зарплату? how to pay salaries?")
+		self.assertIn("Press «Fill»", m_help.sent[0]["system"])
+
+	def test_query_data_runs_safe_select_and_blocks_unsafe_sql(self):
+		from frappe.beeone.ai import sql as ai_sql
+
+		mark = frappe.generate_hash(length=8)
+		frappe.get_doc({"doctype": "Contact", "first_name": "SQL", "company_name": f"sql-{mark}", "status": "Open"}).insert()
+		out = ai_sql.query_data(f"SELECT name, status FROM \"tabContact\" WHERE company_name = 'sql-{mark}' LIMIT 10")
+		self.assertEqual(out["row_count"], 1)
+		self.assertEqual(out["rows"][0]["status"], "Open")
+		self.assertFalse(out["truncated"])
+
+		cte = ai_sql.query_data(f"WITH t AS (SELECT status FROM \"tabContact\" WHERE company_name = 'sql-{mark}') SELECT count(*) AS n FROM t")
+		self.assertEqual(cte["rows"][0]["n"], 1)
+		star = ai_sql.query_data(f"SELECT c.* FROM \"tabContact\" c WHERE c.company_name = 'sql-{mark}'")
+		self.assertEqual(star["row_count"], 1)
+
+		for bad in (
+			"DELETE FROM \"tabContact\"",
+			"INSERT INTO \"tabContact\" (name) VALUES ('x')",
+			"DROP TABLE \"tabContact\"",
+			"SELECT 1; SELECT 2",
+			"SELECT * FROM \"tabUser\"",
+			"SELECT * FROM \"tabToDo\"",
+			"SELECT * FROM \"tabAI Assistant Log\"",
+			"SELECT * FROM pg_catalog.pg_tables",
+			"SELECT * FROM information_schema.tables",
+			"SELECT * FROM \"__Auth\"",
+			"SELECT pg_sleep(1) FROM \"tabContact\"",
+			"SELECT version() FROM \"tabContact\"",
+			"SELECT * FROM \"tabContact\" FOR UPDATE",
+			# whole rows would carry every column past the field rules
+			"SELECT to_jsonb(c) FROM \"tabContact\" c",
+			"SELECT c FROM \"tabContact\" c",
+			"SELECT row_to_json(c.*) FROM \"tabContact\" c",
+			"SELECT json_agg(c.*) FROM \"tabContact\" c",
+			"SELECT to_json(t) FROM (SELECT name FROM \"tabContact\") t",
+		):
+			res = ai_tools.call({"fn": ai_sql.query_data}, {"sql": bad})
+			self.assertIn("error", res, bad)
+
+		# User without read permission on a DocType is blocked
+		frappe.set_user(self.plain_user())
+		denied = ai_tools.call({"fn": ai_sql.query_data}, {"sql": 'SELECT name FROM "tabScheduled Job Type" LIMIT 5'})
+		self.assertEqual(denied["error"], "permission")
+
+	def test_query_data_hides_personal_values_whatever_the_column_is_called(self):
+		from frappe.beeone.ai import sql as ai_sql
+		from frappe.beeone.ai.privacy import Masker
+
+		mark = frappe.generate_hash(length=8)
+		frappe.get_doc(
+			{"doctype": "Contact", "first_name": f"Тарас{mark}", "last_name": "Шевченко", "company_name": f"pd-{mark}"}
+		).insert()
+		out = ai_sql.query_data(
+			f"SELECT first_name AS a, last_name || ' / ' || company_name AS b, count(*) AS n FROM \"tabContact\" "
+			f"WHERE company_name = 'pd-{mark}' GROUP BY 1, 2"
+		)
+		self.assertIn(f"Тарас{mark}", out["_personal"])
+		self.assertIn("Шевченко", out["_personal"])
+		masker = Masker()
+		masked = str(masker.mask(out))
+		self.assertNotIn(f"Тарас{mark}", masked)
+		self.assertNotIn("Шевченко", masked)
+		self.assertIn(f"pd-{mark}", masked)
+		self.assertNotIn("_personal", masked)
+		self.assertIn("Шевченко", str(masker.unmask(masker.mask(out))))
+		plain = ai_sql.query_data(f"SELECT status FROM \"tabContact\" WHERE company_name = 'pd-{mark}'")
+		self.assertNotIn("_personal", plain)
+		# the search failed (too slow): every text of the result is hidden, the numbers stay
+		hidden = ai_sql._personal_values([("tabNo Such Table", "first_name")], [{"who": "Тарас", "n": 5, "sum": "12.5"}])
+		self.assertEqual(hidden, ["Тарас"])
+		self.assertEqual(frappe.db.count("Contact", {"company_name": f"pd-{mark}"}), 1)
+
+	def test_query_data_runs_as_the_read_only_role_when_it_is_set_up(self):
+		from frappe.beeone.ai import sql as ai_sql
+
+		frappe.flags.beeone_ai_ro_role = None
+		if not ai_sql._readonly_role_ready():
+			self.skipTest("the read-only role is not set up on this site")
+		out = ai_sql.query_data('SELECT current_user AS u FROM "tabContact" LIMIT 1')
+		if out["rows"]:
+			self.assertEqual(out["rows"][0]["u"], ai_sql.readonly_role())
+		frappe.db.savepoint("ro_test")
+		try:
+			frappe.db.sql(f"SET LOCAL ROLE {ai_sql._quote(ai_sql.readonly_role())}")
+			with self.assertRaises(Exception):
+				frappe.db.sql('SELECT name FROM "__Auth" LIMIT 1')
+		finally:
+			frappe.db.rollback(save_point="ro_test")
+		self.assertEqual(frappe.db.sql("SELECT current_user")[0][0], frappe.conf.db_user or frappe.conf.db_name)
+
+	def test_query_data_calls_views_and_sql_guard_hook(self):
+		from frappe.beeone.ai import sql as ai_sql
+
+		_guard_calls.clear()
+		with hooks(beeone_ai_sql_guard=[f"{MODULE}._record_guard"]):
+			res = ai_sql.query_data('SELECT count(*) AS n FROM "tabContact"')
+			self.assertGreaterEqual(res["rows"][0]["n"], 0)
+		self.assertEqual(_guard_calls, [["tabContact"]])
 
 	def test_propose_document_saves_nothing(self):
 		before = frappe.db.count("ToDo")

@@ -28,6 +28,8 @@ beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional 
 #   beeone_ai_tools = ["app.module.tools"]           # tools and checks the model may call (frappe.beeone.ai.tools)
 #   beeone_ai_context = ["app.module.context"]      # fn(context) -> a line about the user's situation, or None
 #   beeone_ai_personal_fields = {"Doctype": ["fieldname", ...]}  # hidden from the model
+#   beeone_ai_views = ["app.module.views"]          # read-only SQL views: [{"name", "doctypes"}]
+#   beeone_ai_sql_guard = ["app.module.sql_guard"]  # fn(stmt, tables, dialect) -> AST or raise PermissionError
 # beeone: posted documents edited in place (frappe.beeone.posted_edit). An app opts in with
 #   beeone_posted_editable = ["Doctype", ...]
 #   beeone_posted_edit_checks = ["app.module.fn"]   # fn(doc) -> reason why the document cannot be edited, or None
@@ -373,6 +375,7 @@ after_migrate = [
 	"frappe.beeone.registers.totals.ensure_all_period_indexes",  # beeone: period index of information registers
 	"frappe.beeone.registers.indexes.ensure_all_register_indexes",  # beeone: indexes of the movement tables
 	"frappe.beeone.document_indexes.ensure_all_document_indexes",  # beeone: date and document links of documents
+	"frappe.beeone.ai.sql.sync_readonly_grants",  # beeone: what the read-only role of the AI SQL may read
 	"frappe.website.doctype.website_theme.website_theme.after_migrate",
 	"frappe.search.sqlite_search.build_index_in_background",
 	"frappe.desk.doctype.notification_type.notification_type.install_notification_types",
