@@ -453,7 +453,10 @@ def clean_layout(layout) -> dict:
 				"id": wid,
 				"type": str(widget.get("type") or "")[:80],
 				"source": str(widget.get("source") or "")[:140],
-				"size": widget.get("size") if widget.get("size") in SIZES else "s",
+				# "xl" (the full panel) is the size of a chart only
+				"size": widget.get("size")
+				if widget.get("size") in SIZES and (widget.get("size") != "xl" or widget.get("type") == "beeone.chart")
+				else "s",
 				"title": str(widget.get("title") or "")[:60],
 				"options": clean,
 			}

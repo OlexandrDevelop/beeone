@@ -252,6 +252,34 @@ class TestBeeoneShell(IntegrationTestCase):
 		self.assertNotIn("evil", out)
 		self.assertEqual(out["v"], 1)
 
+	def test_chart_widget_keeps_its_options_and_the_full_panel_size(self):
+		raw = {"widgets": [
+			{"id": "c1", "type": "beeone.chart", "source": "todos", "size": "xl",
+			 "options": {"period": "90d", "group": "status", "style": "bar", "evil": 1}},
+			{"id": "c2", "type": "beeone.chart", "source": "todos", "size": "l", "options": {"period": "forever", "group": "x;drop"}},
+		]}
+		out = shell.clean_layout(raw)["widgets"]
+		self.assertEqual(out[0]["size"], "xl")
+		self.assertEqual(out[0]["options"], {"period": "90d", "style": "bar", "group": "status"})
+		self.assertEqual(out[1]["options"], {"period": "12m", "style": "area"})
+
+	def test_chart_widget_returns_the_buckets_and_the_series(self):
+		with hooks_for(widgets=["widgets_hook"]):
+			data = shell.widget_data(json.dumps([{"id": "c", "type": "beeone.chart", "source": "todos", "options": {"period": "12m"}}]))
+		chart = data["c"]
+		self.assertEqual(len(chart["buckets"]), 12)
+		self.assertEqual(chart["bucket"], "month")
+		self.assertTrue(chart["series"])
+		self.assertTrue(all(len(s["values"]) == 12 for s in chart["series"]))
+		self.assertEqual(chart["total"], sum(s["total"] for s in chart["series"]))
+
+	def test_sections_give_automatic_widget_sources(self):
+		with hooks_for(sections=["sections_a"]):
+			frappe.cache.delete_value(f"beeone_widget_auto:{frappe.session.user}")
+			catalog = shell.widget_catalog()
+		ids = {s["id"] for s in catalog["sources"]}
+		self.assertTrue(any(i.startswith("doctype:") for i in ids), ids)
+
 	def test_layout_is_saved_per_user(self):
 		frappe.set_user(PLAIN_USER)
 		shell.save_layout({"windows": [{"key": "List/ToDo/List", "route": ["List", "ToDo", "List"]}], "accent": "teal"})
