@@ -1,14 +1,14 @@
 # Copyright (c) 2026, beeone contributors
 # License: MIT. See LICENSE
 
-"""The subscription of this installation to BeeOne («Підписка BeeOne», DocType BeeOne Account).
+"""The subscription of this installation to BeeOne («Підписка BeeOne», DocType BeeOne Account): the paid AI services.
 
 Once a day (and with the button «Підключити») the site sends its installation key to the BeeOne admin and gets its
 rights signed with Ed25519 (beeone_admin.api.license.check). The signature is checked with the public key built in
 here, so the rights cannot be edited on the site. `has_feature("ai")` is true while the signed rights name the feature
 and their `valid_until` has not passed: without a contact the rights last at most 7 days.
-Nothing is sent while there is no key. The accounting never depends on the subscription: only the AI of BeeOne Cloud
-and the updates do.
+Nothing is sent while there is no key. Only the AI services of BeeOne Cloud depend on the subscription: the accounting,
+the code and the updates of BeeOne are free.
 """
 
 import base64

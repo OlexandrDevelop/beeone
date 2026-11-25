@@ -22,7 +22,7 @@ def signed(payload, key=PRIVATE):
 	return base64.b64encode(key.sign(subscription.canonical(payload))).decode()
 
 
-def rights(features=("ai", "updates"), valid_until=None, instance_id="inst-1"):
+def rights(features=("ai",), valid_until=None, instance_id="inst-1"):
 	return {
 		"features": list(features),
 		"plans": ["Стандарт"],
@@ -66,7 +66,6 @@ class TestBeeOneSubscription(IntegrationTestCase):
 		state, post = self.run_check(Answer(body={"message": {"entitlements": payload, "signature": signed(payload)}}))
 		self.assertEqual(state, subscription.ACTIVE)
 		self.assertTrue(subscription.has_feature("ai"))
-		self.assertTrue(subscription.has_feature("updates"))
 		self.assertFalse(subscription.has_feature("other"))
 		args, kwargs = post.call_args
 		self.assertEqual(args[0], "https://admin.example" + subscription.CHECK_PATH)

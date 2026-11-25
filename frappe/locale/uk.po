@@ -42057,8 +42057,8 @@ msgid "BeeOne Account"
 msgstr "Підписка BeeOne"
 
 #: frappe/beeone/subscription.py
-msgid "The subscription of this installation to BeeOne: the AI assistant and the updates"
-msgstr "Підписка цієї інсталяції на BeeOne: AI-помічник і оновлення"
+msgid "The subscription of this installation to the AI services of BeeOne"
+msgstr "Підписка цієї інсталяції на AI-сервіси BeeOne"
 
 #: frappe/beeone/subscription.py
 msgid "Plan"

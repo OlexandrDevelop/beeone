@@ -8,7 +8,7 @@
  "name": "BeeOne Account",
  "issingle": 1,
  "engine": "InnoDB",
- "description": "The subscription of this installation to BeeOne: the AI assistant and the updates",
+ "description": "The subscription of this installation to the AI services of BeeOne",
  "field_order": [
   "state",
   "plan",
