@@ -28,6 +28,7 @@ frappe.provide("beeone.ui");
 		landmark: '<path d="M3 21h18"/><path d="M5 18h14"/><path d="M6 18v-7M10 18v-7M14 18v-7M18 18v-7"/><path d="M12 3 3 8.5h18Z"/>',
 		building: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/><path d="M10 21v-3h4v3"/>',
 		chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M8 17v-5M13 17V8M18 17v-9"/>',
+		linechart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 15 4-5 3 3 5-6"/>',
 		book: '<path d="M5 19.5v-15A1.5 1.5 0 0 1 6.5 3H19v14H6.5A1.5 1.5 0 0 0 5 18.5 1.5 1.5 0 0 0 6.5 20H19"/><path d="M9 7.5h6"/>',
 		sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
 		search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',

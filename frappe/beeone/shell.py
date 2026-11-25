@@ -20,8 +20,8 @@ SETTINGS_KEY = "beeone_shell"
 DESKTOP_PAGE = "beeone-desktop"
 COLUMNS = ("docs", "refs", "reps", "svc")
 COMMAND_TYPES = ("doctype", "tree", "single", "report", "page", "route", "new")
-CORE_WIDGETS = ("beeone.count", "beeone.number", "beeone.report", "beeone.recent")
-SIZES = ("s", "m", "l")
+CORE_WIDGETS = ("beeone.count", "beeone.number", "beeone.chart", "beeone.report", "beeone.recent")
+SIZES = ("s", "m", "l", "xl")
 PERIODS = ("month", "quarter", "year")
 STATES = ("normal", "maximized", "minimized")
 ACCENTS = ("cobalt", "teal")
@@ -31,9 +31,15 @@ MAX_LIST = 40
 RECENT_ROWS = 4
 REPORT_ROWS = 5
 AUTO_CACHE_SECONDS = 600
-# the date and the amount of a document for the widget «Число» (the first field the document has)
+# the date and the amount of a document for the widget "Period total" (the first field the document has)
 AUTO_DATE_FIELDS = ("posting_date", "transaction_date", "document_date", "date")
 AUTO_AMOUNT_FIELDS = ("document_amount", "grand_total", "total_amount", "amount_total", "total", "amount")
+# the fields a chart may split its series by (the Link fields of the document that have them)
+AUTO_GROUP_FIELDS = ("organization", "department", "business_line", "warehouse", "counterparty", "responsible", "manager")
+# chart periods: (number of buckets, bucket) — the last bucket is the current one
+CHART_PERIODS = {"12m": (12, "month"), "ytd": (None, "month"), "90d": (13, "week"), "30d": (30, "day")}
+CHART_STYLES = ("line", "area", "bar")
+CHART_MAX_SERIES = 5
 
 
 # --------------------------------------------------------------------------- sections
@@ -248,7 +254,7 @@ def get_sections(user: str | None = None) -> list[dict]:
 
 
 def _number_config(doctype: str) -> dict | None:
-	"""{field, date_field, currency, filters} of the widget «Число» of a document, or None without a date or an amount."""
+	"""{field, date_field, currency, filters} of the widget "Period total" of a document, or None without a date or an amount."""
 	meta = frappe.get_meta(doctype)
 	date_field = next((f for f in AUTO_DATE_FIELDS if (meta.get_field(f) or {}).get("fieldtype") in ("Date", "Datetime")), None)
 	amount = next((f for f in AUTO_AMOUNT_FIELDS if (meta.get_field(f) or {}).get("fieldtype") in ("Currency", "Float")), None)
@@ -260,6 +266,12 @@ def _number_config(doctype: str) -> dict | None:
 		"currency": meta.get_field(amount).fieldtype == "Currency",
 		# the posted documents only, when the document is posted at all
 		"filters": [[doctype, "docstatus", "=", 1]] if meta.is_submittable else [],
+		# what a chart may split its series by
+		"groups": [
+			{"field": f, "label": _(meta.get_field(f).label)}
+			for f in AUTO_GROUP_FIELDS
+			if (meta.get_field(f) or {}).get("fieldtype") == "Link"
+		],
 	}
 
 
@@ -282,7 +294,7 @@ def _auto_sources(user: str) -> list[dict]:
 			types = ["beeone.count", "beeone.recent"]
 			number = _number_config(doctype)
 			if number:
-				types.insert(1, "beeone.number")
+				types[1:1] = ["beeone.number", "beeone.chart"]
 			sources.append({
 				"id": f"doctype:{doctype}",
 				"label": f"{section['label']} · {command.get('label') or _(doctype)}",
@@ -333,6 +345,7 @@ def widget_catalog(user: str | None = None) -> dict:
 			"types": [t for t in s.get("types") or [] if t in CORE_WIDGETS],
 			"doctype": s.get("doctype"),
 			"report": s.get("report"),
+			"groups": (s.get("number") or {}).get("groups") or [],
 			"denied": not _source_allowed(s, user),
 		}
 		for s in config["sources"].values()
@@ -426,6 +439,15 @@ def clean_layout(layout) -> dict:
 		ids.add(wid)
 		options = widget.get("options") if isinstance(widget.get("options"), dict) else {}
 		period = options.get("period")
+		if widget.get("type") == "beeone.chart":
+			# the chart: its period, the field that splits the series (checked against the source on every data call)
+			clean = {"period": period if period in CHART_PERIODS else "12m",
+			         "style": options.get("style") if options.get("style") in CHART_STYLES else "area"}
+			group = str(options.get("group") or "")[:60]
+			if group and group.replace("_", "").isalnum():
+				clean["group"] = group
+		else:
+			clean = {"period": period} if period in PERIODS else {}
 		widgets.append(
 			{
 				"id": wid,
@@ -433,7 +455,7 @@ def clean_layout(layout) -> dict:
 				"source": str(widget.get("source") or "")[:140],
 				"size": widget.get("size") if widget.get("size") in SIZES else "s",
 				"title": str(widget.get("title") or "")[:60],
-				"options": {"period": period} if period in PERIODS else {},
+				"options": clean,
 			}
 		)
 	return {
@@ -554,6 +576,8 @@ def _one_widget(widget: dict, config: dict, user: str):
 		return _number(source, period if period in PERIODS else "month")
 	if wtype == "beeone.recent":
 		return _recent(source)
+	if wtype == "beeone.chart":
+		return _chart(source, widget.get("options") or {})
 	return _report(source)
 
 
@@ -620,6 +644,107 @@ def _number(source: dict, period: str) -> dict:
 		"label": source.get("label"),
 		"doctype": source["doctype"],
 		"currency": bool(cfg.get("currency")),
+	}
+
+
+def _chart_buckets(period: str) -> tuple[list, str]:
+	"""[(start, end)] of the buckets of a chart period, the oldest first, and the bucket kind."""
+	count, kind = CHART_PERIODS.get(period, CHART_PERIODS["12m"])
+	today = getdate(nowdate())
+	if kind == "day":
+		return [(add_days(today, -i), add_days(today, -i)) for i in range(count - 1, -1, -1)], kind
+	if kind == "week":
+		monday = add_days(today, -today.weekday())
+		return [(add_days(monday, -7 * i), add_days(monday, -7 * i + 6)) for i in range(count - 1, -1, -1)], kind
+	first = get_first_day(today)
+	if count is None:  # from the start of the year
+		count = today.month
+	starts = [add_months(first, -i) for i in range(count - 1, -1, -1)]
+	return [(s, get_last_day(s)) for s in starts], kind
+
+
+def _group_titles(doctype: str, field: str, keys: list) -> dict:
+	"""{key: title} of the values of a Link field (the title field of the linked document, else the name)."""
+	df = frappe.get_meta(doctype).get_field(field)
+	target = df.options if df and df.fieldtype == "Link" else None
+	keys = [k for k in keys if k]
+	if not target or not keys:
+		return {}
+	title = frappe.get_meta(target).title_field
+	if not title or title == "name":
+		return {}
+	return dict(frappe.get_all(target, filters={"name": ["in", keys]}, fields=["name", title], as_list=True))
+
+
+def _chart(source: dict, options: dict) -> dict:
+	"""A time series of the period: the sum of the amount per bucket, split by a field into at most CHART_MAX_SERIES
+	series (the rest is «Others»). Every query is a frappe.get_list of the user (permissions and row restrictions)."""
+	cfg = source.get("number") or {}
+	doctype, field, date_field = source.get("doctype"), cfg.get("field"), cfg.get("date_field")
+	if not (doctype and field and date_field):
+		raise frappe.PermissionError
+	period = options.get("period") if options.get("period") in CHART_PERIODS else "12m"
+	group = options.get("group") or ""
+	if group and group not in {g["field"] for g in cfg.get("groups") or []}:
+		group = ""
+	buckets, kind = _chart_buckets(period)
+	base = [*_filters(source), *(cfg.get("filters") or [])]
+	values: dict = {}  # key -> [value per bucket]
+	for index, (start, end) in enumerate(buckets):
+		extra = [doctype, date_field, "between", [str(start), str(end)]]
+		fields = [{"SUM": field, "as": "total"}]
+		if group:
+			fields.insert(0, group)
+		rows = frappe.get_list(
+			doctype, filters=[*base, extra], fields=fields, group_by=group or None, limit_page_length=0, order_by=None,
+		)
+		for row in rows:
+			key = (row.get(group) or "") if group else ""
+			values.setdefault(key, [0.0] * len(buckets))[index] += float(row.get("total") or 0)
+	totals = {key: sum(v) for key, v in values.items()}
+	# the previous period of the same length, for the change in the head of the chart
+	span = (buckets[-1][1] - buckets[0][0]).days + 1
+	prev_end = add_days(buckets[0][0], -1)
+	prev_start = add_days(prev_end, -(span - 1))
+	previous: dict = {}
+	rows = frappe.get_list(
+		doctype, filters=[*base, [doctype, date_field, "between", [str(prev_start), str(prev_end)]]],
+		fields=([group] if group else []) + [{"SUM": field, "as": "total"}], group_by=group or None,
+		limit_page_length=0, order_by=None,
+	)
+	for row in rows:
+		key = (row.get(group) or "") if group else ""
+		previous[key] = previous.get(key, 0.0) + float(row.get("total") or 0)
+	keys = sorted(values, key=lambda k: -totals[k])
+	shown, rest = keys[:CHART_MAX_SERIES], keys[CHART_MAX_SERIES:]
+	titles = _group_titles(doctype, group, shown) if group else {}
+	# the colour follows the entity: the series are in a stable order (by title), «Others» last
+	series = sorted(
+		(
+			{"key": key, "label": (titles.get(key) or key or _("Not set")) if group else source.get("label"), "values": values[key],
+			 "total": totals[key], "previous": previous.get(key, 0.0)}
+			for key in shown
+		),
+		key=lambda s: str(s["label"]).lower(),
+	)
+	if rest:
+		other = [sum(values[k][i] for k in rest) for i in range(len(buckets))]
+		series.append({"key": "__other__", "label": _("Others"), "values": other, "total": sum(other), "other": 1,
+		               "previous": sum(v for k, v in previous.items() if k not in shown)})
+	if not series:
+		series = [{"key": "", "label": source.get("label"), "values": [0.0] * len(buckets), "total": 0.0}]
+	group_label = next((g["label"] for g in cfg.get("groups") or [] if g["field"] == group), "")
+	return {
+		"doctype": doctype,
+		"label": source.get("label"),
+		"period": period,
+		"bucket": kind,
+		"buckets": [str(start) for start, _end in buckets],
+		"series": series,
+		"total": sum(s["total"] for s in series),
+		"currency": bool(cfg.get("currency")),
+		"group": group,
+		"group_label": group_label,
 	}
 
 

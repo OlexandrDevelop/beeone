@@ -2,6 +2,7 @@
 // frappe.beeone.shell.widget_data, which checks the permission on every call. No timers.
 import { wins } from "./windows.js";
 import { open_route, open_section, open_command } from "./panel.js";
+import { render_chart, chart_table } from "./chart.js";
 
 const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 const icon = (n, c) => beeone.ui.icon(n, c);
@@ -12,6 +13,7 @@ const MAX_WIDGETS = 16;
 const CORE_TYPES = () => [
 	{ type: "beeone.count", label: __("Shortcut"), sizes: ["s", "m"], icon: "list" },
 	{ type: "beeone.number", label: __("Period total"), sizes: ["m", "s"], icon: "trending" },
+	{ type: "beeone.chart", label: __("Chart for the period"), sizes: ["l", "xl"], icon: "linechart" },
 	{ type: "beeone.report", label: __("Mini report"), sizes: ["l"], icon: "chart" },
 	{ type: "beeone.recent", label: __("Recent documents"), sizes: ["l"], icon: "history" },
 ];
@@ -38,7 +40,7 @@ export const desk = {
 		const hello = hour < 5 ? __("Good night, {0}", [first_name()]) : hour < 12 ? __("Good morning, {0}", [first_name()]) : hour < 18 ? __("Good afternoon, {0}", [first_name()]) : __("Good evening, {0}", [first_name()]);
 		host.innerHTML =
 			`<div class="bo-desk-hello"><div class="bo-desk-title">${esc(hello)}</div><p>${esc(__("Documents, lists and reports open as windows."))}</p>${this.tiles()}</div>` +
-			`<section class="bo-widgets" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
+			`<section class="bo-widgets${list.some((w) => w.size === "xl") ? " has-wide" : ""}" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
 			`<button type="button" class="bo-btn bo-btn--sm bo-btn--ghost" data-w="add">${icon("plus", "bo-i-sm")}${esc(__("Add widget"))}</button>` +
 			`<button type="button" class="bo-btn bo-btn--sm" data-w="edit">${esc(editing ? __("Done") : __("Customize"))}</button></div></div>` +
 			`<div class="bo-widget-grid${editing ? " is-edit" : ""}">${list.map((w, i) => this.card(w, i, list.length)).join("")}</div>` +
@@ -66,7 +68,7 @@ export const desk = {
 	},
 
 	card(w, i, n) {
-		const size = ["s", "m", "l"].includes(w.size) ? w.size : "s";
+		const size = ["s", "m", "l", "xl"].includes(w.size) ? w.size : "s";
 		const tools = editing
 			? `<div class="bo-w-tools"><button type="button" data-w="up" data-i="${i}" ${i ? "" : "disabled"} aria-label="${esc(__("Move up"))}">${icon("arrow-up")}</button>` +
 			  `<button type="button" data-w="down" data-i="${i}" ${i < n - 1 ? "" : "disabled"} aria-label="${esc(__("Move down"))}">${icon("arrow-down")}</button>` +
@@ -95,6 +97,43 @@ export const desk = {
 			return;
 		}
 		body.innerHTML = `<div class="bo-w-title">${esc(title)}</div>` + view(w, d);
+		if (w.type === "beeone.chart") {
+			const host = body.querySelector(".bo-chart-host");
+			if (host) {
+				host.__bo_w = w;
+				host.__bo_d = d;
+				render_chart(host, d, w.options || {});
+				chart_resize().observe(host);
+			}
+		}
+	},
+
+	// "Chart for the period" opened large: the chart over the whole window and the table of every value
+	expand(w) {
+		const d = data[w.id];
+		if (!d || d.error || d.denied) return;
+		const src = source_of(w);
+		const title = w.title || (src && src.label) || type_label(w.type);
+		const dlg = beeone.ui.dialog({
+			title,
+			width: 1100,
+			className: "bo-chart-dialog",
+			html:
+				`<div class="bo-dialog-head"><h3>${esc(title)}</h3></div>` +
+				`<div class="bo-dialog-body"><div class="bo-chart-host bo-chart-host--big"></div>` +
+				`<details class="bo-chart-data"><summary>${esc(__("Data as a table"))}</summary>${chart_table(d)}</details></div>` +
+				`<div class="bo-dialog-foot"><button type="button" class="bo-btn" data-close>${esc(__("Close"))}</button>` +
+				(d.doctype ? `<button type="button" class="bo-btn bo-btn--primary" data-open>${esc(__("Open the list"))}</button>` : "") +
+				`</div>`,
+		});
+		const host = dlg.box.querySelector(".bo-chart-host");
+		setTimeout(() => render_chart(host, d, w.options || {}), 0);
+		const open = dlg.box.querySelector("[data-open]");
+		if (open)
+			open.addEventListener("click", () => {
+				dlg.close();
+				frappe.set_route("List", d.doctype);
+			});
 	},
 
 	on_click(e) {
@@ -107,7 +146,11 @@ export const desk = {
 		const btn = e.target.closest("[data-w]");
 		const card = e.target.closest(".bo-w");
 		if (!btn) {
-			if (card && !editing) open_source(card.dataset.id, e.target.closest("[data-route]"));
+			if (card && !editing) {
+				const w = this.widgets().find((x) => x.id === card.dataset.id);
+				if (w && w.type === "beeone.chart") return this.expand(w);
+				open_source(card.dataset.id, e.target.closest("[data-route]"));
+			}
 			return;
 		}
 		const act = btn.dataset.w;
@@ -158,6 +201,9 @@ export const desk = {
 		const own = (cat.types || []).filter((t) => !t.denied).map((t) => ({ type: t.type, label: t.label, sizes: t.sizes, icon: "layout", own: true }));
 		const types = [...CORE_TYPES().filter((t) => cat.sources.some((s) => s.types.includes(t.type))), ...own];
 		const cur = { type: widget ? widget.type : (types[0] || {}).type, source: widget ? widget.source : "", size: widget ? widget.size : "s", title: widget ? widget.title : "", period: widget && widget.options ? widget.options.period : "month" };
+		// "Chart for the period": what splits the series, the period, the look
+		const opt = (widget && widget.options) || {};
+		const chart = { group: opt.group ?? "organization", cperiod: opt.period || "12m", style: opt.style || "area" };
 		const dlg = beeone.ui.dialog({
 			title: widget ? __("Edit widget") : __("Add widget"),
 			width: 520,
@@ -176,10 +222,22 @@ export const desk = {
 			const sizes = t.sizes || ["s", "m", "l"];
 			if (!sizes.includes(cur.size)) cur.size = sizes[0];
 			if (!t.own && !sources.some((s) => s.id === cur.source)) cur.source = (sources.find((s) => !s.denied) || sources[0] || {}).id || "";
-			const size_label = { s: __("Small"), m: __("Wide"), l: __("Large") };
+			const size_label = { s: __("Small"), m: __("Wide"), l: __("Large"), xl: __("Full panel") };
+			const src = sources.find((s) => s.id === cur.source) || {};
+			const groups = src.groups || [];
+			if (chart.group && !groups.some((g) => g.field === chart.group)) chart.group = "";
+			const choice = (f, value, list) =>
+				`<select data-f="${f}">${list.map(([v, l]) => `<option value="${esc(v)}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+			const chart_fields =
+				cur.type === "beeone.chart"
+					? `<label class="bo-field"><span>${esc(__("Split by"))}</span>${choice("group", chart.group, [["", __("Do not split")], ...groups.map((g) => [g.field, g.label])])}</label>` +
+					  `<div class="bo-field-row"><label class="bo-field"><span>${esc(__("Period"))}</span>${choice("cperiod", chart.cperiod, [["12m", __("Last 12 months")], ["ytd", __("This year")], ["90d", __("Last 90 days")], ["30d", __("Last 30 days")]])}</label>` +
+					  `<label class="bo-field"><span>${esc(__("Look"))}</span>${choice("style", chart.style, [["area", __("Areas")], ["line", __("Lines")], ["bar", __("Bars")]])}</label></div>`
+					: "";
 			body.innerHTML =
 				`<div class="bo-wd-types">${types.map((x) => `<button type="button" class="bo-wd-type${x.type === cur.type ? " is-on" : ""}" data-type="${esc(x.type)}">${icon(x.icon)}<span>${esc(x.label)}</span></button>`).join("")}</div>` +
 				(t.own ? "" : `<label class="bo-field"><span>${esc(__("Data"))}</span><select data-f="source">${sources.map((s) => `<option value="${esc(s.id)}"${s.denied ? " disabled" : ""}${s.id === cur.source ? " selected" : ""}>${esc(s.label)}${s.denied ? " — " + esc(__("no read permission")) : ""}</option>`).join("")}</select></label>`) +
+				chart_fields +
 				`<label class="bo-field"><span>${esc(__("Title"))}</span><input type="text" data-f="title" maxlength="60" value="${esc(cur.title)}"></label>` +
 				`<label class="bo-field"><span>${esc(__("Size"))}</span><select data-f="size">${sizes.map((s) => `<option value="${s}"${s === cur.size ? " selected" : ""}>${esc(size_label[s])}</option>`).join("")}</select></label>` +
 				(cur.type === "beeone.number" ? `<label class="bo-field"><span>${esc(__("Period"))}</span><select data-f="period">${["month", "quarter", "year"].map((p) => `<option value="${p}"${p === cur.period ? " selected" : ""}>${esc({ month: __("Month"), quarter: __("Quarter"), year: __("Year") }[p])}</option>`).join("")}</select></label>` : "");
@@ -193,7 +251,9 @@ export const desk = {
 		});
 		body.addEventListener("change", (e) => {
 			const f = e.target.dataset.f;
-			if (f) cur[f] = e.target.value;
+			if (["group", "cperiod", "style"].includes(f)) chart[f] = e.target.value;
+			else if (f) cur[f] = e.target.value;
+			if (f === "source") paint(); // the fields to split by belong to the source
 		});
 		body.addEventListener("input", (e) => {
 			if (e.target.dataset.f === "title") cur.title = e.target.value;
@@ -202,7 +262,7 @@ export const desk = {
 			const list = this.widgets().slice();
 			const t = types.find((x) => x.type === cur.type) || {};
 			if (!t.own && !cur.source) return;
-			const item = { id: widget ? widget.id : "w" + Date.now().toString(36), type: cur.type, source: t.own ? "" : cur.source, size: cur.size, title: cur.title.trim(), options: cur.type === "beeone.number" ? { period: cur.period } : {} };
+			const item = { id: widget ? widget.id : "w" + Date.now().toString(36), type: cur.type, source: t.own ? "" : cur.source, size: cur.size, title: cur.title.trim(), options: cur.type === "beeone.number" ? { period: cur.period } : cur.type === "beeone.chart" ? { period: chart.cperiod, group: chart.group, style: chart.style } : {} };
 			if (widget) list[list.findIndex((x) => x.id === widget.id)] = item;
 			else if (list.length >= MAX_WIDGETS) return;
 			else list.push(item);
@@ -274,7 +334,27 @@ function fmt(value, currency) {
 	return beeone.ui.money(value, { digits: Math.abs(value) >= 1000 ? 0 : 2, cur: currency });
 }
 
+let resize_observer = null;
+function chart_resize() {
+	if (!resize_observer)
+		resize_observer = new ResizeObserver((entries) => {
+			for (const e of entries) {
+				const host = e.target;
+				if (!host.isConnected) {
+					resize_observer.unobserve(host);
+					continue;
+				}
+				const width = Math.round(e.contentRect.width);
+				if (host.__bo_width === width) continue;
+				host.__bo_width = width;
+				if (host.__bo_d) render_chart(host, host.__bo_d, (host.__bo_w && host.__bo_w.options) || {});
+			}
+		});
+	return resize_observer;
+}
+
 function view(w, d) {
+	if (w.type === "beeone.chart") return `<div class="bo-chart-host"></div>`;
 	if (w.type === "beeone.count") return `<div class="bo-w-num">${esc(format_number(d.count, null, 0))}</div><div class="bo-w-sub">${esc(__("documents"))}</div>`;
 	if (w.type === "beeone.number") {
 		const up = d.change > 0;

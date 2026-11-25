@@ -41579,3 +41579,87 @@ msgstr "Даних для віджетів поки немає: вам не до
 #: frappe/public/js/beeone/shell/desk.js
 msgid "Period total"
 msgstr "Сума за період"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Chart for the period"
+msgstr "Графік за період"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "bn"
+msgstr "млрд"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "mln"
+msgstr "млн"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "thousand"
+msgstr "тис."
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Week from {0}"
+msgstr "Тиждень з {0}"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Last 12 months"
+msgstr "Останні 12 місяців"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Last 90 days"
+msgstr "Останні 90 днів"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Last 30 days"
+msgstr "Останні 30 днів"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "by {0}"
+msgstr "за {0}"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Show or hide"
+msgstr "Показати або сховати"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Data as a table"
+msgstr "Дані таблицею"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Open the list"
+msgstr "Відкрити журнал"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Full panel"
+msgstr "На всю панель"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Split by"
+msgstr "Розбити за"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Do not split"
+msgstr "Не розбивати"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Look"
+msgstr "Вигляд"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Areas"
+msgstr "Області"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Lines"
+msgstr "Лінії"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Others"
+msgstr "Інші"
+
+#: frappe/public/js/beeone/shell/desk.js
+msgid "Bars"
+msgstr "Стовпці"
+
+#: frappe/public/js/beeone/shell/chart.js
+msgid "Against the previous period: {0}"
+msgstr "Попередній такий самий період: {0}"

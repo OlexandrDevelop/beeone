@@ -1982,3 +1982,297 @@ body.bo-compact .bo-search kbd {
 		animation: none !important;
 	}
 }
+
+/* ---------- widget "Chart for the period" (beeone.chart) ---------- */
+.bo-widgets.has-wide {
+	width: min(760px, 58%);
+}
+
+.bo-w--xl {
+	grid-column: span 2;
+	grid-row: span 4;
+}
+
+.bo-w--l .bo-w-body,
+.bo-w--xl .bo-w-body {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.bo-chart-host {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.bo-chart-host--big {
+	height: min(62vh, 520px);
+}
+
+.bo-chart-head {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.bo-chart-total {
+	font-size: 22px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	font-variant-numeric: tabular-nums;
+	color: var(--bo-text);
+	line-height: 1.15;
+}
+
+.bo-chart-host--big .bo-chart-total {
+	font-size: 30px;
+}
+
+.bo-chart-period {
+	font-size: 12px;
+	color: var(--bo-text-3);
+}
+
+.bo-chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 6px;
+	margin: 8px 0 2px;
+}
+
+.bo-chart-key {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 100%;
+	padding: 3px 8px 3px 6px;
+	border: 1px solid var(--bo-border);
+	border-radius: 999px;
+	background: var(--bo-surface);
+	color: var(--bo-text-2);
+	font-size: 11.5px;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: opacity 0.15s;
+}
+
+.bo-chart-key:hover {
+	border-color: var(--bo-border-strong);
+}
+
+.bo-chart-key i {
+	flex: none;
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	background: var(--c);
+}
+
+.bo-chart-key i.is-line {
+	height: 2.5px;
+	width: 12px;
+	border-radius: 2px;
+}
+
+.bo-chart-key-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 160px;
+}
+
+.bo-chart-key b {
+	font-weight: 600;
+	color: var(--bo-text);
+	font-variant-numeric: tabular-nums;
+}
+
+.bo-chart-key.is-off {
+	opacity: 0.45;
+}
+
+.bo-chart-key.is-off i {
+	background: transparent;
+	box-shadow: inset 0 0 0 1.5px var(--c);
+}
+
+.bo-chart-plot {
+	position: relative;
+	flex: 1;
+	min-height: 90px;
+	margin-top: 4px;
+}
+
+.bo-chart-plot svg {
+	position: absolute;
+	inset: 0;
+	display: block;
+	overflow: visible;
+}
+
+.bo-chart-grid line {
+	stroke: var(--bo-border);
+	stroke-width: 1;
+}
+
+.bo-chart-grid line.is-zero {
+	stroke: var(--bo-border-strong);
+}
+
+.bo-chart-grid text,
+.bo-chart-direct {
+	font-size: 10.5px;
+	fill: var(--bo-text-3);
+	font-variant-numeric: tabular-nums;
+}
+
+.bo-chart-direct {
+	fill: var(--bo-text-2);
+	font-weight: 500;
+}
+
+.bo-chart-dot {
+	stroke: var(--bo-surface);
+	stroke-width: 2;
+}
+
+.bo-chart-cross {
+	stroke: var(--bo-text-3);
+	stroke-width: 1;
+	stroke-dasharray: 3 3;
+}
+
+.bo-chart-bar {
+	transition: opacity 0.12s;
+}
+
+.bo-chart-bar.is-dim {
+	opacity: 0.35;
+}
+
+.bo-chart-hit {
+	cursor: crosshair;
+	outline: none;
+}
+
+.bo-chart-hit:focus-visible {
+	stroke: var(--bo-accent);
+	stroke-width: 1;
+}
+
+.bo-chart-empty {
+	display: grid;
+	place-items: center;
+	height: 100%;
+	font-size: 12px;
+	color: var(--bo-text-3);
+}
+
+.bo-chart-tip {
+	position: absolute;
+	z-index: 5;
+	min-width: 150px;
+	max-width: 260px;
+	padding: 8px 10px;
+	border: 1px solid var(--bo-border);
+	border-radius: 10px;
+	background: var(--bo-surface);
+	box-shadow: var(--bo-shadow-lg);
+	pointer-events: none;
+	font-size: 12px;
+}
+
+.bo-chart-tip-head {
+	margin-bottom: 4px;
+	color: var(--bo-text-3);
+	font-size: 11px;
+}
+
+.bo-chart-tip-row {
+	display: grid;
+	grid-template-columns: 12px auto 1fr;
+	align-items: center;
+	gap: 6px;
+	padding: 1px 0;
+}
+
+.bo-chart-tip-row i {
+	width: 12px;
+	height: 2.5px;
+	border-radius: 2px;
+	background: var(--c);
+}
+
+.bo-chart-tip-row b {
+	color: var(--bo-text);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.bo-chart-tip-row span {
+	color: var(--bo-text-2);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.bo-chart-tip-row.is-sum {
+	margin-top: 3px;
+	padding-top: 4px;
+	border-top: 1px solid var(--bo-border);
+}
+
+.bo-chart-data {
+	margin-top: 14px;
+}
+
+.bo-chart-data summary {
+	cursor: pointer;
+	color: var(--bo-text-2);
+	font-size: 13px;
+}
+
+.bo-chart-table {
+	width: 100%;
+	margin-top: 8px;
+	border-collapse: collapse;
+	font-size: 12.5px;
+}
+
+.bo-chart-table th,
+.bo-chart-table td {
+	padding: 5px 8px;
+	border-bottom: 1px solid var(--bo-border);
+	text-align: left;
+	white-space: nowrap;
+}
+
+.bo-chart-table th {
+	color: var(--bo-text-3);
+	font-weight: 500;
+}
+
+.bo-chart-table .num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.bo-chart-table tfoot td {
+	border-bottom: 0;
+}
+
+.bo-field-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}
+
+.bo-wd-empty {
+	margin: 4px 0;
+	color: var(--bo-text-3);
+}

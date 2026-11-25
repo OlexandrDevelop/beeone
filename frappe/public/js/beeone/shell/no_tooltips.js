@@ -1,4 +1,4 @@
-// No tooltips in the application (user 2026-11-23: «тултіпи потрібно прибрати у всьому додатку, це зайве»).
+// No tooltips in the application (user 2026-11-23: "remove the tooltips in the whole application, they are superfluous").
 // - the native tooltip of a `title` attribute: the text moves to `aria-label` (a screen reader still reads it) and
 //   the attribute is dropped, for the page as it is and for every element added or changed later;
 // - Bootstrap tooltips (`$(...).tooltip()`): a no-op;

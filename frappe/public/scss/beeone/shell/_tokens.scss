@@ -67,10 +67,29 @@ body.bo-shell {
 	--bo-shadow-lg: 0 12px 24px -6px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
 	--bo-shadow-xl: 0 24px 48px -12px rgb(16 24 40 / 0.24);
 	--bo-shadow-sticky: 0 1px 0 var(--bo-border), 0 4px 8px -6px rgb(16 24 40 / 0.12);
+
+	/* chart series: the categorical order, validated on #ffffff (CVD ΔE ≥ 9.1, normal ≥ 19.6; slots 3–5 under 3:1 →
+	   the legend carries the values, the expanded window has the table); «Others» is neutral */
+	--bo-series-1: #2a78d6;
+	--bo-series-2: #eb6834;
+	--bo-series-3: #1baf7a;
+	--bo-series-4: #eda100;
+	--bo-series-5: #e87ba4;
+	--bo-series-6: #6250d6;
+	--bo-series-other: #98a2b3;
 }
 
 html[data-theme="dark"] body.bo-shell {
 	color-scheme: dark;
+
+	/* chart series stepped for the dark surface #12151c (all ≥ 3:1, CVD ΔE ≥ 8.4) */
+	--bo-series-1: #3987e5;
+	--bo-series-2: #d95926;
+	--bo-series-3: #199e70;
+	--bo-series-4: #c98500;
+	--bo-series-5: #d55181;
+	--bo-series-6: #9085e9;
+	--bo-series-other: #667085;
 
 	--bo-bg: #0b0d12;
 	--bo-surface: #12151c;
