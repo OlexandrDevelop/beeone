@@ -66,7 +66,7 @@ def sections_b(user):
 def widgets_hook():
 	return {
 		"sources": [
-			{"id": "todos", "label": "Tasks", "doctype": "ToDo", "types": ["beeone.count", "beeone.recent", "beeone.number"],
+			{"id": "todos", "label": "Tasks", "doctype": "ToDo", "types": ["beeone.count", "beeone.recent", "beeone.number", "beeone.chart"],
 			 "number": {"field": "idx", "date_field": "creation"}},
 			{"id": "roles", "label": "Roles", "doctype": "Role", "types": ["beeone.count"]},
 		],
