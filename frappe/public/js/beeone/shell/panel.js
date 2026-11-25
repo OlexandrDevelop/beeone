@@ -680,6 +680,7 @@ function user_menu(trigger) {
 	const accent = beeone.shell.state.accent;
 	const items =
 		`<div class="bo-menu-label">${esc(frappe.session.user_fullname || frappe.session.user)}</div>` +
+		subscription_item() +
 		`<button class="bo-menu-item" data-a="accent-cobalt">${icon("check", accent === "cobalt" ? "" : "bo-i-hide")}${esc(__("Accent: cobalt"))}</button>` +
 		`<button class="bo-menu-item" data-a="accent-teal">${icon("check", accent === "teal" ? "" : "bo-i-hide")}${esc(__("Accent: teal"))}</button>` +
 		`<div class="bo-menu-sep"></div>` +
@@ -705,10 +706,20 @@ function user_menu(trigger) {
 			else if (a === "keys") help();
 			else if (a === "settings") frappe.set_route("Form", "User", frappe.session.user);
 			else if (a === "setup") frappe.set_route("beeone-setup");
+			else if (a === "subscription") frappe.set_route("Form", "BeeOne Account");
 			else if (a === "logout") frappe.app.logout();
 		},
 		{ cls: "bo-user-pop", side: "right" }
 	);
+}
+
+// the subscription of the installation (frappe.beeone.subscription): a line of the user menu, a link for the manager
+function subscription_item() {
+	const sub = frappe.boot.beeone_subscription;
+	if (!sub) return "";
+	const text = sub.active ? __("Subscription active until {0}", [frappe.datetime.str_to_user(sub.until)]) : __("No subscription");
+	if (!sub.manager) return `<div class="bo-menu-label bo-menu-sub">${icon("star", "bo-i-sm")}${esc(text)}</div>`;
+	return `<button class="bo-menu-item" data-a="subscription">${icon("star")}${esc(text)}</button>`;
 }
 
 export function help() {

@@ -331,6 +331,7 @@ scheduler_events = {
 		"frappe.email.doctype.notification.notification.trigger_daily_alerts",
 		"frappe.desk.form.document_follow.send_daily_updates",
 		"frappe.beeone_core.doctype.ai_assistant_log.ai_assistant_log.clear_old_logs",  # beeone: AI assistant log retention
+		"frappe.beeone.subscription.daily_check",  # beeone: the rights of the installation from the BeeOne admin
 	],
 	"daily_long": [],
 	"daily_maintenance": [
@@ -552,6 +553,7 @@ extend_bootinfo = [
 	"frappe.core.doctype.user_permission.user_permission.send_user_permissions",
 	"frappe.beeone.shell.extend_bootinfo",  # beeone: the saved layout of the desktop shell
 	"frappe.beeone.setup.extend_bootinfo",  # beeone: first-run screen and single language
+	"frappe.beeone.subscription.extend_bootinfo",  # beeone: the subscription state in the user menu
 ]
 
 # beeone: register list and movement viewer data for the desk

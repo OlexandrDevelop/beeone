@@ -1,0 +1,139 @@
+{
+ "creation": "2026-11-25 00:00:00",
+ "modified": "2026-11-25 00:00:00",
+ "modified_by": "Administrator",
+ "owner": "Administrator",
+ "doctype": "DocType",
+ "module": "Beeone Core",
+ "name": "BeeOne Account",
+ "issingle": 1,
+ "engine": "InnoDB",
+ "description": "The subscription of this installation to BeeOne: the AI assistant and the updates",
+ "field_order": [
+  "state",
+  "plan",
+  "features",
+  "subscription_until",
+  "valid_until",
+  "column_break_key",
+  "installation_key",
+  "server_url",
+  "instance_id",
+  "last_check",
+  "last_error",
+  "section_sent",
+  "sent_html",
+  "entitlements",
+  "signature"
+ ],
+ "fields": [
+  {
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "label": "State",
+   "options": "Not Connected\nActive\nExpired\nKey Refused\nNo Connection",
+   "default": "Not Connected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Data",
+   "label": "Plan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "features",
+   "fieldtype": "Data",
+   "label": "Features",
+   "read_only": 1,
+   "length": 255
+  },
+  {
+   "fieldname": "subscription_until",
+   "fieldtype": "Date",
+   "label": "Subscription Until",
+   "read_only": 1
+  },
+  {
+   "fieldname": "valid_until",
+   "fieldtype": "Date",
+   "label": "Rights Valid Until",
+   "read_only": 1,
+   "description": "Without a contact with the server the rights last until this day"
+  },
+  {
+   "fieldname": "column_break_key",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "installation_key",
+   "fieldtype": "Password",
+   "label": "Installation Key",
+   "length": 255,
+   "description": "The key of this installation from the BeeOne admin"
+  },
+  {
+   "fieldname": "server_url",
+   "fieldtype": "Data",
+   "label": "Server",
+   "default": "https://admin.beeone.tech",
+   "read_only_depends_on": "eval:!frappe.boot.developer_mode"
+  },
+  {
+   "fieldname": "instance_id",
+   "fieldtype": "Data",
+   "label": "Installation ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_check",
+   "fieldtype": "Datetime",
+   "label": "Last Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_sent",
+   "fieldtype": "Section Break",
+   "label": "What Is Sent"
+  },
+  {
+   "fieldname": "sent_html",
+   "fieldtype": "HTML",
+   "label": "What Is Sent"
+  },
+  {
+   "fieldname": "entitlements",
+   "fieldtype": "Code",
+   "label": "Entitlements",
+   "options": "JSON",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Small Text",
+   "label": "Signature",
+   "hidden": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "states": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ]
+}

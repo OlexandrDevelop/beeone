@@ -42051,3 +42051,107 @@ msgstr "Рухи та залишки"
 #: frappe/beeone/shell.py
 msgid "Register explorer"
 msgstr "Огляд регістрів"
+
+#: frappe/beeone/subscription.py
+msgid "BeeOne Account"
+msgstr "Підписка BeeOne"
+
+#: frappe/beeone/subscription.py
+msgid "The subscription of this installation to BeeOne: the AI assistant and the updates"
+msgstr "Підписка цієї інсталяції на BeeOne: AI-помічник і оновлення"
+
+#: frappe/beeone/subscription.py
+msgid "Plan"
+msgstr "Тариф"
+
+#: frappe/beeone/subscription.py
+msgid "Features"
+msgstr "Функції"
+
+#: frappe/beeone/subscription.py
+msgid "Subscription Until"
+msgstr "Підписка до"
+
+#: frappe/beeone/subscription.py
+msgid "Rights Valid Until"
+msgstr "Права діють до"
+
+#: frappe/beeone/subscription.py
+msgid "Without a contact with the server the rights last until this day"
+msgstr "Без зв'язку з сервером права діють до цього дня"
+
+#: frappe/beeone/subscription.py
+msgid "Installation Key"
+msgstr "Ключ інсталяції"
+
+#: frappe/beeone/subscription.py
+msgid "The key of this installation from the BeeOne admin"
+msgstr "Ключ цієї інсталяції з адмінки BeeOne"
+
+#: frappe/beeone/subscription.py
+msgid "Server"
+msgstr "Сервер"
+
+#: frappe/beeone/subscription.py
+msgid "Installation ID"
+msgstr "ID інсталяції"
+
+#: frappe/beeone/subscription.py
+msgid "Last Check"
+msgstr "Остання перевірка"
+
+#: frappe/beeone/subscription.py
+msgid "Last Error"
+msgstr "Остання помилка"
+
+#: frappe/beeone/subscription.py
+msgid "What Is Sent"
+msgstr "Що надсилається"
+
+#: frappe/beeone/subscription.py
+msgid "Entitlements"
+msgstr "Права"
+
+#: frappe/beeone/subscription.py
+msgid "Not Connected"
+msgstr "Не підключено"
+
+#: frappe/beeone/subscription.py
+msgid "Key Refused"
+msgstr "Ключ не прийнято"
+
+#: frappe/beeone/subscription.py
+msgid "No Connection"
+msgstr "Немає зв'язку"
+
+#: frappe/beeone/subscription.py
+msgid "Subscription: {0}"
+msgstr "Підписка: {0}"
+
+#: frappe/beeone/subscription.py
+msgid "Once a day, and only while the key is filled, the site sends this to {0}. Nothing else is sent."
+msgstr "Раз на добу, і лише коли ключ заповнено, сайт надсилає це на {0}. Нічого іншого не надсилається."
+
+#: frappe/beeone/subscription.py
+msgid "The server did not accept the installation key"
+msgstr "Сервер не прийняв ключ інсталяції"
+
+#: frappe/beeone/subscription.py
+msgid "The server gave an answer that is not understood"
+msgstr "Сервер дав незрозумілу відповідь"
+
+#: frappe/beeone/subscription.py
+msgid "The signature of the answer is wrong"
+msgstr "Підпис відповіді неправильний"
+
+#: frappe/beeone/subscription.py
+msgid "No connection with the BeeOne server: {0}"
+msgstr "Немає зв'язку з сервером BeeOne: {0}"
+
+#: frappe/beeone/subscription.py
+msgid "Subscription active until {0}"
+msgstr "Підписка активна до {0}"
+
+#: frappe/beeone/subscription.py
+msgid "No subscription"
+msgstr "Без підписки"
