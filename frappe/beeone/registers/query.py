@@ -510,6 +510,50 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)
 
 
+def lowest_balance_from(register: str, moment, filters: dict, resource: str) -> float:
+	"""The lowest balance of `resource` of one key from `moment` on: after every movement at or after the moment,
+	and at the end. A posting in the past (or an unposting) must not make it negative at any of these points.
+
+	`moment` is (date, time) or a Moment; `filters` give every dimension of the key (an empty value is a blank one).
+	No permission check: it is the balance control of a posting.
+	"""
+	reg = get_register(register)
+	dims = totals.dimensions(reg)
+	if resource not in totals.resources(reg):
+		frappe.throw(_("{0} is not a resource of register {1}").format(resource, reg.name))
+	conditions, values = [], {}
+	for i, (fieldname, value) in enumerate((filters or {}).items()):
+		if fieldname not in dims:
+			frappe.throw(_("{0} is not a dimension of register {1}").format(fieldname, reg.name))
+		if value in (None, ""):
+			conditions.append(f"(`{fieldname}` IS NULL OR `{fieldname}` = '')")
+		else:
+			conditions.append(f"`{fieldname}` = %(v{i})s")
+			values[f"v{i}"] = value
+	where = " AND ".join(conditions) or "1 = 1"
+	values["day"] = getdate(moment[0])
+	date_field, time_field = reg.date_field, reg.time_field
+	order = ", ".join(f"`{f}`" for f in (date_field, time_field, "creation", "name") if f)
+	if time_field:
+		seconds = int(moment[1].total_seconds()) if hasattr(moment[1], "total_seconds") else 0
+		values["time"] = f"{seconds // 3600:02d}:{seconds % 3600 // 60:02d}:{seconds % 60:02d}"
+		moment_time = f", `{time_field}` AS moment_time"
+		after = "(moment_day > %(day)s OR (moment_day = %(day)s AND moment_time >= %(time)s))"
+	else:
+		moment_time = ""
+		after = "moment_day >= %(day)s"
+	lowest = frappe.db.sql(
+		f"""SELECT MIN(running) FROM (
+			SELECT SUM(`{resource}`) OVER (ORDER BY {order} ROWS UNBOUNDED PRECEDING) AS running,
+				`{date_field}` AS moment_day{moment_time}
+			FROM `tab{reg.register_doctype}` WHERE {where}) AS movements
+		WHERE {after}""",
+		values,
+	)[0][0]
+	total = frappe.db.sql(f"SELECT COALESCE(SUM(`{resource}`), 0) FROM `tab{reg.register_doctype}` WHERE {where}", values)[0][0]
+	return min(float(total or 0), float(lowest)) if lowest is not None else float(total or 0)
+
+
 def slice_last(
 	register: str,
 	at=None,

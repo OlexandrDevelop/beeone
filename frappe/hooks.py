@@ -31,6 +31,8 @@ beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional 
 #   beeone_ai_views = ["app.module.views"]          # read-only SQL views: [{"name", "doctypes"}]
 #   beeone_ai_sql_guard = ["app.module.sql_guard"]  # fn(stmt, tables, dialect) -> AST or raise PermissionError
 # beeone: posted documents edited in place (frappe.beeone.posted_edit). An app opts in with
+#   beeone_operational_posting = ["Doctype" | "app.module.fn"]  # today: posted at now; a future date: refused
+#   beeone_cancel_to_draft = ["Doctype", ...] or ["*"]  # a cancel (unposting) ends in a draft, no cancelled state
 #   beeone_posted_editable = ["Doctype", ...]
 #   beeone_posted_edit_checks = ["app.module.fn"]   # fn(doc) -> reason why the document cannot be edited, or None
 

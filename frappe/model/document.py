@@ -1381,9 +1381,18 @@ class Document(BaseDocument):
 		return self.save()
 
 	def _cancel(self):
-		"""Cancel the document. Sets `docstatus` = 2, then saves."""
+		"""Cancel the document. Sets `docstatus` = 2, then saves.
+
+		beeone: a document of the 1C model has no cancelled state: the cancel (the posting is undone with the
+		sequences, the back links and the checks of the application) ends in a draft (see
+		frappe.beeone.registers.posting.cancels_to_draft)."""
 		self.docstatus = DocStatus.CANCELLED
-		return self.save()
+		result = self.save()
+		from frappe.beeone.registers.posting import back_to_draft, cancels_to_draft  # beeone:
+
+		if self.flags.get("beeone_unpost_to_draft") or cancels_to_draft(self.doctype):
+			back_to_draft(self)
+		return result
 
 	def _rename(
 		self, name: str | int, merge: bool = False, force: bool = False, validate_rename: bool = True
@@ -1462,6 +1471,9 @@ class Document(BaseDocument):
 			self.run_method("validate")
 			self.run_method("before_save")
 		elif self._action == "submit":
+			from frappe.beeone.registers.posting import prepare_posting  # beeone: operational posting
+
+			prepare_posting(self)
 			self.run_method("validate")
 			self.run_method("before_submit")
 		elif self._action == "cancel":
@@ -1469,6 +1481,9 @@ class Document(BaseDocument):
 		elif self._action == "update_after_submit":
 			self.run_method("before_update_after_submit")
 		elif self._action == "repost":
+			from frappe.beeone.registers.posting import prepare_posting  # beeone: no future date
+
+			prepare_posting(self)
 			self.run_method("validate")  # beeone: a reposted document is validated like a posted one
 			self.run_method("before_repost")
 

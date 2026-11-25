@@ -204,6 +204,59 @@ class TestBeeoneRegisters(IntegrationTestCase):
 		self.assertEqual([r.qty for r in self._turnover("a")], [5])
 		self.assertEqual(doc.docstatus, 2)
 
+	def _hooks(self, **extra):
+		real = frappe.get_hooks
+
+		def fake(hook=None, *args, app_name=None, **kwargs):
+			if hook in extra:
+				return extra[hook] if app_name in (None, "frappe") else []
+			return real(hook, *args, app_name=app_name, **kwargs)
+
+		return patch.object(frappe, "get_hooks", fake)
+
+	def test_a_cancel_of_an_opted_in_doctype_ends_in_a_draft(self):
+		from frappe.beeone.registers.posting import unpost_document
+
+		with self._hooks(beeone_cancel_to_draft=[DOCUMENT]):
+			doc = self._document("a:2")
+			doc.cancel()
+			self.assertEqual((doc.docstatus, frappe.db.get_value(DOCUMENT, doc.name, "docstatus")), (0, 0))
+			self.assertEqual(self._rows(doc), [])
+			# a draft can be posted again
+			frappe.get_doc(DOCUMENT, doc.name).submit()
+			self.assertEqual(len(self._rows(doc)), 1)
+		# «Скасувати проведення» always ends in a draft, through the cancel
+		unpost_document(DOCUMENT, doc.name)
+		self.assertEqual(frappe.db.get_value(DOCUMENT, doc.name, "docstatus"), 0)
+		self.assertEqual(self._rows(doc), [])
+		self.assertEqual(self._current("a"), 0)
+
+	def test_operational_posting(self):
+		from frappe.utils import add_days, today
+
+		with self._hooks(beeone_operational_posting=[DOCUMENT]):
+			now = self._document("a:1", posting_date=today(), posting_time="00:00:01")
+			self.assertNotEqual(str(now.posting_time), "0:00:01")
+			self.assertNotEqual(str(now.posting_time), "00:00:01")
+			past = self._document("a:1", posting_date="2026-03-15", posting_time="10:30:00")
+			self.assertEqual(str(past.posting_time), "10:30:00")
+			self.assertRaises(frappe.ValidationError, self._document, "a:1", posting_date=add_days(today(), 1))
+		# without the hook a future date posts
+		self._document("a:1", posting_date=add_days(today(), 1))
+
+	def test_lowest_balance_from_a_moment(self):
+		from frappe.beeone.registers.query import lowest_balance_from
+
+		self._document("a:5", posting_date="2026-03-10")
+		self._document("a:-3", posting_date="2026-03-20")
+		self._document("a:2", posting_date="2026-03-25")
+		at = lambda day, time="10:30:00": lowest_balance_from(LEDGER, (day, _timedelta(time)), {"item": "a"}, "qty")
+		self.assertEqual(at("2026-03-01"), 2)
+		self.assertEqual(at("2026-03-15"), 2)
+		self.assertEqual(at("2026-03-21"), 4)
+		self.assertEqual(at("2026-03-20", "11:00:00"), 4)
+		self.assertEqual(lowest_balance_from(LEDGER, ("2026-03-15", _timedelta("10:30:00")), {"item": "zz"}, "qty"), 0)
+
 	# repost
 
 	def test_repost_replaces_the_set_and_keeps_docstatus(self):

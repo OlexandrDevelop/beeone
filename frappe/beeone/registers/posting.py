@@ -200,29 +200,97 @@ def repost(doc) -> None:
 	post(doc, _check_period=False)
 
 
-@frappe.whitelist()
-def unpost_document(doctype: str, name: str) -> dict:
-	"""Unpost a submitted document back to draft (docstatus = 0) and remove register movements."""
-	doc = frappe.get_doc(doctype, name)
-	doc.check_permission("cancel")
-	check_period_lock(doc)
-	if doc.docstatus != 1:
-		frappe.throw(_("Document is not posted"))
-	doc.run_method("before_cancel")
-	unpost(doc, _check_period=False)
-	doc.db_set("docstatus", 0)
+def operational_doctypes() -> set[str]:
+	"""Doctypes posted operationally (hook `beeone_operational_posting`: doctypes, or paths of functions
+	returning doctypes)."""
+	out = set()
+	for value in frappe.get_hooks("beeone_operational_posting") or []:
+		if "." in value:
+			out.update(frappe.get_attr(value)() or [])
+		else:
+			out.add(value)
+	return out
+
+
+def prepare_posting(doc) -> None:
+	"""Operational posting, as in 1C: a document of today is posted at the moment of the posting (its time
+	becomes now); a document of a past date is posted non-operationally at its own time (its balances are
+	checked at its moment by the application, the later documents follow by the sequences); a document of a
+	future date is not posted. Runs before the validation of a submit or a repost."""
+	if doc.doctype not in operational_doctypes() or not doc.get("posting_date"):
+		return
+	from frappe.utils import nowtime, today
+
+	day, now_day = getdate(doc.posting_date), getdate(today())
+	if day > now_day:
+		frappe.throw(_("Operational posting of a document with a future date is not allowed"))
+	if doc._action == "submit" and day == now_day and doc.meta.has_field("posting_time"):
+		doc.posting_time = nowtime()
+
+
+def is_operational(doc) -> bool:
+	"""True when the document is posted at today's date (operationally)."""
+	from frappe.utils import today
+
+	return bool(doc.get("posting_date")) and getdate(doc.posting_date) == getdate(today())
+
+
+def cancels_to_draft(doctype: str) -> bool:
+	"""True when a cancel of the doctype ends in a draft (the 1C model: no cancelled state).
+
+	Hook `beeone_cancel_to_draft` of an app: a list of doctypes, or "*" for every doctype of that app that
+	writes registers or is edited in place when posted (`beeone_posted_editable`).
+	"""
+	for app in frappe.get_installed_apps():
+		values = []
+		for value in frappe.get_hooks("beeone_cancel_to_draft", app_name=app) or []:
+			values.extend([value] if isinstance(value, str) else value)
+		if doctype in values:
+			return True
+		if "*" in values and _app_of(doctype) == app:
+			from frappe.beeone import posted_edit
+
+			return bool(movement_registers(doctype)) or posted_edit.enabled(doctype)
+	return False
+
+
+def _app_of(doctype: str) -> str | None:
+	module = frappe.db.get_value("DocType", doctype, "module")
+	return frappe.local.module_app.get(frappe.scrub(module)) if module else None
+
+
+def back_to_draft(doc) -> None:
+	"""A document just cancelled (docstatus 2, movements removed) becomes a draft again."""
+	doc.db_set("docstatus", 0, update_modified=False)
 	for d in doc.get_all_children():
 		d.db_set("docstatus", 0, update_modified=False)
+	doc.docstatus = 0
+	for d in doc.get_all_children():
+		d.docstatus = 0
 	doc.db_set("modified", frappe.utils.now())
-	doc.run_method("on_cancel")
-	doc.run_method("on_change")
+	doc.run_method("on_unpost")
+	doc.clear_cache()
+
+
+@frappe.whitelist()
+def unpost_document(doctype: str, name: str) -> dict:
+	"""«Скасувати проведення»: the posting is undone the way a cancel does it (period lock, sequences,
+	documents posted on its basis, the checks of the application) and the document becomes a draft."""
+	doc = frappe.get_doc(doctype, name)
+	doc.check_permission("cancel")
+	if doc.docstatus != 1:
+		frappe.throw(_("Document is not posted"))
+	doc.flags.beeone_unpost_to_draft = True
+	doc.cancel()
 	return doc.as_dict()
 
 
 @frappe.whitelist()
 def toggle_deletion_mark(doctype: str, name: str) -> dict:
-	"""Mark or unmark a document/catalog for deletion."""
+	"""Mark or unmark a document/catalog for deletion; a posted document is unposted first."""
 	doc = frappe.get_doc(doctype, name)
+	if not doc.meta.has_field("deletion_mark"):
+		frappe.throw(_("{0} has no deletion mark").format(_(doctype)))
 	if not doc.has_permission("write"):
 		doc.throw_permission_error()
 	if doc.get("predefined_id") or doc.get("is_predefined"):
@@ -231,13 +299,9 @@ def toggle_deletion_mark(doctype: str, name: str) -> dict:
 	if new_mark:
 		if getattr(doc, "docstatus", 0) == 1:
 			doc.check_permission("cancel")
-			check_period_lock(doc)
-			doc.run_method("before_cancel")
-			unpost(doc, _check_period=False)
-			doc.db_set("docstatus", 0)
-			for d in doc.get_all_children():
-				d.db_set("docstatus", 0, update_modified=False)
-			doc.run_method("on_cancel")
+			doc.flags.beeone_unpost_to_draft = True
+			doc.cancel()
+			doc = frappe.get_doc(doctype, name)
 		elif period_locked(doc):
 			check_period_lock(doc)
 		doc.db_set("deletion_mark", 1)
@@ -246,4 +310,3 @@ def toggle_deletion_mark(doctype: str, name: str) -> dict:
 	doc.db_set("modified", frappe.utils.now())
 	doc.run_method("on_change")
 	return doc.as_dict()
-
