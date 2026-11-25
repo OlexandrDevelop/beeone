@@ -510,11 +510,12 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)
 
 
-def lowest_balance_from(register: str, moment, filters: dict, resource: str) -> float:
+def lowest_balance_from(register: str, moment, filters: dict, resource: str, exclude=None) -> float:
 	"""The lowest balance of `resource` of one key from `moment` on: after every movement at or after the moment,
 	and at the end. A posting in the past (or an unposting) must not make it negative at any of these points.
 
 	`moment` is (date, time) or a Moment; `filters` give every dimension of the key (an empty value is a blank one).
+	`exclude` = (doctype, name): without the rows of this registrar (the balance as if it were not posted).
 	No permission check: it is the balance control of a posting.
 	"""
 	reg = get_register(register)
@@ -530,6 +531,12 @@ def lowest_balance_from(register: str, moment, filters: dict, resource: str) -> 
 		else:
 			conditions.append(f"`{fieldname}` = %(v{i})s")
 			values[f"v{i}"] = value
+	if exclude:
+		registrar = f"`{reg.registrar_field}` != %(own)s"
+		if reg.registrar_type_field:
+			registrar = f"({registrar} OR `{reg.registrar_type_field}` != %(own_type)s)"
+		conditions.append(registrar)
+		values.update(own_type=exclude[0], own=exclude[1])
 	where = " AND ".join(conditions) or "1 = 1"
 	values["day"] = getdate(moment[0])
 	date_field, time_field = reg.date_field, reg.time_field
