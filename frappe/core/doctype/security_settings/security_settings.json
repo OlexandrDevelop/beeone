@@ -24,7 +24,7 @@
    "label": "Expires"
   },
   {
-   "description": "Website, email or phone where vulnerabilities can be reported. Defaults to `https://security.frappe.io`",
+   "description": "Website, email or phone where vulnerabilities can be reported. Defaults to the site address",
    "fieldname": "public_contacts",
    "fieldtype": "Table",
    "label": "Contact",
@@ -38,7 +38,7 @@
    "options": "Security Settings Language"
   },
   {
-   "description": "Guidelines and policies on vulnerability reporting. Defaults to `https://frappe.io/security`",
+   "description": "Guidelines and policies on vulnerability reporting. Defaults to the site address",
    "fieldname": "public_policy",
    "fieldtype": "Data",
    "label": "Policy",

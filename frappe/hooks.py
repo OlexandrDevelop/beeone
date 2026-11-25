@@ -3,15 +3,15 @@ import os
 from . import __version__ as app_version
 
 app_name = "frappe"
-app_title = "Frappe Framework"
-app_publisher = "Frappe Technologies"
-app_description = "Full stack web framework with Python, Javascript, MariaDB, Redis, Node"
+app_title = "BeeOne"
+app_publisher = "BeeOne"
+app_description = "Платформа BeeOne"
 app_license = "MIT"
-app_logo_url = "/assets/frappe/images/frappe-framework-logo.svg"
+app_logo_url = "/assets/frappe/images/beeone-logo.svg"
 develop_version = "15.x.x-develop"
 app_home = "/desk/build"
 
-app_email = "developers@frappe.io"
+app_email = ""
 
 before_install = "frappe.utils.install.before_install"
 after_install = "frappe.utils.install.after_install"
@@ -36,13 +36,12 @@ beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional 
 # website
 app_include_js = [
 	"libs.bundle.js",
-	"billing.bundle.js",
 	"desk.bundle.js",
 	"list.bundle.js",
 	"form.bundle.js",
 	"controls.bundle.js",
 	"report.bundle.js",
-	"telemetry.bundle.js",
+	"telemetry.bundle.js",  # beeone: a no-op stub (no usage data is sent anywhere)
 	"beeone_registers.bundle.js",  # beeone: movement viewer and register lists
 	"beeone_basis.bundle.js",  # beeone: create-on-basis commands
 	"beeone_subordination.bundle.js",  # beeone: subordination tree on document forms
@@ -281,7 +280,6 @@ scheduler_events = {
 			"frappe.deferred_insert.save_to_db",
 			"frappe.automation.doctype.reminder.reminder.send_reminders",
 			"frappe.model.utils.link_count.update_link_count",
-			"frappe.utils.telemetry.pulse.client.send_queued_events",
 		],
 		# 10 minutes
 		"0/10 * * * *": [
@@ -341,7 +339,6 @@ scheduler_events = {
 	],
 	"weekly_long": [
 		"frappe.desk.form.document_follow.send_weekly_updates",
-		"frappe.utils.change_log.check_for_update",
 	],
 	"monthly": [
 		"frappe.email.doctype.auto_email_report.auto_email_report.send_monthly",
@@ -546,7 +543,6 @@ after_job = [
 ]
 
 extend_bootinfo = [
-	"frappe.utils.telemetry.add_bootinfo",
 	"frappe.core.doctype.user_permission.user_permission.send_user_permissions",
 	"frappe.beeone.shell.extend_bootinfo",  # beeone: the saved layout of the desktop shell
 	"frappe.beeone.setup.extend_bootinfo",  # beeone: first-run screen and single language
@@ -573,12 +569,6 @@ standard_help_items = [
 		"item_label": "System Health",
 		"item_type": "Route",
 		"route": "/desk/system-health-report",
-		"is_standard": 1,
-	},
-	{
-		"item_label": "Frappe Support",
-		"item_type": "Route",
-		"route": "https://frappe.io/support",
 		"is_standard": 1,
 	},
 ]
@@ -613,7 +603,6 @@ persistent_cache_keys = [
 	"rate-limit-counter-*",
 	"rl:*",
 	"concurrency:*",
-	"pulse-client:*",
 ]
 
 user_invitation = {
@@ -627,7 +616,7 @@ add_to_apps_screen = [
 	{
 		"name": app_name,
 		"logo": app_logo_url,
-		"title": "Framework",
+		"title": "BeeOne",
 		"route": app_home,
 		"has_permission": "frappe.permissions.check_app_permission",
 		# Sort order on the apps (desktop) screen; lower shows first. Framework is pinned last.

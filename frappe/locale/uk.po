@@ -63,7 +63,7 @@ msgstr "${values.doctype_name} додано до черги на оптиміз�
 
 #: frappe/public/js/frappe/ui/toolbar/about.js:76
 msgid "&copy; Frappe Technologies Pvt. Ltd. and contributors"
-msgstr "&copy; Frappe Technologies Pvt. Ltd. та учасники"
+msgstr "&copy; BeeOne"
 
 #. Label of the head_html (Code) field in DocType 'Website Settings'
 #: frappe/website/doctype/website_settings/website_settings.json
@@ -673,7 +673,7 @@ msgstr "Назва типу документа має починатися з л
 #. Description of a DocType
 #: frappe/integrations/doctype/oauth_settings/oauth_settings.json
 msgid "A Frappe Framework instance can function as an OAuth Client, Resource, or Authorization server. This DocType contains settings related to all three."
-msgstr "Екземпляр Frappe Framework може працювати як клієнт OAuth, ресурс або сервер авторизації. Цей тип документа містить налаштування для всіх трьох ролей."
+msgstr "Екземпляр BeeOne може працювати як клієнт OAuth, ресурс або сервер авторизації. Цей тип документа містить налаштування для всіх трьох ролей."
 
 #: frappe/custom/doctype/custom_field/custom_field.py:181
 msgid "A field with the name {0} already exists in {1}"
@@ -11024,7 +11024,7 @@ msgstr "Не вдалося сформувати тему: {}"
 
 #: frappe/integrations/frappe_providers/frappecloud_billing.py:150
 msgid "Failed to request login to Frappe Cloud"
-msgstr "Не вдалося запросити вхід до Frappe Cloud"
+msgstr "Не вдалося запросити вхід до BeeOne Cloud"
 
 #: frappe/email/doctype/email_account/email_account.py:240
 msgid "Failed to retrieve the list of IMAP folders from the server. Please ensure the mailbox is accessible and the account has permission to list folders."
@@ -12198,43 +12198,43 @@ msgstr "Фреймворк"
 #: frappe/integrations/doctype/social_login_key/social_login_key.json
 #: frappe/www/login.py:53 frappe/www/login.py:149
 msgid "Frappe"
-msgstr "Frappe"
+msgstr "BeeOne"
 
 #: frappe/public/js/frappe/ui/toolbar/about.js:35
 msgid "Frappe Framework Version"
-msgstr "Версія Frappe Framework"
+msgstr "Версія BeeOne"
 
 #: frappe/public/js/frappe/ui/theme_switcher.js:59
 msgid "Frappe Light"
-msgstr "Frappe Light"
+msgstr "BeeOne Light"
 
 #. Option for the 'Service' (Select) field in DocType 'Email Account'
 #: frappe/email/doctype/email_account/email_account.json
 msgid "Frappe Mail"
-msgstr "Frappe Mail"
+msgstr "BeeOne Mail"
 
 #: frappe/email/doctype/email_account/email_account.py:650
 msgid "Frappe Mail OAuth Error"
-msgstr "Помилка OAuth Frappe Mail"
+msgstr "Помилка OAuth BeeOne Mail"
 
 #. Label of the frappe_mail_site (Data) field in DocType 'Email Account'
 #: frappe/email/doctype/email_account/email_account.json
 msgid "Frappe Mail Site"
-msgstr "Сайт Frappe Mail"
+msgstr "Сайт BeeOne Mail"
 
 #. Label of a standard help item
 #. Type: Route
 #: frappe/hooks.py frappe/public/js/frappe/ui/toolbar/about.js:46
 msgid "Frappe Support"
-msgstr "Підтримка Frappe"
+msgstr "Підтримка BeeOne"
 
 #: frappe/public/js/frappe/legacy_gravatar_cleanup.js:18
-msgid "Frappe no longer uses Gravatar because it can disclose hashed email addresses to a third-party service. To fully stop this behavior, existing Gravatar image URLs must be deleted."
-msgstr "Frappe більше не використовує Gravatar, оскільки це може розкривати хешовані адреси пошти стороннім сервісам. Щоб повністю припинити це, наявні URL зображень Gravatar потрібно видалити."
+msgid "BeeOne no longer uses Gravatar because it can disclose hashed email addresses to a third-party service. To fully stop this behavior, existing Gravatar image URLs must be deleted."
+msgstr "BeeOne більше не використовує Gravatar, оскільки це може розкривати хешовані адреси пошти стороннім сервісам. Щоб повністю припинити це, наявні URL зображень Gravatar потрібно видалити."
 
 #: frappe/website/doctype/web_page/web_page.js:97
-msgid "Frappe page builder using components"
-msgstr "Конструктор сторінок Frappe на основі компонентів"
+msgid "BeeOne page builder using components"
+msgstr "Конструктор сторінок BeeOne на основі компонентів"
 
 #: frappe/public/js/frappe/file_uploader/ImageCropper.vue:112
 msgctxt "Image Cropper"
@@ -20146,11 +20146,11 @@ msgstr "Відкриті документи"
 
 #: frappe/public/js/frappe/ui/sidebar/sidebar.js:112
 msgid "Open Frappe CRM"
-msgstr "Відкрити Frappe CRM"
+msgstr "Відкрити BeeOne CRM"
 
 #: frappe/public/js/frappe/ui/sidebar/sidebar.js:149
 msgid "Open Frappe Helpdesk"
-msgstr "Відкрити Frappe Helpdesk"
+msgstr "Відкрити BeeOne Helpdesk"
 
 #: frappe/public/js/frappe/ui/keyboard.js:228
 msgid "Open Global Search"
@@ -27822,7 +27822,7 @@ msgstr "Розпочато о"
 
 #: frappe/desk/page/setup_wizard/setup_wizard.js:315
 msgid "Starting Frappe ..."
-msgstr "Запуск Frappe ..."
+msgstr "Запуск BeeOne ..."
 
 #. Label of the starts_on (Datetime) field in DocType 'Event'
 #: frappe/desk/doctype/event/event.json
@@ -28467,7 +28467,7 @@ msgstr "Перейти до CRM"
 
 #: frappe/public/js/frappe/ui/sidebar/sidebar.js:123
 msgid "Switch to Frappe CRM"
-msgstr "Перейти до Frappe CRM"
+msgstr "Перейти до BeeOne CRM"
 
 #: frappe/public/js/frappe/ui/sidebar/sidebar.js:148
 #: frappe/public/js/frappe/ui/sidebar/sidebar.js:160
@@ -31333,7 +31333,7 @@ msgstr "Оновити значення"
 
 #: frappe/utils/change_log.py:406
 msgid "Update from Frappe Cloud"
-msgstr "Оновити з Frappe Cloud"
+msgstr "Оновити з BeeOne Cloud"
 
 #: frappe/public/js/frappe/list/bulk_operations.js:406
 msgid "Update {0} records"
@@ -31993,7 +31993,7 @@ msgstr "Перевірити поле"
 #. Account'
 #: frappe/email/doctype/email_account/email_account.json
 msgid "Validate Frappe Mail Settings"
-msgstr "Перевірити налаштування Frappe Mail"
+msgstr "Перевірити налаштування BeeOne Mail"
 
 #. Label of the validate_ssl_certificate (Check) field in DocType 'Email
 #. Account'
@@ -32361,7 +32361,7 @@ msgstr "Перейти на робочий стіл"
 
 #: frappe/public/js/frappe/ui/toolbar/about.js:50
 msgid "Visit Frappe Support Portal"
-msgstr "Відвідати портал підтримки Frappe"
+msgstr "Відвідати портал підтримки BeeOne"
 
 #: frappe/website/doctype/website_route_meta/website_route_meta.js:7
 msgid "Visit Web Page"
@@ -32910,7 +32910,7 @@ msgstr "Вітальний лист надіслано"
 
 #: frappe/public/js/frappe/ui/user_onboarding/user_onboarding.bundle.js:17
 msgid "Welcome to Frappe!"
-msgstr "Вітаємо у Frappe!"
+msgstr "Вітаємо у BeeOne!"
 
 #: frappe/public/js/frappe/views/workspace/workspace.js:696
 msgid "Welcome to the {0} workspace"

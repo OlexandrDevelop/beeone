@@ -181,6 +181,11 @@ def get_app_last_commit_ref(app):
 
 
 def check_for_update():
+	"""beeone: BeeOne is its own platform — no release checks against GitHub of Frappe."""
+	return None
+
+
+def _frappe_check_for_update():
 	if frappe.get_system_settings("disable_system_update_notification") or not frappe.is_setup_complete():
 		return
 
@@ -231,7 +236,7 @@ def check_for_update():
 
 
 def has_app_update_notifications() -> bool:
-	return bool(frappe.cache.sismember("changelog-update-user-set", frappe.session.user))
+	return False  # beeone: no update notifications
 
 
 def parse_latest_non_beta_release(response: list, current_version: Version) -> list | None:
@@ -362,6 +367,7 @@ def add_message_to_redis(update_json):
 
 @frappe.whitelist()
 def show_update_popup():
+	return  # beeone: no update notifications
 	if frappe.get_system_settings("disable_system_update_notification"):
 		return
 	user = frappe.session.user

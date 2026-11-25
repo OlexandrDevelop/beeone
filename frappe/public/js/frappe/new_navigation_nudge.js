@@ -53,9 +53,7 @@ frappe.ui.maybe_show_new_navigation_prompt = function ({ onhide } = {}) {
 				<p>${__(
 					"Your icons and their layout stay just as they are, and you can switch back anytime from Desktop Settings."
 				)}</p>
-				<p><a href="https://docs.frappe.io/framework/user/en/desk/navigation/migrating-to-the-new-navigation" target="_blank" rel="noopener noreferrer">${__(
-					"Read the migration guide"
-				)}</a></p>`,
+`,
 			},
 		],
 		primary_action_label: __("Try it"),

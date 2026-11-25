@@ -8,6 +8,7 @@ from .utils import anonymize_user, pulse_host, utc_iso
 
 
 def is_enabled() -> bool:
+	return False  # beeone: no usage data is sent to Frappe
 	# Not cached: the underlying reads are conf lookups (in-memory) and System Settings
 	# (already request- and redis-cached by frappe), so a local cache here buys nothing
 	# but staleness — notably at setup wizard completion, where the opt-out lands.

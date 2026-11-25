@@ -54,14 +54,12 @@ class SecuritySettings(Document):
 
 	@property
 	def public_policy_section(self):
-		value = self.public_policy or "https://frappe.io/security"
+		value = self.public_policy or frappe.utils.get_url()
 		return f"# Read our security policy before reporting an issue\nPolicy: {value}"
 
 	@property
 	def public_contacts_section(self):
-		contacts = [self.with_protocol(c.contact, c.type) for c in self.public_contacts] or [
-			"https://security.frappe.io"
-		]
+		contacts = [self.with_protocol(c.contact, c.type) for c in self.public_contacts] or [frappe.utils.get_url()]
 		value = "\n".join(f"Contact: {c}" for c in contacts)
 		return f"# Our security address\n{value}"
 

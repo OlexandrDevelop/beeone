@@ -94,7 +94,7 @@ frappe.tour["Web Page"] = [
 						<li><b>${__("Rich Text")}</b>: ${__("Standard rich text editor with controls")}</li>
 						<li><b>${__("Markdown")}</b>: ${__("Github flavoured markdown syntax")}</li>
 						<li><b>${__("HTML")}</b>: ${__("HTML with jinja support")}</li>
-						<li><b>${__("Page Builder")}</b>: ${__("Frappe page builder using components")}</li>
+						<li><b>${__("Page Builder")}</b>: ${__("BeeOne page builder using components")}</li>
 					</ul>
 					`,
 	},

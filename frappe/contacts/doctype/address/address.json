@@ -6,7 +6,7 @@
  "description": "A postal address of a customer, supplier, company or contact.",
  "doctype": "DocType",
  "document_type": "Setup",
- "documentation": "https://docs.frappe.io/erpnext/user/manual/en/address",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "address_details",

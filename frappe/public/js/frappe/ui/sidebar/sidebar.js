@@ -111,6 +111,8 @@ frappe.ui.Sidebar = class Sidebar {
 	}
 
 	get_crm_banner(module) {
+		return; // beeone: no promotion of the products of Frappe
+		// eslint-disable-next-line no-unreachable
 		if (module != "CRM") return;
 
 		const icon =
@@ -146,6 +148,8 @@ frappe.ui.Sidebar = class Sidebar {
 	}
 
 	get_helpdesk_banner(module) {
+		return; // beeone: no promotion of the products of Frappe
+		// eslint-disable-next-line no-unreachable
 		if (module != "Support") return;
 
 		const icon =

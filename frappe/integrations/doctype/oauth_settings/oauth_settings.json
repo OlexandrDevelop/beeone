@@ -2,9 +2,9 @@
  "actions": [],
  "allow_rename": 1,
  "creation": "2025-07-03 12:04:14.759362",
- "description": "A Frappe Framework instance can function as an OAuth Client, Resource, or Authorization server. This DocType contains settings related to all three.",
+ "description": "A BeeOne instance can function as an OAuth Client, Resource, or Authorization server. This DocType contains settings related to all three.",
  "doctype": "DocType",
- "documentation": "https://docs.frappe.io/framework/oauth2",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "authorization_tab",
@@ -46,7 +46,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "https://docs.frappe.io/framework",
+   "default": "",
    "description": "URL of a human-readable page with info that developers might need.",
    "fieldname": "resource_documentation",
    "fieldtype": "Data",
@@ -133,7 +133,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "New line separated list of allowed public client URLs (eg <code>https://frappe.io</code>), or <code>*</code> to accept all.\n<br>\nPublic clients are restricted by default.",
+   "description": "New line separated list of allowed public client URLs (eg <code>https://example.com</code>), or <code>*</code> to accept all.\n<br>\nPublic clients are restricted by default.",
    "fieldname": "allowed_public_client_origins",
    "fieldtype": "Small Text",
    "label": "Allowed Public Client Origins"

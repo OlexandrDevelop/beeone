@@ -14,7 +14,7 @@
  ],
  "creation": "2020-08-18 17:44:35.647815",
  "doctype": "DocType",
- "documentation": "https://docs.frappe.io/framework/user/en/desk/scripting/system-console",
+ "documentation": "",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [

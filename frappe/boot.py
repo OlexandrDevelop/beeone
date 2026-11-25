@@ -23,7 +23,6 @@ from frappe.email.inbox import get_email_accounts
 from frappe.integrations.frappe_providers.cloud_settings import (
 	get_boot_context as get_cloud_settings_boot_context,
 )
-from frappe.integrations.frappe_providers.frappecloud_billing import current_site_info, is_fc_site
 from frappe.model.base_document import get_controller
 from frappe.utils import add_user_info, get_system_timezone
 from frappe.utils.caching import redis_cache
@@ -125,7 +124,7 @@ def get_bootinfo():
 	bootinfo.translated_doctypes = get_translated_doctypes()
 	bootinfo.doctype_ptype_map = get_doctype_ptype_map()
 	bootinfo.subscription_conf = add_subscription_conf()
-	bootinfo.is_fc_site = is_fc_site()
+	bootinfo.is_fc_site = False  # beeone: no Frappe Cloud
 	bootinfo.cloud_settings = get_cloud_settings_boot_context()
 	bootinfo.enable_address_autocompletion = frappe.db.get_single_value(
 		"Geolocation Settings", "enable_address_autocompletion"
@@ -138,8 +137,6 @@ def get_bootinfo():
 	bootinfo.desktop_icon_urls = get_desktop_icon_urls()
 	bootinfo.desktop_icon_style = get_icon_style() or "Subtle"
 	bootinfo.desktop_page = get_desktop_page()
-	if bootinfo.is_fc_site:
-		bootinfo.site_info = current_site_info()
 	return bootinfo
 
 
@@ -655,10 +652,7 @@ def add_subscription_conf():
 
 
 def get_sentry_dsn():
-	if not frappe.get_system_settings("enable_telemetry"):
-		return
-
-	return os.getenv("FRAPPE_SENTRY_DSN")
+	return None  # beeone: no telemetry to Frappe
 
 
 def get_module_sidebars():

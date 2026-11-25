@@ -7,7 +7,7 @@
  "description": "A person you deal with, at a customer, supplier or anywhere else.",
  "doctype": "DocType",
  "document_type": "Setup",
- "documentation": "https://docs.frappe.io/erpnext/user/manual/en/contact",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "contact_section",

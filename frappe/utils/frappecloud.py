@@ -8,4 +8,4 @@ def on_frappecloud() -> bool:
 
 
 	Useful for modifying few features for better UX."""
-	return frappe.local.site.endswith(FRAPPE_CLOUD_DOMAINS)
+	return False  # beeone: never on Frappe Cloud

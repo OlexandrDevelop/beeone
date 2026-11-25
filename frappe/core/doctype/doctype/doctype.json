@@ -7,7 +7,7 @@
  "description": "DocType is a Table / Form in the application.",
  "doctype": "DocType",
  "document_type": "Document",
- "documentation": "https://docs.frappe.io/framework/user/en/basics/doctypes",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "form_builder_tab",

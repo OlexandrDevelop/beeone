@@ -1337,6 +1337,8 @@ frappe.ui.form.Form = class FrappeForm {
 	}
 
 	show_report_bug_link() {
+		return; // beeone: no links to the issue tracker of Frappe
+		// eslint-disable-next-line no-unreachable
 		if (this.meta.beta) {
 			this.add_web_link(
 				"https://github.com/frappe/" +

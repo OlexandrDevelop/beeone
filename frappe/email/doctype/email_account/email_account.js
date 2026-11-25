@@ -131,17 +131,7 @@ function add_helpful_links(frm) {
 		frm.set_df_property("password", "description", "");
 	}
 
-	if (frm.doc.service === "Frappe Mail") {
-		frm.set_df_property(
-			"api_secret",
-			"description",
-			__("To know more click {0}", [
-				"<a href='https://github.com/frappe/mail' target='_blank'>" + __("here") + "</a>",
-			])
-		);
-	} else {
-		frm.set_df_property("api_secret", "description", "");
-	}
+	frm.set_df_property("api_secret", "description", "");
 }
 
 frappe.ui.form.on("Email Account", {

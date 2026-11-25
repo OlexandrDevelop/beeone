@@ -260,14 +260,6 @@ class DesktopPage {
 				},
 				order: 30,
 			},
-			{
-				icon: "life-buoy",
-				label: "Frappe Support",
-				onclick: function () {
-					window.open("https://support.frappe.io/help", "_blank");
-				},
-				order: 40,
-			},
 		];
 		// sort() is stable, so items sharing an `order` keep the order they were added in.
 		menu_items = [...menu_items, ...this.desktop_menu_items].sort(

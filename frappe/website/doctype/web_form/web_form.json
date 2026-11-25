@@ -4,7 +4,7 @@
  "creation": "2014-09-01 14:08:48.624556",
  "doctype": "DocType",
  "document_type": "Document",
- "documentation": "https://docs.frappe.io/framework/user/en/web-form",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "form_tab",
@@ -196,7 +196,6 @@
    "label": "Max attachment size"
   },
   {
-   "description": "For help see <a href=\"https://frappeframework.com/docs/user/en/guides/portal-development/web-forms\" target=\"_blank\" rel=\"noopener noreferrer\">Client Script API and Examples</a>",
    "fieldname": "client_script",
    "fieldtype": "Code",
    "label": "Client script",

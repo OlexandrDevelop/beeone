@@ -342,7 +342,6 @@ def _get_authorization_server_metadata():
 		response_modes_supported=["query"],
 		grant_types_supported=["authorization_code", "refresh_token"],
 		token_endpoint_auth_methods_supported=["none", "client_secret_basic"],
-		service_documentation="https://docs.frappe.io/framework/user/en/guides/integration/how_to_set_up_oauth#add-a-client-app",
 		revocation_endpoint=f"{issuer}{ENDPOINTS['revocation_endpoint']}",
 		revocation_endpoint_auth_methods_supported=["client_secret_basic"],
 		introspection_endpoint=f"{issuer}{ENDPOINTS['introspection_endpoint']}",

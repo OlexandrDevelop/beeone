@@ -128,6 +128,7 @@ def api(method: str, data: str | dict[str, Any] | None = None):
 
 @frappe.whitelist()
 def is_fc_site() -> bool:
+	return False  # beeone: no Frappe Cloud billing
 	is_system_manager = frappe.get_roles(frappe.session.user).count("System Manager")
 	if not is_system_manager:
 		return False

@@ -13,23 +13,7 @@ frappe.ui.misc.about = function () {
 			<div class="about-frappe-section flex flex-col items-center gap-3 py-3 w-full">
 				<div class="about-frappe-header flex flex-col justify-center items-center gap-1.5">
 					<img src="/assets/frappe/images/beeone-logo.svg" alt="beeone" class="about-frappe-wordmark">
-					<p class="about-tagline text-p-sm text-ink-gray-5 m-0">${__(
-						"на основі Frappe Framework"
-					)}</p>
-				</div>
-				<div class="about-social-btns flex gap-1">
-					<a href="https://frappe.io/" target="_blank" class="es-button" data-variant="ghost"
-						data-icon-button="true" title="${__("Website")}" aria-label="${__("Website")}">
-						${frappe.utils.icon("globe", "sm", "", "", "", true)}
-					</a>
-					<a href="https://github.com/frappe" target="_blank" class="es-button" data-variant="ghost"
-						data-icon-button="true" title="${__("Source Code")}" aria-label="${__("Source Code")}">
-						${frappe.utils.icon("github", "sm", "", "", "", true)}
-					</a>
-					<a href="https://discuss.frappe.io" target="_blank" class="es-button" data-variant="ghost"
-						data-icon-button="true" title="${__("Forum")}" aria-label="${__("Forum")}">
-						${frappe.utils.icon("message-circle", "sm", "", "", "", true)}
-					</a>
+					<p class="about-tagline text-p-sm text-ink-gray-5 m-0">${__("Платформа BeeOne")}</p>
 				</div>
 			</div>
 
@@ -37,28 +21,13 @@ frappe.ui.misc.about = function () {
 				<div class="about-info-row flex items-center justify-between">
 					<div class="about-info-content flex flex-col gap-1">
 						<div class="about-info-title inline-flex items-center gap-1 text-base-semibold text-ink-gray-8">${__(
-							"Frappe Framework Version"
+							"Версія платформи BeeOne"
 						)}</div>
 						<div class="about-info-sub text-p-sm text-ink-gray-5" id="about-framework-version">
 							${__("Loading...")}
 						</div>
 					</div>
 				</div>
-				${
-					frappe.boot.is_fc_site
-						? `<div class="about-info-row flex items-center justify-between">
-					<div class="about-info-content flex flex-col gap-1">
-						<a href="https://frappecloud.com/support" target="_blank" class="about-info-title inline-flex items-center gap-1 about-info-title-link text-base-semibold text-ink-gray-8 no-underline">
-							${__("Frappe Support")}
-							${frappe.utils.icon("external-link", "xs")}
-						</a>
-						<div class="about-info-sub text-p-sm text-ink-gray-5">
-							${__("Visit Frappe Support Portal")}
-						</div>
-					</div>
-				</div>`
-						: ""
-				}
 			</div>
 
 			<div class="about-section-header flex items-center justify-between w-full">
@@ -79,7 +48,7 @@ frappe.ui.misc.about = function () {
 		.removeClass("hide")
 		.prepend(
 			`<div class="about-footer text-p-sm text-ink-gray-4 text-center">
-			${__("&copy; Frappe Technologies Pvt. Ltd. and contributors")}
+			${__("&copy; BeeOne")}
 		</div>`
 		);
 
@@ -120,18 +89,7 @@ frappe.ui.misc.about = function () {
 
 	const show_versions = function (versions) {
 		if (versions.frappe) {
-			$("#about-framework-version").text(`frappe: ${get_version_text(versions.frappe)}`);
-		}
-
-		// Show update button on Frappe Cloud sites when updates are available
-		const $version_row = $("#about-framework-version").closest(".about-info-row");
-		$version_row.find(".about-update-indicator").remove();
-		if (frappe.boot.has_app_updates && frappe.boot.is_fc_site) {
-			$(`<a href="https://frappecloud.com/dashboard/sites/${window.location.hostname}"
-					target="_blank"
-					class="es-button no-underline about-update-indicator">
-					${__("Update Available")}
-				</a>`).appendTo($version_row);
+			$("#about-framework-version").text(`BeeOne ${get_version_text(versions.frappe)}`);
 		}
 
 		const $wrap = $("#about-app-versions").empty();

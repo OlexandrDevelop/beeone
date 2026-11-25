@@ -9,7 +9,7 @@
  "creation": "2013-04-30 12:58:46",
  "doctype": "DocType",
  "document_type": "Other",
- "documentation": "https://docs.frappe.io/erpnext/user/manual/en/website-settings",
+ "documentation": "",
  "engine": "InnoDB",
  "field_order": [
   "home_tab",
@@ -235,7 +235,7 @@
    "label": "FavIcon"
   },
   {
-   "description": "Sub-domain provided by erpnext.com",
+   "description": "Sub-domain",
    "fieldname": "subdomain",
    "fieldtype": "Small Text",
    "label": "Subdomain",
@@ -384,7 +384,7 @@
    "label": "Navbar Template"
   },
   {
-   "default": "Frappe",
+   "default": "BeeOne",
    "fieldname": "app_name",
    "fieldtype": "Data",
    "label": "App Name"

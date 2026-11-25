@@ -31,9 +31,8 @@ frappe.ui.form.on("Server Script", {
 	check_safe_exec(frm) {
 		frappe.xcall("frappe.core.doctype.server_script.server_script.enabled").then((enabled) => {
 			if (enabled === false) {
-				let docs_link =
-					"https://frappeframework.com/docs/user/en/desk/scripting/server-script";
-				let docs = `<a href=${docs_link}>${__("Official Documentation")}</a>`;
+				// beeone: the platform configuration (bench set-config -g server_script_enabled 1)
+				let docs = `<code>server_script_enabled</code>`;
 
 				frm.dashboard.clear_comment();
 				let msg = __("Server Scripts feature is not available on this site.") + " ";

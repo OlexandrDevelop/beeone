@@ -554,7 +554,7 @@ class User(Document):
 			dict(
 				link=link,
 				site_url=get_url(),
-				app_name=get_brand_name() or "Frappe",
+				app_name=get_brand_name() or "BeeOne",
 			),
 			custom_template=welcome_email_template,
 			wrapper=None if welcome_email_template else "templates/emails/auth_email.html",

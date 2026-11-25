@@ -247,8 +247,7 @@ class CustomizeForm(Document):
 				if frappe.db.is_db_table_size_limit(e):
 					frappe.throw(
 						_("You have hit the row size limit on database table: {0}").format(
-							"<a href='https://docs.erpnext.com/docs/v14/user/manual/en/customize-erpnext/articles/maximum-number-of-fields-in-a-form'>"
-							"Maximum Number of Fields in a Form</a>"
+							_("Maximum Number of Fields in a Form")
 						),
 						title=_("Database Table Row Size Limit"),
 					)

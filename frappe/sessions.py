@@ -128,7 +128,7 @@ def get():
 	"""get session boot info"""
 	from frappe.boot import get_bootinfo
 	from frappe.desk.doctype.note.note import get_unseen_notes
-	from frappe.utils.change_log import get_change_log
+
 	from frappe.utils.legacy_gravatar_cleanup import (
 		should_show_gravatar_deletion_prompt,
 	)
@@ -157,7 +157,7 @@ def get():
 
 		# check only when clear cache is done, and don't cache this
 		if frappe.local.request:
-			bootinfo["change_log"] = get_change_log()
+			bootinfo["change_log"] = []  # beeone: no release notes of Frappe
 
 	bootinfo["metadata_version"] = frappe.client_cache.get_value("metadata_version")
 	if not bootinfo["metadata_version"]:
