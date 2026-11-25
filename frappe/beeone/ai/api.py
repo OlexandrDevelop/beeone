@@ -3,6 +3,8 @@
 
 """Whitelisted methods of the AI assistant panel (public/js/beeone/shell/assistant.js)."""
 
+import re
+
 import frappe
 from frappe import _
 from frappe.beeone.ai import agent
@@ -48,7 +50,10 @@ def help_page(page):
 	p = ai_help.page(page)
 	if not p:
 		frappe.throw(_("The help page is not found"))
-	p["html"] = markdown(p.pop("text"))
+	# an HTML comment (the doctypes of a guide) makes the text pass as HTML: drop it, and the title shown above
+	text = re.sub(r"<!--.*?-->", "", p.pop("text"), flags=re.S)
+	text = re.sub(r"\A\s*#\s+[^\n]*\n", "", text)
+	p["html"] = markdown(text)
 	return p
 
 

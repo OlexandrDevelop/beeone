@@ -160,7 +160,10 @@ def offline_answer(question, reason, found, tools):
 	guide = next((s for s in found if s["kind"] == "guide"), None)
 	if guide:
 		sections = ai_help.split_sections(ai_help.index()["pages"].get(guide["page"]) or {})
-		steps = next((t for h, t in sections if h.lower().startswith(STEPS_HEADINGS)), None)
+		# the steps: the section so named, else the first one that is neither the intro nor «where to find» / «related»
+		steps = next((t for h, t in sections if h.lower().startswith(STEPS_HEADINGS)), None) or next(
+			(t for h, t in sections if h and not h.lower().startswith(SKIP_HEADINGS)), None
+		)
 		body = guide["text"] if guide["section"] and not guide["section"].lower().startswith(SKIP_HEADINGS) else (steps or guide["text"])
 		lines += ["", f"**{guide['title']}**", "", body[:OFFLINE_CHARS].strip()]
 		return "\n".join(lines)
