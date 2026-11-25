@@ -42039,3 +42039,15 @@ msgstr "Сьогодні лишилось питань: {0}"
 #: frappe/beeone/ai
 msgid "Tokens"
 msgstr "Токени"
+
+#: frappe/beeone/shell.py
+msgid "Registers"
+msgstr "Регістри"
+
+#: frappe/beeone/shell.py
+msgid "Movements and balances"
+msgstr "Рухи та залишки"
+
+#: frappe/beeone/shell.py
+msgid "Register explorer"
+msgstr "Огляд регістрів"
