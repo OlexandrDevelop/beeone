@@ -41663,3 +41663,379 @@ msgstr "Стовпці"
 #: frappe/public/js/beeone/shell/chart.js
 msgid "Against the previous period: {0}"
 msgstr "Попередній такий самий період: {0}"
+
+#: frappe/beeone/ai
+msgid "AI Assistant Log"
+msgstr "Журнал AI-помічника"
+
+#: frappe/beeone/ai
+msgid "AI Assistant Settings"
+msgstr "Налаштування AI-помічника"
+
+#: frappe/beeone/ai
+msgid "AI assistant"
+msgstr "AI-помічник"
+
+#: frappe/beeone/ai
+msgid "AI model"
+msgstr "AI-модель"
+
+#: frappe/beeone/ai
+msgid "Answer"
+msgstr "Відповідь"
+
+#: frappe/beeone/ai
+msgid "Answer Length, Tokens"
+msgstr "Довжина відповіді, токенів"
+
+#: frappe/beeone/ai
+msgid "Answered"
+msgstr "Відповів"
+
+#: frappe/beeone/ai
+msgid "Ask about the program or your data…"
+msgstr "Запитайте про програму або ваші дані…"
+
+#: frappe/beeone/ai
+msgid "Ask how to do something in the program or what is going on in your data. I read only what you may read and change nothing."
+msgstr "Запитайте, як щось зробити в програмі, або що відбувається у ваших даних. Я читаю лише те, що доступно вам, і нічого не змінюю."
+
+#: frappe/beeone/ai
+msgid "Cache Answers about Using the Program"
+msgstr "Кешувати відповіді про роботу з програмою"
+
+#: frappe/beeone/ai
+msgid "Calls of the model for one question (each call of a tool takes one more)"
+msgstr "Звернень до моделі на одне питання (кожен виклик інструмента — ще одне)"
+
+#: frappe/beeone/ai
+msgid "Check that the stock balances are all right"
+msgstr "Перевір, чи все добре з товарними залишками"
+
+#: frappe/beeone/ai
+msgid "Checking…"
+msgstr "Перевіряю…"
+
+#: frappe/beeone/ai
+msgid "Checks"
+msgstr "Перевірки"
+
+#: frappe/beeone/ai
+msgid "Connect"
+msgstr "Підключити"
+
+#: frappe/beeone/ai
+msgid "Could not get an answer"
+msgstr "Не вдалося отримати відповідь"
+
+#: frappe/beeone/ai
+msgid "Counted totals"
+msgstr "Порахував підсумки"
+
+#: frappe/beeone/ai
+msgid "Data and Privacy"
+msgstr "Дані та конфіденційність"
+
+#: frappe/beeone/ai
+msgid "Duration, s"
+msgstr "Тривалість, с"
+
+#: frappe/beeone/ai
+msgid "For example"
+msgstr "Наприклад"
+
+#: frappe/beeone/ai
+msgid "For example gemini-flash-latest or gemini-2.5-flash; for a local server the name of its model"
+msgstr "Наприклад gemini-flash-latest або gemini-2.5-flash; для локального сервера — назва його моделі"
+
+#: frappe/beeone/ai
+msgid "For example http://ollama:11434/v1 or https://openrouter.ai/api/v1"
+msgstr "Наприклад http://ollama:11434/v1 або https://openrouter.ai/api/v1"
+
+#: frappe/beeone/ai
+msgid "From Cache"
+msgstr "З кешу"
+
+#: frappe/beeone/ai
+msgid "Gemini"
+msgstr "Gemini"
+
+#: frappe/beeone/ai
+msgid "Gemini: create a key at aistudio.google.com (API keys). The free tier allows a few requests per minute and a limited number per day per project, and Google may use the requests to improve its models; on the paid tier it does not."
+msgstr "Gemini: створіть ключ на aistudio.google.com (API keys). Безкоштовний тариф дозволяє кілька запитів на хвилину й обмежену кількість на день на проєкт, і Google може використовувати запити для покращення своїх моделей; на платному тарифі — ні."
+
+#: frappe/beeone/ai
+msgid "Help pages on the question:"
+msgstr "Сторінки довідки з цього питання:"
+
+#: frappe/beeone/ai
+msgid "Help pages: {0}, sections: {1}"
+msgstr "Сторінок довідки: {0}, розділів: {1}"
+
+#: frappe/beeone/ai
+msgid "Hide Personal Data from the Model"
+msgstr "Приховувати персональні дані від моделі"
+
+#: frappe/beeone/ai
+msgid "How do I pay salaries?"
+msgstr "Як нарахувати і виплатити зарплату?"
+
+#: frappe/beeone/ai
+msgid "How do I pick goods into a customer order?"
+msgstr "Як зробити підбір товарів у замовлення покупця?"
+
+#: frappe/beeone/ai
+msgid "I could not finish the answer within the limit of steps. Ask a narrower question."
+msgstr "Не вдалося завершити відповідь у межах ліміту кроків. Поставте вужче питання."
+
+#: frappe/beeone/ai
+msgid "Keep the Log, Days"
+msgstr "Зберігати журнал, днів"
+
+#: frappe/beeone/ai
+msgid "Looked for document types and reports"
+msgstr "Шукав види документів і звіти"
+
+#: frappe/beeone/ai
+msgid "Model"
+msgstr "Модель"
+
+#: frappe/beeone/ai
+msgid "Model Calls per Question"
+msgstr "Звернень до моделі на питання"
+
+#: frappe/beeone/ai
+msgid "Names of people, tax numbers, phones, e-mails and bank accounts are replaced with tokens before they are sent to the model; the user sees the real values"
+msgstr "Імена людей, податкові номери, телефони, e-mail і банківські рахунки замінюються мітками до відправки в модель; користувач бачить справжні значення"
+
+#: frappe/beeone/ai
+msgid "New chat"
+msgstr "Нова розмова"
+
+#: frappe/beeone/ai
+msgid "No permission"
+msgstr "Немає доступу"
+
+#: frappe/beeone/ai
+msgid "No permission to create {0}"
+msgstr "Немає права створювати «{0}»"
+
+#: frappe/beeone/ai
+msgid "Nothing was found in the help. Try other words."
+msgstr "У довідці нічого не знайдено. Спробуйте інші слова."
+
+#: frappe/beeone/ai
+msgid "Open new {0}"
+msgstr "Відкрити новий документ «{0}»"
+
+#: frappe/beeone/ai
+msgid "Open the assistant"
+msgstr "Відкрити помічника"
+
+#: frappe/beeone/ai
+msgid "Open the log"
+msgstr "Відкрити журнал"
+
+#: frappe/beeone/ai
+msgid "OpenAI compatible"
+msgstr "Сумісний з OpenAI"
+
+#: frappe/beeone/ai
+msgid "OpenAI compatible: a local server (for example Ollama with a model that supports tools) keeps the data on your servers; or a gateway such as OpenRouter."
+msgstr "Сумісний з OpenAI: локальний сервер (наприклад Ollama з моделлю, що підтримує інструменти) — дані лишаються на ваших серверах; або шлюз на кшталт OpenRouter."
+
+#: frappe/beeone/ai
+msgid "Opened Window"
+msgstr "Відкрите вікно"
+
+#: frappe/beeone/ai
+msgid "Prepared a document"
+msgstr "Підготував документ"
+
+#: frappe/beeone/ai
+msgid "Question"
+msgstr "Питання"
+
+#: frappe/beeone/ai
+msgid "Questions per User per Day"
+msgstr "Питань на користувача за день"
+
+#: frappe/beeone/ai
+msgid "Questions to the AI assistant and its answers"
+msgstr "Питання до AI-помічника та його відповіді"
+
+#: frappe/beeone/ai
+msgid "Questions to the model per user per day; 0 means no limit"
+msgstr "Питань до моделі на одного користувача за день; 0 — без обмеження"
+
+#: frappe/beeone/ai
+msgid "Ran a report"
+msgstr "Сформував звіт"
+
+#: frappe/beeone/ai
+msgid "Read a document"
+msgstr "Прочитав документ"
+
+#: frappe/beeone/ai
+msgid "Read a list of documents"
+msgstr "Прочитав список документів"
+
+#: frappe/beeone/ai
+msgid "Read the filters of a report"
+msgstr "Прочитав відбори звіту"
+
+#: frappe/beeone/ai
+msgid "Read the structure of a document"
+msgstr "Прочитав структуру документа"
+
+#: frappe/beeone/ai
+msgid "Reread the help"
+msgstr "Перечитати довідку"
+
+#: frappe/beeone/ai
+msgid "Searched the help"
+msgstr "Пошукав у довідці"
+
+#: frappe/beeone/ai
+msgid "Server Address"
+msgstr "Адреса сервера"
+
+#: frappe/beeone/ai
+msgid "Test the connection"
+msgstr "Перевірити підключення"
+
+#: frappe/beeone/ai
+msgid "The AI assistant: the model provider, the limits and what the assistant may read"
+msgstr "AI-помічник: постачальник моделі, ліміти й те, що помічник може читати"
+
+#: frappe/beeone/ai
+msgid "The AI model does not answer now, so here is what the help and the checks give."
+msgstr "AI-модель зараз не відповідає, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI model has run out of its request quota for now, so here is what the help and the checks give. Try again in a minute."
+msgstr "AI-модель вичерпала ліміт запитів, тому ось що дають довідка та перевірки. Спробуйте за хвилину."
+
+#: frappe/beeone/ai
+msgid "The AI model is not connected, so here is what the help and the checks give."
+msgstr "AI-модель не підключена, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI model is not connected: I will show the help pages and run the checks."
+msgstr "AI-модель не підключена: я покажу сторінки довідки та виконаю перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI model refused the API key (see AI Assistant Settings), so here is what the help and the checks give."
+msgstr "AI-модель не прийняла API-ключ (див. «Налаштування AI-помічника»), тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The Assistant May Read the Data"
+msgstr "Помічник може читати дані"
+
+#: frappe/beeone/ai
+msgid "The check failed"
+msgstr "Перевірка не вдалася"
+
+#: frappe/beeone/ai
+msgid "The help page is not found"
+msgstr "Сторінку довідки не знайдено"
+
+#: frappe/beeone/ai
+msgid "The model answers: {0}"
+msgstr "Модель відповідає: {0}"
+
+#: frappe/beeone/ai
+msgid "The model may read documents, lists and reports (always with the rights of the user who asks). Off: help pages only"
+msgstr "Модель може читати документи, списки та звіти (завжди з правами користувача, який питає). Вимкнено — лише довідка"
+
+#: frappe/beeone/ai
+msgid "The same question about using the program is answered from the cache for a day: it saves the quota"
+msgstr "На однакове питання про роботу з програмою протягом доби відповідь береться з кешу: це економить ліміт"
+
+#: frappe/beeone/ai
+msgid "There is no document type {0}"
+msgstr "Немає виду документа {0}"
+
+#: frappe/beeone/ai
+msgid "There is no such check"
+msgstr "Такої перевірки немає"
+
+#: frappe/beeone/ai
+msgid "Thinking…"
+msgstr "Думаю…"
+
+#: frappe/beeone/ai
+msgid "Tokens In"
+msgstr "Токенів на вхід"
+
+#: frappe/beeone/ai
+msgid "Tokens Out"
+msgstr "Токенів на вихід"
+
+#: frappe/beeone/ai
+msgid "Tools Used"
+msgstr "Використані інструменти"
+
+#: frappe/beeone/ai
+msgid "Turn on «Use an AI model» and fill the model and the key"
+msgstr "Увімкніть «Використовувати AI-модель» і заповніть модель та ключ"
+
+#: frappe/beeone/ai
+msgid "Unknown rating"
+msgstr "Невідома оцінка"
+
+#: frappe/beeone/ai
+msgid "Use an AI model"
+msgstr "Використовувати AI-модель"
+
+#: frappe/beeone/ai
+msgid "What I did"
+msgstr "Що я зробив"
+
+#: frappe/beeone/ai
+msgid "What was checked"
+msgstr "Що перевірено"
+
+#: frappe/beeone/ai
+msgid "Which customers owe us the most?"
+msgstr "Які покупці винні нам найбільше?"
+
+#: frappe/beeone/ai
+msgid "Without AI model"
+msgstr "Без AI-моделі"
+
+#: frappe/beeone/ai
+msgid "Without Model"
+msgstr "Без моделі"
+
+#: frappe/beeone/ai
+msgid "Without a model the assistant still finds help pages and runs the checks"
+msgstr "Без моделі помічник однаково знаходить сторінки довідки та виконує перевірки"
+
+#: frappe/beeone/ai
+msgid "Without a model the assistant still finds help pages and runs the checks."
+msgstr "Без моделі помічник однаково знаходить сторінки довідки та виконує перевірки."
+
+#: frappe/beeone/ai
+msgid "Write a question"
+msgstr "Напишіть питання"
+
+#: frappe/beeone/ai
+msgid "You have used today's questions to the AI model, so here is what the help and the checks give."
+msgstr "Ви використали сьогоднішні питання до AI-моделі, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "{0} has no fields {1}"
+msgstr "{0} не має полів {1}"
+
+#: frappe/beeone/ai
+msgid "{0} is not a number field"
+msgstr "{0} — не числове поле"
+
+#: frappe/beeone/ai
+msgid "{0} questions left today"
+msgstr "Сьогодні лишилось питань: {0}"
+
+#: frappe/beeone/ai
+msgid "Tokens"
+msgstr "Токени"

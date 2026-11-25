@@ -89,6 +89,7 @@ frappe.provide("beeone.ui");
 		square: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
 		restore: '<rect x="4" y="8" width="12" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2"/>',
 		clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+		sparkle: '<path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.5l-1.9-5.7-5.6-1.9L10.1 9Z"/><path d="M19 3v3.5M17.25 4.75h3.5"/>',
 		logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>',
 	};
 

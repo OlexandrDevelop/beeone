@@ -23,6 +23,11 @@ page_js = {"setup-wizard": "public/js/frappe/setup_wizard.js"}
 # Platform-owned navigation; applications add their own sections alongside it.
 beeone_sections = ["frappe.beeone.shell.core_sections"]
 beeone_setup_steps = ["frappe.beeone.setup.core_steps"]  # beeone: the regional step of the setup wizard
+# beeone: the AI assistant (frappe.beeone.ai). An app adds
+#   beeone_ai_help = ["app.module.pages"]            # help pages: [{"id", "title", "text", "kind", "doctypes"}]
+#   beeone_ai_tools = ["app.module.tools"]           # tools and checks the model may call (frappe.beeone.ai.tools)
+#   beeone_ai_context = ["app.module.context"]      # fn(context) -> a line about the user's situation, or None
+#   beeone_ai_personal_fields = {"Doctype": ["fieldname", ...]}  # hidden from the model
 # beeone: posted documents edited in place (frappe.beeone.posted_edit). An app opts in with
 #   beeone_posted_editable = ["Doctype", ...]
 #   beeone_posted_edit_checks = ["app.module.fn"]   # fn(doc) -> reason why the document cannot be edited, or None
@@ -325,6 +330,7 @@ scheduler_events = {
 		"frappe.desk.doctype.event.event.send_event_digest",
 		"frappe.email.doctype.notification.notification.trigger_daily_alerts",
 		"frappe.desk.form.document_follow.send_daily_updates",
+		"frappe.beeone_core.doctype.ai_assistant_log.ai_assistant_log.clear_old_logs",  # beeone: AI assistant log retention
 	],
 	"daily_long": [],
 	"daily_maintenance": [

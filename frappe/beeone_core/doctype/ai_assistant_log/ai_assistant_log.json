@@ -1,0 +1,138 @@
+{
+  "autoname": "hash",
+  "creation": "2026-11-25",
+  "description": "Questions to the AI assistant and its answers",
+  "doctype": "DocType",
+  "document_type": "Other",
+  "engine": "InnoDB",
+  "field_order": [
+    "user",
+    "status",
+    "rating",
+    "column_break_head",
+    "model",
+    "duration",
+    "tokens_in",
+    "tokens_out",
+    "section_question",
+    "route",
+    "question",
+    "answer",
+    "steps",
+    "error"
+  ],
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "User",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "label": "Status",
+      "options": "Answered\nFrom Cache\nWithout Model\nLimit\nError",
+      "read_only": 1
+    },
+    {
+      "fieldname": "rating",
+      "fieldtype": "Select",
+      "in_standard_filter": 1,
+      "label": "Rating",
+      "options": "\nHelpful\nNot Helpful",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_head",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "model",
+      "fieldtype": "Data",
+      "label": "Model",
+      "read_only": 1
+    },
+    {
+      "fieldname": "duration",
+      "fieldtype": "Float",
+      "label": "Duration, s",
+      "precision": "1",
+      "read_only": 1
+    },
+    {
+      "fieldname": "tokens_in",
+      "fieldtype": "Int",
+      "label": "Tokens In",
+      "read_only": 1
+    },
+    {
+      "fieldname": "tokens_out",
+      "fieldtype": "Int",
+      "label": "Tokens Out",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_question",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "route",
+      "fieldtype": "Data",
+      "label": "Opened Window",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "question",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Question",
+      "read_only": 1
+    },
+    {
+      "fieldname": "answer",
+      "fieldtype": "Long Text",
+      "label": "Answer",
+      "read_only": 1
+    },
+    {
+      "fieldname": "steps",
+      "fieldtype": "Code",
+      "label": "Tools Used",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error",
+      "fieldtype": "Small Text",
+      "label": "Error",
+      "read_only": 1
+    }
+  ],
+  "in_create": 1,
+  "links": [],
+  "modified": "2026-11-25",
+  "modified_by": "Administrator",
+  "module": "Beeone Core",
+  "name": "AI Assistant Log",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "delete": 1,
+      "export": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager"
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "question"
+}

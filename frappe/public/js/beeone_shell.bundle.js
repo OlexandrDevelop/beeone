@@ -1,6 +1,7 @@
 import "./beeone/shell/no_tooltips.js";
 import "./beeone/shell/ui.js";
 import "./beeone/shell/index.js";
+import "./beeone/shell/assistant.js";
 import "./beeone/setup/index.js";
 import "./beeone/form/dt_input.js";
 import "./beeone/form/index.js";

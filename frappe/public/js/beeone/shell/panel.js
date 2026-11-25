@@ -63,7 +63,8 @@ export function build() {
 		`<nav id="bo-rail" aria-label="${esc(__("Sections"))}"><div class="bo-rail-top"><span class="bo-logo bo-logo-full" role="img" aria-label="${esc(brand_label())}">${brand().logo || ""}</span>` +
 		`<span class="bo-logo bo-logo-mark" role="img" aria-label="${esc(brand_label())}">${brand().mark || ""}</span></div>` +
 		`<div class="bo-rail-list" id="bo-rail-list"></div>` +
-		`<div class="bo-rail-bottom"><button type="button" class="bo-rail-btn bo-rail-fold" data-act="fold" aria-pressed="false" title="${esc(__("Collapse the sections bar"))}" aria-label="${esc(__("Collapse the sections bar"))}">${icon("panel")}<span class="bo-rail-label">${esc(__("Collapse"))}</span></button>` +
+		`<div class="bo-rail-bottom"><button type="button" class="bo-rail-btn bo-rail-ai" data-act="assistant" title="${esc(__("AI assistant"))} (Alt A)" aria-label="${esc(__("AI assistant"))}">${icon("sparkle")}<span class="bo-rail-label">${esc(__("AI assistant"))}</span></button>` +
+		`<button type="button" class="bo-rail-btn bo-rail-fold" data-act="fold" aria-pressed="false" title="${esc(__("Collapse the sections bar"))}" aria-label="${esc(__("Collapse the sections bar"))}">${icon("panel")}<span class="bo-rail-label">${esc(__("Collapse"))}</span></button>` +
 		`<button type="button" class="bo-rail-btn" data-act="user" title="${esc(user)}" aria-label="${esc(user)}">` +
 		`<span class="bo-avatar">${esc(initials(user))}</span></button></div></nav>` +
 		// no top bar: search is Ctrl K, the theme and notifications are in the user menu
@@ -135,6 +136,7 @@ function on_click(e) {
 	else if (what === "sections") toggle_panel(null);
 	else if (what === "fold") set_fold(!document.getElementById("bo-app").classList.contains("bo-rail-collapsed"));
 	else if (what === "user") user_menu(act);
+	else if (what === "assistant") beeone.shell.assistant.toggle();
 }
 
 // ------------------------------------------------------------------ function panel
@@ -721,6 +723,7 @@ export function help() {
 		["Alt ↑", __("Maximize")],
 		["Alt Q", __("Close")],
 		["Alt D", __("Show desktop")],
+		["Alt A", __("AI assistant")],
 		["Ctrl S", __("Save")],
 	];
 	beeone.ui.dialog({
@@ -772,6 +775,7 @@ export function init_keys() {
 			else if (code === "ArrowUp") wins.active && toggle_max(wins.active);
 			else if (code === "KeyQ") wins.active && close(wins.active);
 			else if (code === "KeyD") show_desktop();
+			else if (code === "KeyA" && beeone.shell.assistant) beeone.shell.assistant.toggle();
 			else handled = false;
 			if (handled) {
 				e.preventDefault();
