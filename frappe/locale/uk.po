@@ -41676,17 +41676,11 @@ msgstr "Налаштування AI-помічника"
 msgid "AI assistant"
 msgstr "AI-помічник"
 
-#: frappe/beeone/ai
-msgid "AI model"
-msgstr "AI-модель"
 
 #: frappe/beeone/ai
 msgid "Answer"
 msgstr "Відповідь"
 
-#: frappe/beeone/ai
-msgid "Answer Length, Tokens"
-msgstr "Довжина відповіді, токенів"
 
 #: frappe/beeone/ai
 msgid "Answered"
@@ -41744,25 +41738,13 @@ msgstr "Тривалість, с"
 msgid "For example"
 msgstr "Наприклад"
 
-#: frappe/beeone/ai
-msgid "For example gemini-flash-latest or gemini-2.5-flash; for a local server the name of its model"
-msgstr "Наприклад gemini-flash-latest або gemini-2.5-flash; для локального сервера — назва його моделі"
 
-#: frappe/beeone/ai
-msgid "For example http://ollama:11434/v1 or https://openrouter.ai/api/v1"
-msgstr "Наприклад http://ollama:11434/v1 або https://openrouter.ai/api/v1"
 
 #: frappe/beeone/ai
 msgid "From Cache"
 msgstr "З кешу"
 
-#: frappe/beeone/ai
-msgid "Gemini"
-msgstr "Gemini"
 
-#: frappe/beeone/ai
-msgid "Gemini: create a key at aistudio.google.com (API keys). The free tier allows a few requests per minute and a limited number per day per project, and Google may use the requests to improve its models; on the paid tier it does not."
-msgstr "Gemini: створіть ключ на aistudio.google.com (API keys). Безкоштовний тариф дозволяє кілька запитів на хвилину й обмежену кількість на день на проєкт, і Google може використовувати запити для покращення своїх моделей; на платному тарифі — ні."
 
 #: frappe/beeone/ai
 msgid "Help pages on the question:"
@@ -41796,9 +41778,6 @@ msgstr "Зберігати журнал, днів"
 msgid "Looked for document types and reports"
 msgstr "Шукав види документів і звіти"
 
-#: frappe/beeone/ai
-msgid "Model"
-msgstr "Модель"
 
 #: frappe/beeone/ai
 msgid "Model Calls per Question"
@@ -41836,13 +41815,7 @@ msgstr "Відкрити помічника"
 msgid "Open the log"
 msgstr "Відкрити журнал"
 
-#: frappe/beeone/ai
-msgid "OpenAI compatible"
-msgstr "Сумісний з OpenAI"
 
-#: frappe/beeone/ai
-msgid "OpenAI compatible: a local server (for example Ollama with a model that supports tools) keeps the data on your servers; or a gateway such as OpenRouter."
-msgstr "Сумісний з OpenAI: локальний сервер (наприклад Ollama з моделлю, що підтримує інструменти) — дані лишаються на ваших серверах; або шлюз на кшталт OpenRouter."
 
 #: frappe/beeone/ai
 msgid "Opened Window"
@@ -41896,37 +41869,16 @@ msgstr "Перечитати довідку"
 msgid "Searched the help"
 msgstr "Пошукав у довідці"
 
-#: frappe/beeone/ai
-msgid "Server Address"
-msgstr "Адреса сервера"
 
 #: frappe/beeone/ai
 msgid "Test the connection"
 msgstr "Перевірити підключення"
 
-#: frappe/beeone/ai
-msgid "The AI assistant: the model provider, the limits and what the assistant may read"
-msgstr "AI-помічник: постачальник моделі, ліміти й те, що помічник може читати"
 
-#: frappe/beeone/ai
-msgid "The AI model does not answer now, so here is what the help and the checks give."
-msgstr "AI-модель зараз не відповідає, тому ось що дають довідка та перевірки."
 
-#: frappe/beeone/ai
-msgid "The AI model has run out of its request quota for now, so here is what the help and the checks give. Try again in a minute."
-msgstr "AI-модель вичерпала ліміт запитів, тому ось що дають довідка та перевірки. Спробуйте за хвилину."
 
-#: frappe/beeone/ai
-msgid "The AI model is not connected, so here is what the help and the checks give."
-msgstr "AI-модель не підключена, тому ось що дають довідка та перевірки."
 
-#: frappe/beeone/ai
-msgid "The AI model is not connected: I will show the help pages and run the checks."
-msgstr "AI-модель не підключена: я покажу сторінки довідки та виконаю перевірки."
 
-#: frappe/beeone/ai
-msgid "The AI model refused the API key (see AI Assistant Settings), so here is what the help and the checks give."
-msgstr "AI-модель не прийняла API-ключ (див. «Налаштування AI-помічника»), тому ось що дають довідка та перевірки."
 
 #: frappe/beeone/ai
 msgid "The Assistant May Read the Data"
@@ -41940,9 +41892,6 @@ msgstr "Перевірка не вдалася"
 msgid "The help page is not found"
 msgstr "Сторінку довідки не знайдено"
 
-#: frappe/beeone/ai
-msgid "The model answers: {0}"
-msgstr "Модель відповідає: {0}"
 
 #: frappe/beeone/ai
 msgid "The model may read documents, lists and reports (always with the rights of the user who asks). Off: help pages only"
@@ -41976,17 +41925,11 @@ msgstr "Токенів на вихід"
 msgid "Tools Used"
 msgstr "Використані інструменти"
 
-#: frappe/beeone/ai
-msgid "Turn on «Use an AI model» and fill the model and the key"
-msgstr "Увімкніть «Використовувати AI-модель» і заповніть модель та ключ"
 
 #: frappe/beeone/ai
 msgid "Unknown rating"
 msgstr "Невідома оцінка"
 
-#: frappe/beeone/ai
-msgid "Use an AI model"
-msgstr "Використовувати AI-модель"
 
 #: frappe/beeone/ai
 msgid "What I did"
@@ -42000,29 +41943,17 @@ msgstr "Що перевірено"
 msgid "Which customers owe us the most?"
 msgstr "Які покупці винні нам найбільше?"
 
-#: frappe/beeone/ai
-msgid "Without AI model"
-msgstr "Без AI-моделі"
 
 #: frappe/beeone/ai
 msgid "Without Model"
 msgstr "Без моделі"
 
-#: frappe/beeone/ai
-msgid "Without a model the assistant still finds help pages and runs the checks"
-msgstr "Без моделі помічник однаково знаходить сторінки довідки та виконує перевірки"
 
-#: frappe/beeone/ai
-msgid "Without a model the assistant still finds help pages and runs the checks."
-msgstr "Без моделі помічник однаково знаходить сторінки довідки та виконує перевірки."
 
 #: frappe/beeone/ai
 msgid "Write a question"
 msgstr "Напишіть питання"
 
-#: frappe/beeone/ai
-msgid "You have used today's questions to the AI model, so here is what the help and the checks give."
-msgstr "Ви використали сьогоднішні питання до AI-моделі, тому ось що дають довідка та перевірки."
 
 #: frappe/beeone/ai
 msgid "{0} has no fields {1}"
@@ -42155,3 +42086,83 @@ msgstr "Підписка активна до {0}"
 #: frappe/beeone/subscription.py
 msgid "No subscription"
 msgstr "Без підписки"
+
+#: frappe/beeone/ai
+msgid "The AI assistant is turned off in its settings, so here is what the help and the checks give."
+msgstr "AI-помічник вимкнено в налаштуваннях, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI assistant is available with a BeeOne subscription, so here is what the help and the checks give."
+msgstr "AI-помічник доступний за підпискою BeeOne, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI questions of today are used up, so here is what the help and the checks give."
+msgstr "Сьогоднішні питання до AI вичерпано, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI service is busy now, so here is what the help and the checks give. Try again in a minute."
+msgstr "AI-сервіс зараз зайнятий, тому ось що дають довідка та перевірки. Спробуйте за хвилину."
+
+#: frappe/beeone/ai
+msgid "The AI service does not answer now, so here is what the help and the checks give."
+msgstr "AI-сервіс зараз не відповідає, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The BeeOne server did not accept the installation key (see «Підписка BeeOne»), so here is what the help and the checks give."
+msgstr "Сервер BeeOne не прийняв ключ інсталяції (див. «Підписка BeeOne»), тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI service could not take this question, so here is what the help and the checks give."
+msgstr "AI-сервіс не зміг прийняти це питання, тому ось що дають довідка та перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI assistant is available with a BeeOne subscription: connect it in «Підписка BeeOne»"
+msgstr "AI-помічник доступний за підпискою BeeOne: підключіть її в «Підписка BeeOne»"
+
+#: frappe/beeone/ai
+msgid "The AI service answers: {0}"
+msgstr "AI-сервіс відповідає: {0}"
+
+#: frappe/beeone/ai
+msgid "Without AI"
+msgstr "Без AI"
+
+#: frappe/beeone/ai
+msgid "The AI assistant is turned off in its settings: I will show the help pages and run the checks."
+msgstr "AI-помічник вимкнено в налаштуваннях: я покажу сторінки довідки та виконаю перевірки."
+
+#: frappe/beeone/ai
+msgid "The AI is available with a BeeOne subscription: until then I show the help pages and run the checks."
+msgstr "AI доступний за підпискою BeeOne: поки її немає, я показую сторінки довідки та виконую перевірки."
+
+#: frappe/beeone/ai
+msgid "Subscription"
+msgstr "Підписка"
+
+#: frappe/beeone/ai
+msgid "Use the AI Assistant"
+msgstr "Використовувати AI-помічник"
+
+#: frappe/beeone/ai
+msgid "The AI answers through the BeeOne server with a subscription (see «Підписка BeeOne»). Without it the assistant still finds help pages and runs the checks"
+msgstr "AI відповідає через сервер BeeOne за підпискою (див. «Підписка BeeOne»). Без неї помічник однаково знаходить сторінки довідки та виконує перевірки"
+
+#: frappe/beeone/ai
+msgid "The AI assistant: the limits and what the assistant may read"
+msgstr "AI-помічник: ліміти й те, що помічник може читати"
+
+#: frappe/beeone/ai
+msgid "The AI of BeeOne is available by the subscription until {0}."
+msgstr "AI BeeOne доступний за підпискою до {0}."
+
+#: frappe/beeone/ai
+msgid "The AI of BeeOne is available with a subscription."
+msgstr "AI BeeOne доступний за підпискою."
+
+#: frappe/beeone/ai
+msgid "Open «Підписка BeeOne»"
+msgstr "Відкрити «Підписка BeeOne»"
+
+#: frappe/beeone/ai
+msgid "Without a subscription the assistant still finds help pages and runs the checks."
+msgstr "Без підписки помічник однаково знаходить сторінки довідки та виконує перевірки."

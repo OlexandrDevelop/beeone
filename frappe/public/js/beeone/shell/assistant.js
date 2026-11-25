@@ -118,6 +118,7 @@ function on_click(e) {
 	else if (what === "action") run_action(chat[+btn.dataset.m].actions[+btn.dataset.i]);
 	else if (what === "rate") rate(+btn.dataset.m, btn.dataset.rating);
 	else if (what === "settings") frappe.set_route("Form", "AI Assistant Settings");
+	else if (what === "subscription") frappe.set_route("Form", "BeeOne Account");
 }
 
 function focus_input() {
@@ -163,7 +164,7 @@ export function toggle() {
 
 function left_text() {
 	if (!boot) return "";
-	if (!boot.ready) return __("Without AI model");
+	if (!boot.ready) return __("Without AI");
 	if (boot.remaining == null || boot.remaining < 0) return "";
 	return __("{0} questions left today", [boot.remaining]);
 }
@@ -172,7 +173,9 @@ function welcome() {
 	const b = boot || { checks: [], examples: [] };
 	let html = `<div class="bo-ai-welcome"><p>${esc(__("Ask how to do something in the program or what is going on in your data. I read only what you may read and change nothing."))}</p>`;
 	if (boot && !boot.ready) {
-		html += `<p class="bo-ai-note">${icon("info", "bo-i-sm")}${esc(__("The AI model is not connected: I will show the help pages and run the checks."))}` + (b.is_manager ? ` <button type="button" class="bo-link" data-ai="settings">${esc(__("Connect"))}</button>` : "") + `</p>`;
+		const note = b.subscribed ? __("The AI assistant is turned off in its settings: I will show the help pages and run the checks.") : __("The AI is available with a BeeOne subscription: until then I show the help pages and run the checks.");
+		const link = b.subscribed ? ["settings", __("Settings")] : ["subscription", __("Subscription")];
+		html += `<p class="bo-ai-note">${icon("info", "bo-i-sm")}${esc(note)}` + (b.is_manager ? ` <button type="button" class="bo-link" data-ai="${link[0]}">${esc(link[1])}</button>` : "") + `</p>`;
 	}
 	if (b.checks.length) {
 		html += `<div class="bo-ai-sub">${esc(__("Checks"))}</div><div class="bo-ai-chips">` + b.checks.map((c) => `<button type="button" class="bo-ai-chip" data-ai="check" data-tool="${esc(c.tool)}" data-label="${esc(c.label)}" title="${esc(c.description)}">${icon("checks", "bo-i-sm")}${esc(c.label)}</button>`).join("") + `</div>`;

@@ -5,7 +5,7 @@ frappe.ui.form.on("AI Assistant Settings", {
 	refresh(frm) {
 		frm.add_custom_button(__("Test the connection"), () =>
 			frappe.xcall("frappe.beeone.ai.api.test_connection").then((r) =>
-				frappe.msgprint({ message: r.message, indicator: r.ok ? "green" : "red", title: __("AI model") })
+				frappe.msgprint({ message: r.message, indicator: r.ok ? "green" : "red", title: __("AI assistant") })
 			)
 		);
 		frm.add_custom_button(__("Reread the help"), () =>
@@ -15,10 +15,17 @@ frappe.ui.form.on("AI Assistant Settings", {
 		);
 		frm.add_custom_button(__("Open the log"), () => frappe.set_route("List", "AI Assistant Log"));
 		frm.add_custom_button(__("Open the assistant"), () => beeone.shell && beeone.shell.assistant && beeone.shell.assistant.open());
-		const help =
-			`<p>${__("Gemini: create a key at aistudio.google.com (API keys). The free tier allows a few requests per minute and a limited number per day per project, and Google may use the requests to improve its models; on the paid tier it does not.")}</p>` +
-			`<p>${__("OpenAI compatible: a local server (for example Ollama with a model that supports tools) keeps the data on your servers; or a gateway such as OpenRouter.")}</p>` +
-			`<p>${__("Without a model the assistant still finds help pages and runs the checks.")}</p>`;
-		frm.get_field("status_html").$wrapper.html(`<div class="text-muted small">${help}</div>`);
+		const sub = frappe.boot.beeone_subscription || {};
+		const on = (sub.features || []).includes("ai");
+		const esc = frappe.utils.escape_html;
+		frm.get_field("status_html").$wrapper.html(
+			`<div class="small"><p>${esc(on ? __("The AI of BeeOne is available by the subscription until {0}.", [frappe.datetime.str_to_user(sub.until)]) : __("The AI of BeeOne is available with a subscription."))}</p>` +
+				`<p><a href="#" data-sub>${esc(__("Open «Підписка BeeOne»"))}</a></p>` +
+				`<p class="text-muted">${esc(__("Without a subscription the assistant still finds help pages and runs the checks."))}</p></div>`
+		);
+		frm.get_field("status_html").$wrapper.find("[data-sub]").on("click", (e) => {
+			e.preventDefault();
+			frappe.set_route("Form", "BeeOne Account");
+		});
 	},
 });

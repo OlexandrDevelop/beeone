@@ -27,7 +27,7 @@ def bootstrap():
 	tools = ai_tools.all_tools(allow_data=True)
 	return {
 		"ready": s.ready,
-		"model": s.model if s.ready else None,
+		"subscribed": s.subscribed,
 		"remaining": agent.remaining(s),
 		"checks": [{"tool": t["name"], "label": t["check"]["label"], "description": t["check"].get("hint") or ""} for t in tools.values() if t.get("check")],
 		"examples": [_(e) for e in EXAMPLES],
@@ -68,15 +68,16 @@ def rate(log, rating):
 
 @frappe.whitelist(methods=["POST"])
 def test_connection():
+	"""«Перевірити підключення»: one short question through the BeeOne server."""
 	frappe.only_for("System Manager")
 	s = agent.settings()
-	if not s.ready:
-		return {"ok": False, "message": _("Turn on «Use an AI model» and fill the model and the key")}
+	if not s.subscribed:
+		return {"ok": False, "message": _("The AI assistant is available with a BeeOne subscription: connect it in «Підписка BeeOne»")}
 	try:
-		reply = get_provider(s).complete("Answer with one word.", [{"role": "user", "text": "ping"}], [])
+		reply = get_provider().complete("Answer with one word.", [{"role": "user", "text": "ping"}], [])
 	except ProviderError as e:
-		return {"ok": False, "message": f"{e.kind}: {e}"}
-	return {"ok": True, "message": _("The model answers: {0}").format(reply.text[:80])}
+		return {"ok": False, "message": _(agent.OFFLINE_NOTE.get(e.kind, agent.OFFLINE_NOTE["unavailable"]))}
+	return {"ok": True, "message": _("The AI service answers: {0}").format(reply.text[:80])}
 
 
 @frappe.whitelist(methods=["POST"])

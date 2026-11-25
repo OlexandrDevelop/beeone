@@ -66,6 +66,15 @@ def hooks(**extra):
 	return patch.object(frappe, "get_hooks", side_effect=lambda name=None, *a, **k: ours[name] if name in ours else real(name, *a, **k))
 
 
+class Answer:
+	def __init__(self, status, body):
+		self.status_code = status
+		self._body = body
+
+	def json(self):
+		return self._body
+
+
 class FakeModel:
 	"""Answers by a script: a list of Reply; records what it was sent."""
 
@@ -88,11 +97,15 @@ class TestBeeoneAI(IntegrationTestCase):
 		frappe.cache.delete_keys("beeone_ai_")
 		frappe.db.delete("AI Assistant Log")
 		s = frappe.get_single("AI Assistant Settings")
-		s.update({"enabled": 1, "provider": "Gemini", "model": "test-model", "api_key": "k", "daily_limit": 3, "max_steps": 4, "allow_data": 1, "mask_personal_data": 1, "cache_help_answers": 1})
+		s.update({"enabled": 1, "daily_limit": 3, "max_steps": 4, "allow_data": 1, "mask_personal_data": 1, "cache_help_answers": 1})
 		s.save()
 		frappe.clear_document_cache("AI Assistant Settings", "AI Assistant Settings")
 
+		self.subscribed = patch("frappe.beeone.subscription.has_feature", return_value=True)
+		self.subscribed.start()
+
 	def tearDown(self):
+		self.subscribed.stop()
 		frappe.set_user("Administrator")
 		ai_help.clear_index()
 
@@ -249,30 +262,36 @@ class TestBeeoneAI(IntegrationTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			api.rate(r["log"], "Not Helpful")
 
-	def test_gemini_schema_has_no_empty_objects(self):
-		def walk(schema):
-			if schema.get("type") == "object":
-				self.assertTrue(schema.get("properties"), schema)
-			for sub in (schema.get("properties") or {}).values():
-				walk(sub)
-			if schema.get("items"):
-				walk(schema["items"])
+	def test_without_a_subscription_the_help_answers_and_says_why(self):
+		with patch("frappe.beeone.subscription.has_feature", return_value=False):
+			r = self.ask(FakeModel([]))
+		self.assertEqual(r["status"], "Without Model")
+		self.assertIn("subscription", r["answer"])
+		self.assertIn("Press «Fill»", r["answer"])
 
-		for t in ai_tools.platform_tools():
-			walk(providers._gemini_tool(t).get("parameters") or {"type": "string"})
-		list_tool = next(t for t in ai_tools.platform_tools() if t["name"] == "list_documents")
-		self.assertEqual(providers._gemini_tool(list_tool)["parameters"]["properties"]["filters"]["type"], "string")
-
-	def test_gemini_reply_is_parsed(self):
-		body = {
-			"candidates": [{"content": {"role": "model", "parts": [{"text": "a"}, {"functionCall": {"name": "x", "args": {"q": 1}}}, {"text": "hidden", "thought": True}]}}],
-			"usageMetadata": {"promptTokenCount": 7, "candidatesTokenCount": 3, "thoughtsTokenCount": 2},
-		}
-		settings = frappe._dict(model="m", key="k", max_answer_tokens=10)
-		with patch.object(providers, "_post", return_value=body) as post:
-			reply = providers.Gemini(settings).complete("sys", [{"role": "user", "text": "hi"}], [])
-		self.assertEqual((reply.text, reply.calls[0].name, reply.calls[0].args, reply.tokens_in, reply.tokens_out), ("a", "x", {"q": 1}, 7, 5))
-		self.assertEqual(post.call_args[0][1]["contents"][0]["parts"][0]["text"], "hi")
+	def test_cloud_sends_the_conversation_to_the_server_with_the_key(self):
+		frappe.db.set_single_value("BeeOne Account", {"server_url": "https://admin.example"})
+		account = frappe.get_single("BeeOne Account")
+		account.installation_key = "bo_key"
+		account.flags.from_check = True
+		account.save()
+		frappe.clear_document_cache("BeeOne Account", "BeeOne Account")
+		body = {"message": {"text": "hi", "calls": [{"name": "x", "args": {"a": 1}, "id": "c"}], "raw": {"role": "model"}, "tokens_in": 3, "tokens_out": 2}}
+		with patch.object(providers.requests, "post", return_value=Answer(200, body)) as post:
+			reply = providers.get_provider().complete(
+				"sys", [{"role": "user", "text": "q"}, {"role": "tool", "results": [(Call("x", {}, "c"), {"ok": 1})]}], []
+			)
+		self.assertEqual((reply.text, reply.calls[0], reply.tokens_in), ("hi", Call("x", {"a": 1}, "c"), 3))
+		url, kwargs = post.call_args[0][0], post.call_args[1]
+		self.assertEqual(url, "https://admin.example" + providers.COMPLETE_PATH)
+		self.assertEqual(kwargs["headers"], {"X-BeeOne-Key": "bo_key"})
+		self.assertEqual(kwargs["json"]["messages"][1]["results"][0][0], {"name": "x", "args": {}, "id": "c"})
+		for status, error, kind in ((402, "subscription", "subscription"), (429, "limit", "limit"), (429, None, "quota"), (401, "key", "key"), (503, None, "unavailable")):
+			answer = Answer(status, {"message": {"error": error, "message": "m"}} if error else {})
+			with patch.object(providers.requests, "post", return_value=answer):
+				with self.assertRaises(ProviderError) as caught:
+					providers.get_provider().complete("s", [], [])
+			self.assertEqual(caught.exception.kind, kind, status)
 
 	def plain_user(self):
 		if not frappe.db.exists("User", PLAIN_USER):

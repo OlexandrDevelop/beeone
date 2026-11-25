@@ -53,12 +53,15 @@ How to answer:
 - After a check, summarise: what is wrong, how serious, which documents, and what to do about it."""
 
 OFFLINE_NOTE = {
-	"off": "The AI model is not connected, so here is what the help and the checks give.",
-	"limit": "You have used today's questions to the AI model, so here is what the help and the checks give.",
-	"quota": "The AI model has run out of its request quota for now, so here is what the help and the checks give. Try again in a minute.",
-	"unavailable": "The AI model does not answer now, so here is what the help and the checks give.",
-	"key": "The AI model refused the API key (see AI Assistant Settings), so here is what the help and the checks give.",
+	"off": "The AI assistant is turned off in its settings, so here is what the help and the checks give.",
+	"subscription": "The AI assistant is available with a BeeOne subscription, so here is what the help and the checks give.",
+	"limit": "The AI questions of today are used up, so here is what the help and the checks give.",
+	"quota": "The AI service is busy now, so here is what the help and the checks give. Try again in a minute.",
+	"unavailable": "The AI service does not answer now, so here is what the help and the checks give.",
+	"key": "The BeeOne server did not accept the installation key (see «Підписка BeeOne»), so here is what the help and the checks give.",
+	"bad_request": "The AI service could not take this question, so here is what the help and the checks give.",
 }
+MODEL_LABEL = "BeeOne Cloud"
 
 
 class Settings(frappe._dict):
@@ -67,9 +70,11 @@ class Settings(frappe._dict):
 
 def settings():
 	doc = frappe.get_cached_doc(SETTINGS)
+	from frappe.beeone.subscription import has_feature
+
 	s = Settings(doc.as_dict())
-	s.key = doc.get_password("api_key", raise_exception=False) or ""
-	s.ready = bool(s.enabled and s.model and (s.key or s.provider == "OpenAI compatible") and (s.provider != "OpenAI compatible" or s.base_url))
+	s.subscribed = has_feature("ai")
+	s.ready = bool(s.enabled and s.subscribed)
 	return s
 
 
@@ -182,7 +187,7 @@ def offline_answer(question, reason, found, tools):
 
 def cache_key(question, s):
 	norm = " ".join(ai_help.words(question))
-	return "beeone_ai_answer:" + hashlib.sha1(f"{s.provider}|{s.model}|{frappe.local.lang}|{norm}".encode()).hexdigest()
+	return "beeone_ai_answer:" + hashlib.sha1(f"{MODEL_LABEL}|{frappe.local.lang}|{norm}".encode()).hexdigest()
 
 
 def clean_history(history):
@@ -207,10 +212,11 @@ def ask(question, history=None, context=None):
 	tools = ai_tools.all_tools(allow_data=bool(s.allow_data))
 	found = ai_help.search(question, limit=PREFETCH_SECTIONS, doctype=doctype_of(context))
 	result = {"sources": sources_of(found), "checks": suggest_checks(question, tools), "actions": [], "steps": []}
-	log = {"question": question, "route": "/".join(map(cstr, context.get("route") or []))[:250], "model": s.model}
+	log = {"question": question, "route": "/".join(map(cstr, context.get("route") or []))[:250], "model": MODEL_LABEL}
 
 	if not s.ready:
-		return finish(result, log, started, "Without Model", offline_answer(question, "off", found, tools))
+		reason = "off" if not s.enabled else "subscription"
+		return finish(result, log, started, "Without Model", offline_answer(question, reason, found, tools))
 	if remaining(s) == 0:
 		return finish(result, log, started, "Limit", offline_answer(question, "limit", found, tools))
 
@@ -234,7 +240,7 @@ def ask(question, history=None, context=None):
 		system += "\n\n" + help_excerpts(found)
 	messages = history + [{"role": "user", "text": question}]
 	declarations = [{"name": t["name"], "description": t["description"], "parameters": t["parameters"]} for t in tools.values()]
-	provider = get_provider(s)
+	provider = get_provider()
 	used = {"tokens_in": 0, "tokens_out": 0}
 	only_help = True
 	answer = ""
@@ -273,7 +279,8 @@ def ask(question, history=None, context=None):
 		reason = e.kind if e.kind in OFFLINE_NOTE else "unavailable"
 		log["error"] = cstr(e)[:500]
 		log.update(used)
-		return finish(result, log, started, "Limit" if e.kind == "quota" else "Error", offline_answer(question, reason, found, tools))
+		status = "Limit" if e.kind in ("quota", "limit") else "Without Model" if e.kind == "subscription" else "Error"
+		return finish(result, log, started, status, offline_answer(question, reason, found, tools))
 
 	answer = masker.unmask(answer)
 	log.update(used)

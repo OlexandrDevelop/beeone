@@ -280,3 +280,4 @@ frappe.patches.v16_0.fill_sequence_part_columns
 frappe.patches.v16_0.add_missing_postgres_indexes
 frappe.patches.v16_0.add_sequence_entry_indexes
 frappe.patches.v16_0.beeone_brand_app_name
+frappe.patches.v16_0.beeone_ai_server_only
