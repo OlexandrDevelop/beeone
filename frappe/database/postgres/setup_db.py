@@ -23,6 +23,7 @@ def setup_database():
 		semver_version_num = psql_version[0].get("server_version_num") or "140000"
 		if cint(semver_version_num) > 150000:
 			root_conn.sql(f'ALTER DATABASE "{frappe.conf.db_name}" OWNER TO "{frappe.conf.db_user}"')
+	_create_ai_readonly_role(root_conn)
 	root_conn.close()
 
 	# On Azure Managed PostgreSQL the public schema is owned by the azure_pg_admin role.
@@ -74,6 +75,17 @@ def import_db_from_sql(source_sql=None, verbose=False):
 	)
 	if verbose:
 		print("Imported from database {}".format(source_sql))
+
+
+def _create_ai_readonly_role(root_conn):
+	"""beeone: the read-only role of the AI assistant's SQL (frappe.beeone.ai.sql); a site without it still works."""
+	try:
+		from frappe.beeone.ai.sql import create_readonly_role
+
+		create_readonly_role(root_conn)
+		root_conn.commit()
+	except Exception as e:
+		print(f"The read-only role of the AI assistant was not created: {e}")
 
 
 def get_root_connection():

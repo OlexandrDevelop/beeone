@@ -282,8 +282,10 @@ def _is_number(value):
 		return False
 
 
-def _quote(name):
-	q = '"' if frappe.db.db_type == "postgres" else "`"
+def _quote(name, postgres=None):
+	if postgres is None:
+		postgres = frappe.db.db_type == "postgres"
+	q = '"' if postgres else "`"
 	return q + name.replace(q, q + q) + q
 
 
@@ -319,14 +321,20 @@ def setup_readonly_role():
 		return
 	from frappe.database.postgres.setup_db import get_root_connection
 
-	role = readonly_role()
 	root = get_root_connection()
-	if not root.sql("SELECT 1 FROM pg_roles WHERE rolname = %s", role):
-		root.sql(f"CREATE ROLE {_quote(role)} NOLOGIN NOINHERIT")
-	root.sql(f"GRANT {_quote(role)} TO {_quote(frappe.conf.db_user or frappe.conf.db_name)}")
+	create_readonly_role(root)
 	root.commit()
 	frappe.flags.beeone_ai_ro_role = None
 	sync_readonly_grants()
+
+
+def create_readonly_role(root):
+	"""With a super user connection: the role (once per database user) and the site's user as its member.
+	A new site gets it from setup_database; the tables are granted after each app is installed."""
+	role = readonly_role()
+	if not root.sql("SELECT 1 FROM pg_roles WHERE rolname = %s", role):
+		root.sql(f"CREATE ROLE {_quote(role, True)} NOLOGIN NOINHERIT")
+	root.sql(f"GRANT {_quote(role, True)} TO {_quote(frappe.conf.db_user or frappe.conf.db_name, True)}")
 
 
 def grant_readonly(names):

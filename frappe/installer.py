@@ -374,6 +374,11 @@ def install_app(name, verbose=False, set_as_patched=True, force=False):
 	for after_install in app_hooks.after_install or []:
 		frappe.get_attr(after_install)()
 
+	# beeone: the read-only role of the AI SQL may read the new tables of the app
+	from frappe.beeone.ai.sql import sync_readonly_grants
+
+	sync_readonly_grants()
+
 	for fn in frappe.get_hooks("after_app_install"):
 		frappe.get_attr(fn)(name)
 
