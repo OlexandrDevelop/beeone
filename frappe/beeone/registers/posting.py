@@ -241,9 +241,14 @@ def cancels_to_draft(doctype: str) -> bool:
 	Hook `beeone_cancel_to_draft` of an app: a list of doctypes, or "*" for every doctype of that app that
 	writes registers or is edited in place when posted (`beeone_posted_editable`).
 	"""
+	if not frappe.get_hooks("beeone_cancel_to_draft"):
+		return False
+	# the hooks modules are loaded by get_hooks first: importing an app's hooks.py from here while it runs
+	# get_hooks itself would fill the site cache of the hooks with a half-imported module
 	for app in frappe.get_installed_apps():
+		hook = getattr(frappe.get_module(f"{app}.hooks"), "beeone_cancel_to_draft", None) or []
 		values = []
-		for value in frappe.get_hooks("beeone_cancel_to_draft", app_name=app) or []:
+		for value in [hook] if isinstance(hook, str) else hook:
 			values.extend([value] if isinstance(value, str) else value)
 		if doctype in values:
 			return True

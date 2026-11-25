@@ -217,7 +217,11 @@ class TestBeeoneRegisters(IntegrationTestCase):
 	def test_a_cancel_of_an_opted_in_doctype_ends_in_a_draft(self):
 		from frappe.beeone.registers.posting import unpost_document
 
-		with self._hooks(beeone_cancel_to_draft=[DOCUMENT]):
+		import frappe.hooks as frappe_hooks
+
+		with patch.object(frappe_hooks, "beeone_cancel_to_draft", [DOCUMENT], create=True), self._hooks(
+			beeone_cancel_to_draft=[DOCUMENT]
+		):
 			doc = self._document("a:2")
 			doc.cancel()
 			self.assertEqual((doc.docstatus, frappe.db.get_value(DOCUMENT, doc.name, "docstatus")), (0, 0))
