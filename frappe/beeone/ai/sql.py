@@ -193,6 +193,8 @@ def _check_tables(stmt, views):
 		elif name.startswith("tab"):
 			doctype = name[3:]
 			meta = _check_doctype_read(doctype)
+			# PostgreSQL folds an unquoted tabItem to tabitem: keep the DocType's case
+			tbl.set("this", exp.to_identifier(name, quoted=True))
 			tables[name] = {"kind": "doctype", "name": name, "doctype": doctype, "meta": meta}
 		else:
 			raise frappe.PermissionError(_("Table {0} is not accessible").format(name))

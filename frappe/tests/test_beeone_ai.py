@@ -275,6 +275,8 @@ class TestBeeoneAI(IntegrationTestCase):
 
 		cte = ai_sql.query_data(f"WITH t AS (SELECT status FROM \"tabContact\" WHERE company_name = 'sql-{mark}') SELECT count(*) AS n FROM t")
 		self.assertEqual(cte["rows"][0]["n"], 1)
+		unquoted = ai_sql.query_data(f"SELECT count(*) AS n FROM tabContact WHERE company_name = 'sql-{mark}'")
+		self.assertEqual(unquoted["rows"][0]["n"], 1)
 		star = ai_sql.query_data(f"SELECT c.* FROM \"tabContact\" c WHERE c.company_name = 'sql-{mark}'")
 		self.assertEqual(star["row_count"], 1)
 
