@@ -54,17 +54,16 @@ def check_tool():
 
 
 def hooks(**extra):
-	return patch.object(
-		frappe,
-		"get_hooks",
-		side_effect=lambda name=None, *a, **k: {
-			"beeone_ai_help": [f"{MODULE}.help_pages"],
-			"beeone_ai_tools": [f"{MODULE}.check_tool"],
-			"beeone_ai_personal_fields": {"*": [["counterparty_name"]]},
-			"beeone_ai_context": [],
-			**extra,
-		}.get(name, []),
-	)
+	"""The AI hooks of this test; every other hook stays as it is."""
+	real = frappe.get_hooks
+	ours = {
+		"beeone_ai_help": [f"{MODULE}.help_pages"],
+		"beeone_ai_tools": [f"{MODULE}.check_tool"],
+		"beeone_ai_personal_fields": {"*": [["counterparty_name"]]},
+		"beeone_ai_context": [],
+		**extra,
+	}
+	return patch.object(frappe, "get_hooks", side_effect=lambda name=None, *a, **k: ours[name] if name in ours else real(name, *a, **k))
 
 
 class FakeModel:
@@ -87,6 +86,7 @@ class TestBeeoneAI(IntegrationTestCase):
 		frappe.set_user("Administrator")
 		ai_help.clear_index()
 		frappe.cache.delete_keys("beeone_ai_")
+		frappe.db.delete("AI Assistant Log")
 		s = frappe.get_single("AI Assistant Settings")
 		s.update({"enabled": 1, "provider": "Gemini", "model": "test-model", "api_key": "k", "daily_limit": 3, "max_steps": 4, "allow_data": 1, "mask_personal_data": 1, "cache_help_answers": 1})
 		s.save()
@@ -212,8 +212,9 @@ class TestBeeoneAI(IntegrationTestCase):
 	# ------------------------------------------------------------ tools and rights
 
 	def test_list_documents_reads_with_the_rights_of_the_user(self):
-		frappe.get_doc({"doctype": "ToDo", "description": "beeone ai todo", "allocated_to": "Administrator"}).insert()
-		out = ai_tools.list_documents("ToDo", filters={"description": ["like", "%beeone ai%"]}, fields=["name", "description"])
+		mark = frappe.generate_hash(length=10)
+		frappe.get_doc({"doctype": "ToDo", "description": f"beeone ai {mark}", "allocated_to": "Administrator"}).insert()
+		out = ai_tools.list_documents("ToDo", filters={"description": ["like", f"%{mark}%"]}, fields=["name", "description"])
 		self.assertEqual(out["total"], 1)
 		self.assertTrue(out["rows"][0]["_link"].startswith("/desk/todo/"))
 		with self.assertRaises(frappe.ValidationError):
@@ -275,5 +276,5 @@ class TestBeeoneAI(IntegrationTestCase):
 
 	def plain_user(self):
 		if not frappe.db.exists("User", PLAIN_USER):
-			frappe.get_doc({"doctype": "User", "email": PLAIN_USER, "first_name": "AI", "send_welcome_email": 0, "roles": [{"role": "Blogger"}]}).insert(ignore_permissions=True)
+			frappe.get_doc({"doctype": "User", "email": PLAIN_USER, "first_name": "AI", "last_name": "Plain", "send_welcome_email": 0}).insert(ignore_permissions=True)
 		return PLAIN_USER

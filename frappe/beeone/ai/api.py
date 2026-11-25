@@ -77,6 +77,6 @@ def test_connection():
 @frappe.whitelist(methods=["POST"])
 def rebuild_help():
 	frappe.only_for("System Manager")
+	frappe.cache.delete_keys("beeone_ai_answer")
 	ai_help.clear_index()
-	frappe.cache.delete_keys("beeone_ai_")
 	return {"sections": len(ai_help.index()["docs"]), "pages": len(ai_help.index()["pages"])}

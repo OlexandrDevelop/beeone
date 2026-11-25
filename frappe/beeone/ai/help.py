@@ -29,6 +29,7 @@ STOP = {
 }
 
 _index = {}
+VERSION_KEY = "beeone_ai_help_version"
 
 
 def words(text):
@@ -107,13 +108,19 @@ def build_index():
 
 
 def index():
+	"""The index of the site, built once per process; «Reread the help» bumps the shared version for all workers."""
 	key = frappe.local.site
-	if key not in _index:
-		_index[key] = build_index()
-	return _index[key]
+	version = frappe.cache.get_value(VERSION_KEY) or 0
+	built = _index.get(key)
+	if not built or built["version"] != version:
+		built = build_index()
+		built["version"] = version
+		_index[key] = built
+	return built
 
 
 def clear_index():
+	frappe.cache.set_value(VERSION_KEY, (frappe.cache.get_value(VERSION_KEY) or 0) + 1)
 	_index.pop(frappe.local.site, None)
 
 

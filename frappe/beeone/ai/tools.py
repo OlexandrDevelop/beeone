@@ -24,6 +24,7 @@ MAX_ROWS = 50
 MAX_REPORT_ROWS = 60
 MAX_CHILD_ROWS = 40
 MAX_TEXT = 600
+SAVEPOINT = "beeone_ai_tool"
 SKIP_TYPES = {"Section Break", "Column Break", "Tab Break", "HTML", "Button", "Fold", "Heading", "Image", "Attach Image", "Signature", "Password", "Geolocation"}
 STANDARD_FIELDS = ("name", "creation", "modified", "owner", "docstatus")
 MODULES_SKIPPED = {"Core", "Website", "Email", "Custom", "Desk", "Integrations", "Printing", "Automation", "Workflow", "Social", "Data", "Build", "Users", "Geo"}
@@ -180,7 +181,7 @@ def list_documents(doctype, filters=None, fields=None, order_by=None, limit=20):
 			frappe.throw(_("{0} has no field {1}").format(doctype, field))
 		order_by = f"{field} {'asc' if str(order_by).lower().endswith('asc') else 'desc'}"
 	rows = frappe.get_list(doctype, filters=flt, fields=fields, order_by=order_by or "creation desc", limit_page_length=limit)
-	total = frappe.get_list(doctype, filters=flt, fields=[{"COUNT": "*", "as": "n"}])
+	total = frappe.get_list(doctype, filters=flt, fields=[{"COUNT": "*", "as": "n"}], order_by="")
 	for r in rows:
 		r["_link"] = link_of(doctype, r["name"])
 	return {"doctype": doctype, "total": total[0]["n"] if total else len(rows), "shown": len(rows), "rows": [{k: _short(v) for k, v in r.items()} for r in rows]}
@@ -398,14 +399,19 @@ def all_tools(allow_data=True):
 def call(tool, args):
 	"""Run a tool; an error becomes a result the model can read and explain."""
 	args = {k: v for k, v in (args or {}).items() if v is not None}
+	# a failed query must not break the transaction of the request (Postgres): roll back to here
+	frappe.db.savepoint(SAVEPOINT)
 	try:
 		return tool["fn"](**args)
 	except frappe.PermissionError as e:
+		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.local.message_log = []
 		return {"error": "permission", "message": cstr(e) or _("No permission")}
 	except TypeError as e:
+		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.local.message_log = []
 		return {"error": "bad_arguments", "message": cstr(e)}
 	except Exception as e:
+		frappe.db.rollback(save_point=SAVEPOINT)
 		frappe.local.message_log = []
 		return {"error": "failed", "message": cstr(e)[:500]}

@@ -27,6 +27,8 @@ HISTORY_TURNS = 6
 HISTORY_CHARS = 2000
 PREFETCH_SECTIONS = 4
 PREFETCH_CHARS = 1600
+GUIDE_CHARS = 7000
+MAX_ROLES = 20
 MAX_CALLS_PER_STEP = 4
 MAX_RESULT_CHARS = 14000
 CACHE_SECONDS = 86400
@@ -107,16 +109,23 @@ def context_text(context):
 
 def doctype_of(context):
 	route = (context or {}).get("route") or []
-	if len(route) > 1 and route[0] in ("Form", "List", "Tree", "Report"):
+	if len(route) > 1 and route[0] in ("Form", "List", "Tree", "Report", "query-report"):
 		return route[1]
 	return None
 
 
 def help_excerpts(found):
+	"""The sections found; the best user guide goes whole (it is short and its steps may not match the words)."""
 	if not found:
 		return ""
 	parts = ["Help excerpts that may answer the question:"]
+	guide = next((s for s in found if s["kind"] == "guide"), None)
+	if guide:
+		page = ai_help.index()["pages"].get(guide["page"]) or {}
+		parts.append(f"### {guide['title']}\n{(page.get('text') or guide['text'])[:GUIDE_CHARS]}")
 	for s in found:
+		if guide and s["page"] == guide["page"]:
+			continue
 		head = s["title"] + (f" — {s['section']}" if s["section"] else "")
 		parts.append(f"### {head}\n{s['text'][:PREFETCH_CHARS]}")
 	return "\n\n".join(parts)
@@ -215,7 +224,7 @@ def ask(question, history=None, context=None):
 		brand=frappe.get_attr("frappe.beeone.brand.brand_name")(),
 		today=now_datetime().strftime("%Y-%m-%d (%A)"),
 		user=masker.text(frappe.session.user) if s.mask_personal_data else frappe.session.user,
-		roles=", ".join(r for r in frappe.get_roles() if r not in ("All", "Guest")),
+		roles=", ".join([r for r in frappe.get_roles() if r not in ("All", "Guest")][:MAX_ROLES]),
 		context=context_text(context),
 	)
 	if found:
