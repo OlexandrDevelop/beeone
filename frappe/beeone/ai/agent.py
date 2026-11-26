@@ -39,6 +39,11 @@ OFFLINE_CHARS = 2400
 MIN_COVERAGE = 0.5
 # the headings of the guide sections with the steps, and of the ones not worth showing alone (uk and en)
 STEPS_HEADINGS = ("кроки", "steps")
+DEFAULT_STEPS = 8
+FINAL_STEP_NOTE = (
+	"The limit of tool calls is reached. Answer the question now, in Ukrainian, from the results you already have: "
+	"say what you found, what it means, and what is still unknown and how the user can check it."
+)
 SKIP_HEADINGS = ("пов'язане", "повʼязане", "пов’язане", "related", "де знайти", "where to find")
 HELP_PREFIX_RE = re.compile(r"^\s*(?:як\b|де\b|навіщо\b|що\s+(?:означа|таке)\b|чому\s+не\b|how\s|where\s|what\s+(?:is|does)\b|why\s+does|explain\b)", re.I)
 DATA_HINT_RE = re.compile(
@@ -72,6 +77,7 @@ Today is {today}. The user is {user}; roles: {roles}.
 How to answer:
 - Always answer in Ukrainian, whatever the language of the question. Be short and practical: steps as a numbered list, names of sections, documents, fields and buttons in «quotes» exactly as the help names them.
 - Questions about using the program: answer from the help excerpts below or from search_help. The help is written for developers: name things by their labels, not by system identifiers (`code`, `Sales Shipment`); do not mention 1C unless asked. If the help does not cover the question, say so and do not invent menu items or buttons.
+- Name documents, reports, sections and units in Ukrainian exactly as the tool results or the help give them (a document type from a tool result is already translated; never write a system name like Sales Shipment). Mention a report or section only if a tool or the help returned it; when you send the user to look somewhere, give the link from the tool result.
 - Questions about the data: use the tools. Never invent or estimate a number: every number, name and date in the answer must come from a tool result. To verify something, prefer a check_* tool. For open-ended analytical questions (rankings, trends, forecasts, comparisons across tables), use specialized tools or query_data (read-only SQL) after checking table fields with describe_doctype if needed. To find which document type or report the user means, use find_objects.
 - Link documents with markdown links to their `_link` values, e.g. [ПН-000123](/desk/purchase-invoice/ПН-000123).
 - You only read. When the user wants a document created, call propose_document: the user gets a button to open it filled and saves it themselves.
@@ -307,9 +313,16 @@ def _ask(question, history=None, context=None):
 	only_help = True
 	answer = ""
 	try:
-		for step in range(max(1, cint(s.max_steps) or 5)):
-			last = step == max(1, cint(s.max_steps) or 5) - 1
-			reply = provider.complete(system, messages, [] if last else declarations)
+		steps = max(1, cint(s.max_steps) or DEFAULT_STEPS)
+		for step in range(steps):
+			last = step == steps - 1
+			# the last step has no tools: the model is told to answer from what the tools returned (in the system text,
+			# the tool results already end the turn of the user); an empty reply here showed «could not finish»
+			# although the data were already found, so it is asked once more
+			prompt = system + "\n\n" + FINAL_STEP_NOTE if last and step else system
+			reply = provider.complete(prompt, messages, [] if last else declarations)
+			if last and not reply.calls and not (reply.text or "").strip():
+				reply = provider.complete(prompt, messages, [])
 			used["tokens_in"] += reply.tokens_in
 			used["tokens_out"] += reply.tokens_out
 			if not reply.calls:
