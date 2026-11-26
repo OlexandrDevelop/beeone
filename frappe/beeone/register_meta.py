@@ -105,6 +105,16 @@ def validate_register(doc):
 	if doc.lock_dimension:
 		_require_field(register, doctype, fields, doc.lock_dimension, doc.meta.get_label("lock_dimension"))
 
+	# totals written at the commit: the current balance is not locked by the write, so a register whose balance is
+	# controlled (negative control, a lock dimension) keeps writing its totals at once
+	if doc.get("defer_totals") and (
+		(doc.totals or "None") == "None" or doc.totals_doctype or doc.lock_dimension or doc.get("control_negative")
+	):
+		frappe.throw(
+			_("Register {0}: totals written at the commit need own totals and no balance control").format(register),
+			title=_("Invalid Register"),
+		)
+
 	resources = {row.fieldname for row in doc.get("fields") or [] if row.role == "Resource"}
 	for row in doc.get("control_negative") or []:
 		_require_field(register, doctype, fields, row.fieldname, _("Control Negative row {0}").format(row.idx))

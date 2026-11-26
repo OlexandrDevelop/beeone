@@ -165,3 +165,20 @@ search, 13 reports, «save and post» of sales shipments by 25 users over 32 ite
 shared 12-core host: lists 0.11 s / p99 0.5 s, forms 0.14 s / 0.7 s, reports 0.24 s / 1.0 s, catalogs 0.26 s / 1.5 s,
 posting 0.4–1.0 s median without errors (before: 81 of 192 postings failed, reports p99 3.7 s). The rest of the time
 is CPU of the application: the transactions mostly wait for the client, rarely for a lock.
+
+## Totals written at the commit (2026-11-26)
+
+A register without balance control may set `defer_totals` (Register, «Write totals at commit»). A posting then writes
+its totals deltas to `__beeone_pend_<register>` (inserts only) and a `before_commit` callback moves them into the
+totals: the registers in name order, the keys sorted, `lock_keys` + upsert. The row of a hot key (the settlements of the
+end consumer, an expense item of a month) is locked only for the commit, not for the whole posting. The readers of the
+current balance and of the totals (`current_balance`, `totals_read`) add the pending rows of their own transaction;
+the rows of other transactions are not visible before their commit (READ COMMITTED). A rollback, also to a savepoint,
+drops the pending rows with the movements. A register with negative control or a lock dimension may not defer (its
+current balance must be locked by the write). Test: `test_beeone_register_deferred_totals`.
+
+HiveFirm defers the customer and supplier settlements, income and expense, sales, purchases, VAT liabilities and
+credit. Load test on the copy of the working site, 120 sales shipments over 72 items: 30 users posting only (think
+time 1–3 s) 5.2 → 7.3 postings/s; 100 users of all roles: «save and post» 0.72 s median, p90 1.4 s, p99 3.3 s (before
+p99 20 s), lists 0.11 s / p99 0.6 s, forms 0.15 s / 0.8 s, reports 0.32 s / 1.9 s, no errors. What still queues is the
+balance control of one item (its current stock row, from the write to the commit), as in 1C.

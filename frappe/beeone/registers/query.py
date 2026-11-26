@@ -12,7 +12,7 @@ import frappe
 from frappe import _
 from frappe.beeone.registers import totals, totals_read
 from frappe.beeone.registers.meta import get_register
-from frappe.utils import cstr, getdate
+from frappe.utils import cstr, flt, getdate
 
 KIND_BALANCE = "Accumulation: Balance"
 KIND_TURNOVER = "Accumulation: Turnover"
@@ -521,7 +521,32 @@ def current_balance(register: str, filters=None, lock: bool = False, resources=N
 
 	from frappe.beeone import db
 
-	return db.select_current(table, dims, res, filters=effective_filters, lock=lock)
+	rows = db.select_current(table, dims, res, filters=effective_filters, lock=lock)
+	if not totals.is_deferred(reg):
+		return rows
+	# totals written at the commit: the own pending deltas of this transaction belong to the current balance
+	where, params = [], []
+	for fieldname, value in effective_filters.items():
+		if isinstance(value, list | tuple):
+			if not value:
+				return rows
+			where.append(f"{db.quote(fieldname)} IN ({', '.join(['%s'] * len(value))})")
+			params.extend(cstr(v) for v in value)
+		else:
+			where.append(f"{db.quote(fieldname)} = %s")
+			params.append(cstr(value))
+	pending = totals.pending_rows(reg, dims, res, where, params, monthly=False)
+	if not pending:
+		return rows
+	merged = {tuple(cstr(r.get(d)) for d in dims): r for r in rows}
+	for p in pending:
+		if not any(abs(flt(p.get(r))) > 1e-12 for r in res):
+			continue  # a delta that nets out writes no row at the flush either
+		key = tuple(cstr(p.get(d)) for d in dims)
+		row = merged.setdefault(key, frappe._dict({**{d: p.get(d) for d in dims}, **dict.fromkeys(res, 0)}))
+		for r in res:
+			row[r] = flt(row.get(r)) + flt(p.get(r))
+	return [merged[k] for k in sorted(merged)]
 
 
 def lowest_balance_from(register: str, moment, filters: dict, resource: str, exclude=None) -> float:

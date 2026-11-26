@@ -29,6 +29,15 @@ def current_table(register: str) -> str:
 	return db.table_name("__beeone_cur_", register)
 
 
+def pending_table(register: str) -> str:
+	return db.table_name("__beeone_pend_", register)
+
+
+def is_deferred(reg) -> bool:
+	"""The totals of the register are written at the commit (Register `defer_totals`)."""
+	return bool(reg.get("defer_totals")) and has_totals(reg)
+
+
 def dimensions(reg) -> list[str]:
 	return [row.fieldname for row in reg.fields if row.role == "Dimension"]
 
@@ -78,6 +87,23 @@ def ensure_totals_tables(reg):
 	from frappe.beeone.registers.indexes import ensure_totals_index
 
 	ensure_totals_index(reg)
+	ensure_pending_table(reg)
+
+
+def ensure_pending_table(reg):
+	"""The pending deltas of a register with totals written at the commit: (period, dimensions..., resources), inserts only.
+
+	A row is visible only to the transaction that wrote it until the commit moves it into the totals (flush_deferred),
+	so the table is empty between transactions. Runs DDL: call it when the register meta is saved or after migrate."""
+	if not is_deferred(reg):
+		return
+	table = pending_table(reg.name)
+	columns = ["period", *dimensions(reg), *resources(reg)]
+	if db.table_exists(table):
+		if db.table_columns(table) == columns:
+			return
+		db.drop_table(table)
+	db.create_pending_table(table, dimensions(reg), resources(reg), key_lengths(reg))
 
 
 def rebuild_totals(reg):
@@ -157,12 +183,109 @@ def _collect(reg, row, sign: int, turnover: dict, current: dict):
 
 
 def apply_deltas(reg, turnover: dict, current: dict):
-	"""Add the deltas to the totals tables, keys in sorted order."""
+	"""Add the deltas to the totals tables, keys in sorted order; for a register with totals written at the commit,
+	to its pending table (no row of the totals is locked until the commit)."""
 	if not has_totals(reg):
 		return
+	if is_deferred(reg) and db.table_exists(pending_table(reg.name)):
+		_defer(reg, turnover, current)
+		return
+	_write(reg, turnover, current)
+
+
+def _write(reg, turnover: dict, current: dict):
 	_upsert(totals_table(reg.name), ["period", *dimensions(reg)], reg, turnover)
 	if has_current(reg):
 		_upsert(current_table(reg.name), dimensions(reg), reg, current)
+
+
+# ---------------------------------------------------------------- totals written at the commit
+#
+# A hot key (the settlements of one customer, an expense item of a month) is written by every posting. Written at once,
+# its row stays locked until the commit, so the postings of the whole system queue on it. A register with
+# `defer_totals` writes its deltas to the pending table (inserts, no conflicts) and moves them into the totals in a
+# `before_commit` callback: the rows of the totals are locked only for the commit itself, the registers in name order
+# and the keys sorted (no deadlock). A rollback, also to a savepoint, drops the pending rows with the movements. The
+# readers of the totals add the pending rows of their own transaction (the others are not visible before the commit).
+
+_DEFERRED = "beeone_deferred_totals"
+
+
+def _pending_set() -> set:
+	pending = getattr(frappe.local, _DEFERRED, None)
+	if pending is None:
+		pending = set()
+		setattr(frappe.local, _DEFERRED, pending)
+	return pending
+
+
+def _defer(reg, turnover: dict, current: dict):
+	res = resources(reg)
+	dims = dimensions(reg)
+	rows = []
+	covered = defaultdict(lambda: defaultdict(float))
+	for key, values in turnover.items():
+		if any(values.values()):
+			rows.append((key[0], *key[1:], *[flt(values.get(r)) for r in res]))
+		for r in res:
+			covered[tuple(key[1:])][r] += flt(values.get(r))
+	if has_current(reg):
+		# a movement without a date goes to the current balance only: its delta is the current minus the months
+		for key, values in current.items():
+			rest = [flt(values.get(r)) - covered[tuple(key)][r] for r in res]
+			if any(abs(v) > 1e-12 for v in rest):
+				rows.append((None, *key, *rest))
+	if not rows:
+		return
+	db.insert_rows(pending_table(reg.name), ["period", *dims, *res], rows)
+	_pending_set().add(reg.name)
+	# once per transaction; a rollback drops the callback and the pending rows together, so the check is on the queue
+	if flush_deferred not in frappe.db.before_commit._functions:
+		frappe.db.before_commit.add(flush_deferred)
+
+
+def flush_deferred():
+	"""Move the pending deltas of this transaction into the totals (before_commit)."""
+	from frappe.beeone.registers.meta import get_register
+
+	names = sorted(_pending_set())
+	setattr(frappe.local, _DEFERRED, set())
+	q = db.quote
+	for name in names:
+		reg = get_register(name)
+		table = pending_table(name)
+		dims, res = dimensions(reg), resources(reg)
+		cols = ", ".join(q(c) for c in ["period", *dims])
+		sums = ", ".join(f"SUM({q(r)})" for r in res)
+		rows = frappe.db.sql(f"SELECT {cols}, {sums} FROM {q(table)} GROUP BY {cols}")
+		frappe.db.sql(f"DELETE FROM {q(table)}")
+		turnover = defaultdict(lambda: defaultdict(float))
+		current = defaultdict(lambda: defaultdict(float))
+		for row in rows:
+			period, key, values = row[0], tuple(cstr(v) for v in row[1 : 1 + len(dims)]), row[1 + len(dims) :]
+			for r, value in zip(res, values, strict=True):
+				if period is not None:
+					turnover[(getdate(period), *key)][r] += flt(value)
+				current[key][r] += flt(value)
+		_write(reg, turnover, current)
+
+
+def pending_rows(reg, columns: list[str], resources_: list[str], where: list[str], params: list, monthly: bool) -> list:
+	"""(columns..., SUM(resources)) of the own pending deltas of a deferred register, grouped by `columns`; [] otherwise.
+
+	`monthly` keeps only the rows with a period (the monthly totals); the current balance takes all of them."""
+	if not is_deferred(reg) or reg.name not in (getattr(frappe.local, _DEFERRED, None) or ()):
+		return []
+	q = db.quote
+	conds = list(where) + ([f"{q('period')} IS NOT NULL"] if monthly else [])
+	select = [*(q(c) for c in columns), *(f"SUM({q(r)}) AS {q(r)}" for r in resources_)]
+	sql = f"SELECT {', '.join(select)} FROM {q(pending_table(reg.name))}"
+	if conds:
+		sql += " WHERE " + " AND ".join(conds)
+	if columns:
+		sql += " GROUP BY " + ", ".join(q(c) for c in columns)
+	return frappe.db.sql(sql, params, as_dict=True)
+
 
 
 def _upsert(table: str, key_columns: list[str], reg, deltas: dict):

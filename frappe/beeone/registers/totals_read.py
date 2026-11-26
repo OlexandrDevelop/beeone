@@ -135,7 +135,9 @@ def _key(row: dict, group_by: list[str]) -> tuple:
 	return tuple("" if row.get(g) is None else _text(row.get(g)) for g in group_by)
 
 
-def _select_totals(table: str, group_by: list[str], resources: list[str], where: list[str], params: list) -> dict:
+def _select_totals(
+	table: str, group_by: list[str], resources: list[str], where: list[str], params: list, reg=None, monthly=False
+) -> dict:
 	q = db.quote
 	cols = [q(g) for g in group_by]
 	sums = [f"SUM({q(r)}) AS {q(r)}" for r in resources]
@@ -148,6 +150,12 @@ def _select_totals(table: str, group_by: list[str], resources: list[str], where:
 	out = {}
 	for row in frappe.db.sql(sql, params, as_dict=True):
 		out[_key(row, group_by)] = {r: flt(row.get(r)) for r in resources}
+	# totals written at the commit: the own pending deltas of this transaction are part of the totals
+	if reg is not None:
+		for row in totals.pending_rows(reg, group_by, resources, where, params, monthly):
+			target = out.setdefault(_key(row, group_by), dict.fromkeys(resources, 0.0))
+			for r in resources:
+				target[r] += flt(row.get(r))
 	return out
 
 
@@ -220,12 +228,14 @@ def balance(reg, at, filters, group_by: list[str], resources: list[str]) -> list
 	month = get_first_day(at)
 	acc = {}
 	if totals.has_current(reg) and _months_between(month, get_first_day(getdate())) <= NEAR_MONTHS:
-		_add(acc, _select_totals(totals.current_table(reg.name), group_by, resources, where, params), resources)
+		_add(acc, _select_totals(totals.current_table(reg.name), group_by, resources, where, params, reg, False), resources)
 		_add(acc, _select_movements(reg, filters, group_by, resources, [(">", at)]), resources, -1)
 	else:
 		_add(
 			acc,
-			_select_totals(totals.totals_table(reg.name), group_by, resources, [*where, f"{db.quote('period')} < %s"], [*params, month]),
+			_select_totals(
+				totals.totals_table(reg.name), group_by, resources, [*where, f"{db.quote('period')} < %s"], [*params, month], reg, True
+			),
 			resources,
 		)
 		_add(acc, _select_movements(reg, filters, group_by, resources, [(">=", month), ("<=", at)]), resources)
@@ -253,7 +263,7 @@ def turnover(reg, start, end, filters, group_by: list[str], resources: list[str]
 		acc,
 		_select_totals(
 			totals.totals_table(reg.name), group_by, resources,
-			[*where, f"{period} >= %s", f"{period} <= %s"], [*params, first, get_first_day(last)],
+			[*where, f"{period} >= %s", f"{period} <= %s"], [*params, first, get_first_day(last)], reg, True,
 		),
 		resources,
 	)

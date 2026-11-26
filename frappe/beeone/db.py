@@ -972,3 +972,34 @@ def autonomous_counter(table: str, key: str, count: int) -> int:
 			_drop_autonomous_connection()
 			if attempt == 2:
 				raise
+
+
+# ---------------------------------------------------------------- pending totals (registers/totals.py, defer_totals)
+
+INSERT_CHUNK = 1000
+
+
+def create_pending_table(table: str, dimensions: list[str], resources: list[str], lengths: dict[str, int] | None = None):
+	"""(period DATE NULL, dimensions..., resources): the deltas a transaction moves into the totals at its commit.
+	No key: the rows are only inserted, summed and deleted by the transaction that wrote them."""
+	q = quote
+	lengths = lengths or {}
+	columns = [f"{q('period')} DATE NULL"]
+	columns += [f"{q(col)} VARCHAR({lengths.get(col) or 140}) NOT NULL DEFAULT ''" for col in dimensions]
+	columns += [f"{q(col)} DECIMAL(21,9) NOT NULL DEFAULT 0" for col in resources]
+	ddl(f"CREATE TABLE IF NOT EXISTS {q(table)} ({', '.join(columns)})")
+
+
+def insert_rows(table: str, columns: list[str], rows: list[tuple]):
+	"""Multi-row INSERT of `rows` (tuples in the order of `columns`), in chunks."""
+	if not rows:
+		return
+	q = quote
+	names = ", ".join(q(c) for c in columns)
+	mark = "(" + ", ".join(["%s"] * len(columns)) + ")"
+	for i in range(0, len(rows), INSERT_CHUNK):
+		chunk = rows[i : i + INSERT_CHUNK]
+		frappe.db.sql(
+			f"INSERT INTO {q(table)} ({names}) VALUES {', '.join([mark] * len(chunk))}",
+			[value for row in chunk for value in row],
+		)

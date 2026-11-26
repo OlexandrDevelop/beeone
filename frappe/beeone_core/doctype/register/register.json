@@ -20,6 +20,7 @@
   "section_totals",
   "totals",
   "totals_doctype",
+  "defer_totals",
   "lock_dimension",
   "control_negative"
  ],
@@ -117,6 +118,14 @@
    "options": "DocType"
   },
   {
+   "fieldname": "defer_totals",
+   "fieldtype": "Check",
+   "label": "Write totals at commit",
+   "default": "0",
+   "description": "For a register without balance control: a posting writes its totals deltas to a pending table and moves them into the totals just before the commit, so parallel postings of one key (one customer, one expense item of a month) do not wait for each other during the whole posting.",
+   "depends_on": "eval:doc.totals && doc.totals != 'None' && !doc.totals_doctype"
+  },
+  {
    "fieldname": "lock_dimension",
    "fieldtype": "Data",
    "label": "Period Lock Dimension"
@@ -130,7 +139,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-25 00:00:00.000000",
+ "modified": "2026-11-26 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Beeone Core",
  "name": "Register",
