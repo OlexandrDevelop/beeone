@@ -252,6 +252,26 @@ class TestBeeoneAI(IntegrationTestCase):
 		by_day = ai_tools.aggregate("ToDo", date_field="creation", date_group="day", order_by="count")
 		self.assertTrue(by_day["rows"] and len(by_day["rows"][0]["period"]) == 10)
 
+	def test_the_model_answers_in_ukrainian_and_only_about_the_program(self):
+		m = FakeModel([Reply(text="Ось")])
+		self.ask(m, "How do I pay salaries?")
+		system = m.sent[0]["system"]
+		self.assertIn("Always answer in Ukrainian", system)
+		self.assertIn("Answer only questions about working in", system)
+		self.assertIn("Never tell who made the program", system)
+
+	def test_questions_about_the_program_itself_never_reach_the_model(self):
+		for question in ("Хто і як написав цю програму?", "Who made this program?", "Яка ти модель?", "Ти на Frappe?", "Хто тебе створив?"):
+			m = FakeModel([Reply(text="should not be asked")])
+			out = self.ask(m, question)
+			self.assertEqual(m.sent, [], question)
+			self.assertIn("Я допомагаю лише з роботою", out["answer"], question)
+		# a question about the data with the same words goes to the model
+		for question in ("Хто створив цей документ?", "Who made the last payment?", "Яка модель обліку собівартості?"):
+			m = FakeModel([Reply(text="Ось")])
+			self.ask(m, question)
+			self.assertEqual(len(m.sent), 1, question)
+
 	def test_analytics_questions_skip_help_excerpts_while_how_to_keeps_them(self):
 		m_data = FakeModel([Reply(text="5")])
 		self.ask(m_data, "Show how many salaries are unpaid")
