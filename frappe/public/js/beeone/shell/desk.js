@@ -9,6 +9,16 @@ const icon = (n, c) => beeone.ui.icon(n, c);
 const METHOD = "frappe.beeone.shell.widget_data";
 const REFRESH_MS = 60000;
 const MAX_WIDGETS = 16;
+// the free desktop (user 2026-11-26): a widget stands where the user put it; the sizes on a grid of 12 px
+const STEP = 12;
+const CELL = { w: 174, h: 108 };
+const SIZE_PX = {
+	s: [CELL.w, CELL.h],
+	m: [2 * CELL.w + STEP, CELL.h],
+	l: [2 * CELL.w + STEP, 2 * CELL.h + STEP],
+	xl: [4 * CELL.w + 3 * STEP, 4 * CELL.h + 3 * STEP],
+};
+const TOP = 44; // below the bar «Віджети» of the desktop
 
 const CORE_TYPES = () => [
 	{ type: "beeone.count", label: __("Shortcut"), sizes: ["s", "m"], icon: "list" },
@@ -23,6 +33,7 @@ let loaded_at = 0;
 let loading = false;
 let editing = false;
 let was_visible = false;
+let placed_on_resize = false;
 
 export const desk = {
 	widgets() {
@@ -40,13 +51,114 @@ export const desk = {
 		const hello = hour < 5 ? __("Good night, {0}", [first_name()]) : hour < 12 ? __("Good morning, {0}", [first_name()]) : hour < 18 ? __("Good afternoon, {0}", [first_name()]) : __("Good evening, {0}", [first_name()]);
 		host.innerHTML =
 			`<div class="bo-desk-hello"><div class="bo-desk-title">${esc(hello)}</div><p>${esc(__("Documents, lists and reports open as windows."))}</p>${this.tiles()}</div>` +
-			`<section class="bo-widgets${list.some((w) => w.size === "xl") ? " has-wide" : ""}" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
+			`<section class="bo-widgets${editing ? " is-edit" : ""}" aria-label="${esc(__("Widgets"))}"><div class="bo-widgets-head"><h2>${esc(__("Widgets"))}</h2><div>` +
 			`<button type="button" class="bo-btn bo-btn--sm bo-btn--ghost" data-w="add">${icon("plus", "bo-i-sm")}${esc(__("Add widget"))}</button>` +
 			`<button type="button" class="bo-btn bo-btn--sm" data-w="edit">${esc(editing ? __("Done") : __("Customize"))}</button></div></div>` +
-			`<div class="bo-widget-grid${editing ? " is-edit" : ""}">${list.map((w, i) => this.card(w, i, list.length)).join("")}</div>` +
+			(editing && list.length ? `<p class="bo-widgets-hint">${esc(__("Drag a widget to any place of the desktop"))}</p>` : "") +
 			(list.length ? "" : `<div class="bo-widgets-empty">${icon("layout")}<p>${esc(__("Your widgets will be here"))}</p></div>`) +
-			`</section>`;
+			`</section>` +
+			`<div class="bo-widget-grid${editing ? " is-edit" : ""}">${list.map((w, i) => this.card(w, i, list.length)).join("")}</div>`;
+		this.place(host, list);
 		list.forEach((w) => this.fill(w));
+		if (!placed_on_resize) {
+			// a narrower desktop keeps every widget inside it
+			placed_on_resize = true;
+			let timer = null;
+			window.addEventListener("resize", () => {
+				clearTimeout(timer);
+				timer = setTimeout(() => {
+					const bg = document.getElementById("bo-desk-bg");
+					if (bg && !bg.hidden) this.place(bg, this.widgets());
+				}, 150);
+			});
+		}
+	},
+
+	// the places of the widgets on the desktop: the saved one, else the first free place in the column of the widgets at
+	// the right edge (where the widgets stood before they could be moved); a place is kept inside the desktop
+	places(host, list) {
+		const width = Math.max(host.clientWidth - 2 * 28, SIZE_PX.l[0]);
+		const wide = list.some((w) => w.size === "xl" && w.x == null);
+		const column = Math.max(0, width - (wide ? SIZE_PX.xl[0] : SIZE_PX.l[0]));
+		const taken = [];
+		const free = (r) => !taken.some((t) => r.x < t.x + t.w + STEP && t.x < r.x + r.w + STEP && r.y < t.y + t.h + STEP && t.y < r.y + r.h + STEP);
+		const out = {};
+		const size = (w) => SIZE_PX[w.size] || SIZE_PX.s;
+		list.forEach((w) => {
+			if (w.x == null || w.y == null) return;
+			const [ww, hh] = size(w);
+			const r = { x: Math.max(0, Math.min(w.x, width - ww)), y: Math.max(0, w.y), w: ww, h: hh };
+			taken.push(r);
+			out[w.id] = r;
+		});
+		list.forEach((w) => {
+			if (out[w.id]) return;
+			const [ww, hh] = size(w);
+			for (let y = TOP; ; y += STEP) {
+				const x = [column, column + CELL.w + STEP].find((x0) => x0 + ww <= width + 0.5 && free({ x: x0, y, w: ww, h: hh }));
+				if (x != null) {
+					out[w.id] = { x, y, w: ww, h: hh };
+					taken.push(out[w.id]);
+					break;
+				}
+			}
+		});
+		return out;
+	},
+
+	place(host, list) {
+		const grid = host.querySelector(".bo-widget-grid");
+		if (!grid || document.body.classList.contains("bo-compact")) return; // a small screen: one column, as it was
+		const at = this.places(host, list);
+		let bottom = 0;
+		grid.querySelectorAll(".bo-w").forEach((el) => {
+			const r = at[el.dataset.id];
+			if (!r) return;
+			Object.assign(el.style, { left: r.x + "px", top: r.y + "px", width: r.w + "px", height: r.h + "px" });
+			bottom = Math.max(bottom, r.y + r.h);
+		});
+		grid.style.height = bottom + 24 + "px";
+		if (editing) this.drag(host, grid, list);
+	},
+
+	// «Налаштувати»: a widget is dragged to any place of the desktop; the place is snapped to the grid and saved
+	drag(host, grid, list) {
+		grid.querySelectorAll(".bo-w").forEach((el) => {
+			el.addEventListener("pointerdown", (e) => {
+				if (e.button !== 0 || e.target.closest("button")) return;
+				e.preventDefault();
+				const start = { x: e.clientX, y: e.clientY, left: el.offsetLeft, top: el.offsetTop };
+				const max_x = Math.max(0, host.clientWidth - 2 * 28 - el.offsetWidth);
+				let moved = false;
+				el.setPointerCapture(e.pointerId);
+				el.classList.add("is-drag");
+				const pos = (ev) => ({
+					x: Math.max(0, Math.min(max_x, Math.round((start.left + ev.clientX - start.x) / STEP) * STEP)),
+					y: Math.max(0, Math.round((start.top + ev.clientY - start.y) / STEP) * STEP),
+				});
+				const move = (ev) => {
+					const p = pos(ev);
+					moved = moved || Math.abs(ev.clientX - start.x) + Math.abs(ev.clientY - start.y) > 3;
+					el.style.left = p.x + "px";
+					el.style.top = p.y + "px";
+				};
+				const up = (ev) => {
+					el.removeEventListener("pointermove", move);
+					el.removeEventListener("pointerup", up);
+					el.removeEventListener("pointercancel", up);
+					el.classList.remove("is-drag");
+					if (!moved) return;
+					// every widget keeps the place it has now (the ones placed automatically too), the dragged one its new one
+					const at = this.places(host, list);
+					const p = pos(ev);
+					const next = list.map((w) => (w.id === el.dataset.id ? { ...w, ...p } : { ...w, x: at[w.id].x, y: at[w.id].y }));
+					this.commit(next, false);
+				};
+				el.addEventListener("pointermove", move);
+				el.addEventListener("pointerup", up);
+				el.addEventListener("pointercancel", up);
+			});
+		});
 	},
 
 	// the home page of the role: tiles of its sections and commands (the role desk, SHELL.md §6.6)
@@ -70,8 +182,7 @@ export const desk = {
 	card(w, i, n) {
 		const size = ["s", "m", "l", "xl"].includes(w.size) ? w.size : "s";
 		const tools = editing
-			? `<div class="bo-w-tools"><button type="button" data-w="up" data-i="${i}" ${i ? "" : "disabled"} aria-label="${esc(__("Move up"))}">${icon("arrow-up")}</button>` +
-			  `<button type="button" data-w="down" data-i="${i}" ${i < n - 1 ? "" : "disabled"} aria-label="${esc(__("Move down"))}">${icon("arrow-down")}</button>` +
+			? `<div class="bo-w-tools">${icon("grip", "bo-w-grip")}` +
 			  `<button type="button" data-w="cfg" data-i="${i}" aria-label="${esc(__("Edit widget"))}">${icon("gear")}</button>` +
 			  `<button type="button" data-w="del" data-i="${i}" aria-label="${esc(__("Remove widget"))}">${icon("x")}</button></div>`
 			: "";
@@ -163,11 +274,6 @@ export const desk = {
 		if (act === "add") return this.dialog(null);
 		if (act === "retry") return this.refresh(true);
 		if (act === "cfg") return this.dialog(list[i]);
-		if (act === "up" || act === "down") {
-			const j = act === "up" ? i - 1 : i + 1;
-			[list[i], list[j]] = [list[j], list[i]];
-			return this.commit(list);
-		}
 		if (act === "del") {
 			const [gone] = list.splice(i, 1);
 			this.commit(list);
@@ -187,13 +293,14 @@ export const desk = {
 		}
 	},
 
-	commit(list) {
+	commit(list, reload = true) {
 		const st = beeone.shell.state;
 		st.widgets = list.slice(0, MAX_WIDGETS);
 		st.has_widgets = true;
-		beeone.shell.save_soon();
+		beeone.shell.save_soon("widgets");
 		this.render();
-		this.refresh(true);
+		if (reload) this.refresh(true);
+		else st.widgets.forEach((w) => this.fill(w)); // a move: the data the widgets have
 	},
 
 	dialog(widget) {

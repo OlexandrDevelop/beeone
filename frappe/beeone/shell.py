@@ -461,6 +461,10 @@ def clean_layout(layout) -> dict:
 				"options": clean,
 			}
 		)
+		if widget.get("x") is not None and widget.get("y") is not None:
+			# the place on the desktop the user put the widget at (px from the top left corner of the desktop)
+			widgets[-1]["x"] = _num(widget.get("x"), 0, 8000)
+			widgets[-1]["y"] = _num(widget.get("y"), 0, 8000)
 	return {
 		"v": 1,
 		"windows": windows,
@@ -501,12 +505,38 @@ def get_saved_layout() -> dict | None:
 	return get_layout(frappe.session.user)
 
 
+# the parts of a layout a client saves on its own: a browser that changed only its windows does not overwrite the widgets
+# another browser of the same user added meanwhile
+LAYOUT_PARTS = {
+	"windows": ("windows", "z", "active", "recent"),
+	"widgets": ("widgets", "has_widgets"),
+	"favorites": ("favorites",),
+	"accent": ("accent",),
+}
+
+
 @frappe.whitelist()
-def save_layout(layout) -> dict:
-	"""Save the layout of the session user. The data is cleaned first."""
+def save_layout(layout, parts=None) -> dict:
+	"""Save the layout of the session user. The data is cleaned first.
+
+	`parts` (a list of `LAYOUT_PARTS` keys): only these parts of the saved layout are replaced, the others stay as they
+	are saved (another browser may have changed them). Without `parts` the whole layout is replaced.
+	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	clean = clean_layout(layout)
+	if isinstance(parts, str):
+		try:
+			parts = json.loads(parts)
+		except ValueError:
+			parts = None
+	stored = get_layout(frappe.session.user) if parts else None
+	if stored:
+		merged = dict(stored)
+		for part in parts:
+			for key in LAYOUT_PARTS.get(part, ()):
+				merged[key] = clean[key]
+		clean = clean_layout(merged)
 	value = json.dumps(clean, ensure_ascii=False)
 	if len(value) > 60000:
 		frappe.throw(_("The layout is too big"))

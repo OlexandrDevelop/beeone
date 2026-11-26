@@ -10,6 +10,9 @@ const MAX_RECENT = 20;
 const MAX_FAV = 40;
 let save_timer = null;
 let dirty = false;
+// the parts of the layout changed here since the last save (frappe.beeone.shell.LAYOUT_PARTS): the server replaces only
+// them, so a browser that moved a window does not overwrite the widgets another browser of the user added
+const changed = new Set();
 
 // a window of a page may be tracked before its title is known: then the label is the raw route (a slug).
 // Use the name the app gave the command, else the (translated) title of the Page.
@@ -31,19 +34,43 @@ function flush(keep) {
 	clearTimeout(save_timer);
 	save_timer = null;
 	const layout = JSON.stringify(state_to_layout());
+	const sent = [...changed];
+	changed.clear();
+	const parts = JSON.stringify(sent);
 	if (keep) {
 		// the page is going away: fetch with keepalive finishes after it
 		fetch("/api/method/" + SAVE_METHOD, {
 			method: "POST",
 			keepalive: true,
 			headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Frappe-CSRF-Token": frappe.csrf_token, Accept: "application/json" },
-			body: "layout=" + encodeURIComponent(layout),
+			body: "layout=" + encodeURIComponent(layout) + "&parts=" + encodeURIComponent(parts),
 		}).catch(() => {});
 		return;
 	}
-	frappe.xcall(SAVE_METHOD, { layout }).catch(() => {
-		dirty = true;
-	});
+	frappe
+		.xcall(SAVE_METHOD, { layout, parts })
+		.then((saved) => adopt(saved))
+		.catch(() => {
+			sent.forEach((p) => changed.add(p));
+			dirty = true;
+		});
+}
+
+// take the parts of the saved layout another browser of the user changed (not the ones changed here and not saved yet)
+function adopt(saved) {
+	if (!saved) return;
+	const st = beeone.shell.state;
+	if (!changed.has("widgets") && JSON.stringify(saved.widgets || []) !== JSON.stringify(st.widgets || [])) {
+		st.widgets = saved.widgets || [];
+		st.has_widgets = !!(saved.has_widgets || st.widgets.length);
+		desk.render();
+		desk.refresh(true);
+	}
+	if (!changed.has("favorites")) st.favorites = saved.favorites || [];
+	if (!changed.has("accent") && saved.accent && saved.accent !== st.accent) {
+		st.accent = saved.accent;
+		document.body.dataset.boAccent = st.accent;
+	}
 }
 
 Object.assign(beeone.shell, {
@@ -68,7 +95,9 @@ Object.assign(beeone.shell, {
 		P.open_route(route);
 	},
 
-	save_soon() {
+	// part: "widgets" | "favorites" | "accent" | "windows" (the windows and the recent ones)
+	save_soon(part = "windows") {
+		changed.add(part);
 		dirty = true;
 		if (save_timer) return;
 		save_timer = setTimeout(() => {
@@ -104,14 +133,14 @@ Object.assign(beeone.shell, {
 		st.favorites = (st.favorites || []).filter((f) => f.route.join("/") !== key);
 		if (!had) st.favorites.unshift({ route: entry.route.map(String), label: entry.label || key });
 		st.favorites = st.favorites.slice(0, MAX_FAV);
-		beeone.shell.save_soon();
+		beeone.shell.save_soon("favorites");
 		return !had;
 	},
 
 	set_accent(accent) {
 		beeone.shell.state.accent = accent === "teal" ? "teal" : "cobalt";
 		document.body.dataset.boAccent = beeone.shell.state.accent;
-		beeone.shell.save_soon();
+		beeone.shell.save_soon("accent");
 	},
 
 	reset_layout() {
@@ -172,7 +201,11 @@ Object.assign(beeone.shell, {
 		desk.refresh(true);
 		document.getElementById("bo-desk-bg").addEventListener("click", (e) => desk.on_click(e));
 		window.addEventListener("pagehide", () => flush(true));
-		document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush(true));
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "hidden") return flush(true);
+			// back in this tab: the widgets and favourites another browser of the user saved meanwhile
+			frappe.xcall("frappe.beeone.shell.get_saved_layout").then(adopt).catch(() => {});
+		});
 		// a desktop route (no window) clears the active window
 		frappe.router.on("change", () => {
 			if (!W.is_window_route(frappe.get_route())) W.blur();

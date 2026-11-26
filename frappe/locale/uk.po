@@ -42238,3 +42238,7 @@ msgstr "Оперативне проведення документа майбу�
 #: frappe/beeone/ai
 msgid "{0} has no deletion mark"
 msgstr "Об'єкт „{0}“ не має позначки на видалення"
+
+#: frappe/public/js/beeone/shell/desk.js
+msgid "Drag a widget to any place of the desktop"
+msgstr "Перетягніть віджет у будь-яке місце робочого столу"

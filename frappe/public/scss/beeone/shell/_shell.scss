@@ -309,6 +309,11 @@ body.bo-shell .sticky-top.navbar {
 .bo-desk-hello {
 	flex: 1;
 	min-width: 0;
+	margin-right: 384px; // the column the widgets stand in until the user moves them
+}
+
+#bo-desk-bg:has(.bo-w--xl) .bo-desk-hello {
+	margin-right: 784px;
 }
 
 .bo-desk-hello h1 {
@@ -1628,9 +1633,20 @@ body.bo-shell .modal-backdrop.show {
 }
 
 /* ---------- widgets ---------- */
+// the bar «Віджети» in the top right corner; the widgets themselves stand anywhere on the desktop (user 2026-11-26)
 .bo-widgets {
+	position: absolute;
+	top: 24px;
+	right: 28px;
 	width: 360px;
-	flex: none;
+	z-index: 3;
+}
+
+.bo-widgets-hint {
+	margin: 0 0 8px;
+	font-size: 12px;
+	color: var(--bo-text-3);
+	text-align: right;
 }
 
 .bo-widgets-head {
@@ -1652,11 +1668,37 @@ body.bo-shell .modal-backdrop.show {
 	gap: 6px;
 }
 
+// the layer of the widgets over the whole desktop: a widget has its place (left/top set by desk.js); the empty
+// layer lets the clicks through to the tiles under it
 .bo-widget-grid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	grid-auto-rows: 108px;
-	gap: 12px;
+	position: absolute;
+	top: 24px;
+	left: 28px;
+	right: 28px;
+	pointer-events: none;
+}
+
+.bo-widget-grid .bo-w {
+	position: absolute;
+	pointer-events: auto;
+}
+
+.bo-widget-grid.is-edit .bo-w {
+	cursor: grab;
+	touch-action: none;
+}
+
+.bo-widget-grid .bo-w.is-drag {
+	z-index: 5;
+	cursor: grabbing;
+	box-shadow: var(--bo-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.18));
+}
+
+.bo-w-grip {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	color: var(--bo-text-3);
 }
 
 .bo-w {
@@ -1826,7 +1868,6 @@ body.bo-shell .modal-backdrop.show {
 
 .bo-widget-grid.is-edit .bo-w {
 	border-style: dashed;
-	cursor: default;
 }
 
 .bo-widget-grid.is-edit .bo-w-body {
@@ -1837,6 +1878,7 @@ body.bo-shell .modal-backdrop.show {
 	position: absolute;
 	inset: 0;
 	z-index: 2;
+	pointer-events: none; // the card under it takes the drag; the buttons take their clicks
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1844,6 +1886,7 @@ body.bo-shell .modal-backdrop.show {
 }
 
 .bo-w-tools button {
+	pointer-events: auto;
 	width: 30px;
 	height: 30px;
 	border: 1px solid var(--bo-border-strong);
@@ -1966,7 +2009,27 @@ body.bo-compact #bo-desk-bg {
 }
 
 body.bo-compact .bo-widgets {
+	position: static;
 	width: 100%;
+}
+
+body.bo-compact .bo-desk-hello {
+	margin-right: 0;
+}
+
+// a small screen: the widgets one under another, as before they could be moved
+body.bo-compact .bo-widget-grid {
+	position: static;
+	pointer-events: auto;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-auto-rows: 108px;
+	gap: 12px;
+	height: auto !important;
+}
+
+body.bo-compact .bo-widget-grid .bo-w {
+	position: relative;
 }
 
 body.bo-compact .bo-search kbd {
@@ -1984,9 +2047,7 @@ body.bo-compact .bo-search kbd {
 }
 
 /* ---------- widget "Chart for the period" (beeone.chart) ---------- */
-.bo-widgets.has-wide {
-	width: min(760px, 58%);
-}
+
 
 .bo-w--xl {
 	grid-column: span 2;
