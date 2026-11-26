@@ -3,13 +3,14 @@
 
 """Read queries on a register: movements of a document, balance and turnover.
 
-Every query goes through `frappe.get_list`, so the read permission of the register
-DocType and the user permissions apply. Country neutral.
+Every query of the movements goes through `frappe.get_list`, so the read permission of the register
+DocType and the user permissions apply. The balance and the turnover are read from the totals tables where they can
+be (totals_read.py, as 1C reads its totals), with the same rights. Country neutral.
 """
 
 import frappe
 from frappe import _
-from frappe.beeone.registers import totals
+from frappe.beeone.registers import totals, totals_read
 from frappe.beeone.registers.meta import get_register
 from frappe.utils import cstr, getdate
 
@@ -336,8 +337,13 @@ def balance(register: str, at=None, filters=None, group_by=None, resources=None)
 		frappe.throw(_("Register {0} has no balance").format(reg.name))
 	frappe.has_permission(reg.register_doctype, "read", throw=True)
 	query = _check_filters(reg, filters)
+	group_by, resources = _check_group_by(reg, group_by), _resources(reg, resources)
+	# from the totals tables (as 1C): the movements are read only near the date, never from the start of the books
+	fast = totals_read.balance(reg, at or getdate(), filters, group_by, resources)
+	if fast is not None:
+		return fast
 	query.append([reg.register_doctype, reg.date_field, "<=", getdate(at)])
-	return _aggregate(reg, query, _check_group_by(reg, group_by), _resources(reg, resources))
+	return _aggregate(reg, query, group_by, resources)
 
 
 def turnover(register: str, start, end, filters=None, group_by=None, resources=None) -> list[dict]:
@@ -350,8 +356,13 @@ def turnover(register: str, start, end, filters=None, group_by=None, resources=N
 	if start > end:
 		frappe.throw(_("The start of the period is after its end"))
 	query = _check_filters(reg, filters)
+	group_by, resources = _check_group_by(reg, group_by), _resources(reg, resources)
+	# the whole months from the monthly totals, the cut months from the movements
+	fast = totals_read.turnover(reg, start, end, filters, group_by, resources)
+	if fast is not None:
+		return fast
 	query.append([reg.register_doctype, reg.date_field, "between", [start, end]])
-	return _aggregate(reg, query, _check_group_by(reg, group_by), _resources(reg, resources))
+	return _aggregate(reg, query, group_by, resources)
 
 
 def balance_and_turnover(
@@ -384,8 +395,11 @@ def balance_and_turnover(
 
 	# 1. Opening balance on day before start
 	prev_day = add_days(start, -1)
-	opening_query = [*base_query, [reg.register_doctype, reg.date_field, "<=", prev_day]]
-	opening_rows = _aggregate(reg, opening_query, grp_list, res_list)
+	# the opening balance from the totals (as 1C); the inflows and outflows of the period from its movements
+	opening_rows = totals_read.balance(reg, prev_day, filters, grp_list, res_list)
+	if opening_rows is None:
+		opening_query = [*base_query, [reg.register_doctype, reg.date_field, "<=", prev_day]]
+		opening_rows = _aggregate(reg, opening_query, grp_list, res_list)
 
 	# 2. Period turnovers: inflows (> 0) and outflows (< 0)
 	period_query = [*base_query, [reg.register_doctype, reg.date_field, "between", [start, end]]]

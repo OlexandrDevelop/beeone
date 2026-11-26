@@ -239,7 +239,11 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 		return self.last_query
 
 	def get_tables(self, cached=True):
-		return [
+		"""Return list of tables. Kept in the client cache "db_tables" as on MariaDB: a posting asks for a table
+		several times (change log, documents) and information_schema costs milliseconds on PostgreSQL."""
+		if cached and (tables := frappe.client_cache.get_value("db_tables")):
+			return tables
+		tables = [
 			d[0]
 			for d in self.sql(
 				"""select table_name
@@ -250,6 +254,8 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 				(self.cur_db_name, self.db_schema),
 			)
 		]
+		frappe.client_cache.set_value("db_tables", tables)
+		return tables
 
 	def get_db_table_columns(self, table) -> list[str]:
 		"""Returns list of column names from given table."""

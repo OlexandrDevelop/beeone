@@ -75,6 +75,9 @@ def ensure_totals_tables(reg):
 		rebuild = True
 	if rebuild:
 		rebuild_totals(reg)
+	from frappe.beeone.registers.indexes import ensure_totals_index
+
+	ensure_totals_index(reg)
 
 
 def rebuild_totals(reg):

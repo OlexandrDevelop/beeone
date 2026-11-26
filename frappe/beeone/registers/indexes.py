@@ -10,6 +10,8 @@ The reports read the movements in three ways, and each gets an index:
   index (dimensions..., date);
 - a report of one period without dimension filters (turnovers of a month): index (date);
 - the card of a document, the check and the delete of its movements: index (recorder type, recorder);
+- the monthly totals of one key (the balance of one item on a date read from the totals, totals_read.py): the primary
+  key of the totals table starts with the period, so it gets index (dimensions..., period) too;
 - the state of one document a movement refers to (the shipped and paid part of a customer order, the settlements of
   an invoice): a dimension that links to a submittable DocType and is not the first dimension gets index
   (dimension, date) — the index of the dimensions serves only a filter that starts with the first dimensions.
@@ -71,6 +73,15 @@ def ensure_register_indexes(reg):
 		if tag.startswith("doc_") and db.dialect().index_on(table, columns[:1]):
 			continue
 		db.ensure_index(table, tag, columns)
+	ensure_totals_index(reg)
+
+
+def ensure_totals_index(reg):
+	"""Index (dimensions..., period) of the monthly totals table: a balance or turnover of one key over the months."""
+	dims = totals.dimensions(reg)[:MAX_INDEX_DIMENSIONS]
+	table = totals.totals_table(reg.name)
+	if dims and totals.has_totals(reg) and db.table_exists(table):
+		db.ensure_index(table, "dimensions_period", [*dims, "period"])
 
 
 def drop_register_indexes(reg):
@@ -79,6 +90,8 @@ def drop_register_indexes(reg):
 	if db.table_exists(table):
 		for tag in index_plan(reg):
 			db.drop_index(table, tag)
+	if db.table_exists(totals.totals_table(reg.name)):
+		db.drop_index(totals.totals_table(reg.name), "dimensions_period")
 
 
 def ensure_all_register_indexes():

@@ -768,17 +768,27 @@ def accumulate(
 		)
 
 
+LOCK_CHUNK = 500
+
+
 def lock_keys(table: str, key_columns: list[str], keys: list[tuple]):
-	"""Lock the rows of the given keys, in key order. A missing key locks nothing."""
+	"""Lock the rows of the given keys, in key order. A missing key locks nothing.
+
+	The keys go in chunks of LOCK_CHUNK, the chunks in key order too: one statement with tens of thousands of row
+	values exceeds the parser stack of PostgreSQL (a bulk load, a document of thousands of rows).
+	"""
 	if not keys:
 		return
 	q = quote
 	names = ", ".join(q(c) for c in key_columns)
-	marks = ", ".join("(" + ", ".join(["%s"] * len(key_columns)) + ")" for _key in keys)
-	frappe.db.sql(
-		f"SELECT 1 FROM {q(table)} WHERE ({names}) IN ({marks}) ORDER BY {names} FOR UPDATE",
-		[part for key in sorted(keys) for part in key],
-	)
+	keys = sorted(keys)
+	for i in range(0, len(keys), LOCK_CHUNK):
+		chunk = keys[i : i + LOCK_CHUNK]
+		marks = ", ".join("(" + ", ".join(["%s"] * len(key_columns)) + ")" for _key in chunk)
+		frappe.db.sql(
+			f"SELECT 1 FROM {q(table)} WHERE ({names}) IN ({marks}) ORDER BY {names} FOR UPDATE",
+			[part for key in chunk for part in key],
+		)
 
 
 def select_current(
