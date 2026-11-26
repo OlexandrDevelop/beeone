@@ -248,6 +248,16 @@ def clean_history(history):
 
 
 def ask(question, history=None, context=None):
+	"""The answer of the assistant; its own texts are always Ukrainian, whatever the language of the user."""
+	lang = frappe.local.lang
+	frappe.local.lang = "uk"
+	try:
+		return _ask(question, history, context)
+	finally:
+		frappe.local.lang = lang
+
+
+def _ask(question, history=None, context=None):
 	started = time.monotonic()
 	question = cstr(question).strip()[:QUESTION_CHARS]
 	if not question:

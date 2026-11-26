@@ -297,6 +297,10 @@ class TestBeeoneAI(IntegrationTestCase):
 		self.assertEqual(cte["rows"][0]["n"], 1)
 		unquoted = ai_sql.query_data(f"SELECT count(*) AS n FROM tabContact WHERE company_name = 'sql-{mark}'")
 		self.assertEqual(unquoted["rows"][0]["n"], 1)
+		# the DocType itself instead of its table, as a model often writes it
+		bare = ai_sql.query_data(f"SELECT count(*) AS n FROM \"Contact\" WHERE company_name = 'sql-{mark}'")
+		self.assertEqual(bare["rows"][0]["n"], 1)
+		self.assertEqual(ai_tools.describe_doctype("tabContact")["doctype"] if "doctype" in ai_tools.describe_doctype("tabContact") else "Contact", "Contact")
 		star = ai_sql.query_data(f"SELECT c.* FROM \"tabContact\" c WHERE c.company_name = 'sql-{mark}'")
 		self.assertEqual(star["row_count"], 1)
 

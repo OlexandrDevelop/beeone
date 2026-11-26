@@ -149,6 +149,8 @@ def _report_allowed(name):
 
 
 def describe_doctype(doctype):
+	if doctype and doctype.startswith("tab") and not frappe.db.exists("DocType", doctype):
+		doctype = doctype[3:]  # the table name was given
 	meta = _readable(doctype)
 	fields = []
 	for df in meta.fields:

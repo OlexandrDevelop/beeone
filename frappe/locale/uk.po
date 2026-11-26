@@ -42166,3 +42166,75 @@ msgstr "Відкрити «Підписка BeeOne»"
 #: frappe/beeone/ai
 msgid "Without a subscription the assistant still finds help pages and runs the checks."
 msgstr "Без підписки помічник однаково знаходить сторінки довідки та виконує перевірки."
+
+#: frappe/beeone/ai
+msgid "Queried the database"
+msgstr "Зробив запит до даних"
+
+#: frappe/beeone/ai
+msgid "CTE name {0} is not allowed"
+msgstr "Назва CTE {0} не дозволена"
+
+#: frappe/beeone/ai
+msgid "Invalid SQL: {0}"
+msgstr "Некоректний SQL: {0}"
+
+#: frappe/beeone/ai
+msgid "Invalid table reference"
+msgstr "Некоректне посилання на таблицю"
+
+#: frappe/beeone/ai
+msgid "Name the columns instead of *"
+msgstr "Назвіть колонки замість *"
+
+#: frappe/beeone/ai
+msgid "Name the columns instead of the whole row {0}"
+msgstr "Назвіть колонки замість цілого рядка {0}"
+
+#: frappe/beeone/ai
+msgid "Name the columns instead of {0}"
+msgstr "Назвіть колонки замість {0}"
+
+#: frappe/beeone/ai
+msgid "Only SELECT queries are allowed"
+msgstr "Дозволено лише запити SELECT"
+
+#: frappe/beeone/ai
+msgid "Only a single SELECT statement is allowed"
+msgstr "Дозволено лише один запит SELECT"
+
+#: frappe/beeone/ai
+msgid "Only read-only SELECT queries are allowed"
+msgstr "Дозволено лише запити SELECT для читання"
+
+#: frappe/beeone/ai
+msgid "Query must read at least one table"
+msgstr "Запит має читати хоча б одну таблицю"
+
+#: frappe/beeone/ai
+msgid "SQL function {0} is not allowed"
+msgstr "SQL-функція {0} не дозволена"
+
+#: frappe/beeone/ai
+msgid "SQL query is empty"
+msgstr "SQL-запит порожній"
+
+#: frappe/beeone/ai
+msgid "Schema {0} is not allowed"
+msgstr "Схема {0} не дозволена"
+
+#: frappe/beeone/ai
+msgid "Table {0} is not accessible"
+msgstr "Таблиця {0} недоступна"
+
+#: frappe/beeone/ai
+msgid "{0} is a single document; use get_document"
+msgstr "{0} — одиничний документ; використайте get_document"
+
+#: frappe/beeone/ai
+msgid "Operational posting of a document with a future date is not allowed"
+msgstr "Оперативне проведення документа майбутньою датою заборонено"
+
+#: frappe/beeone/ai
+msgid "{0} has no deletion mark"
+msgstr "Об'єкт „{0}“ не має позначки на видалення"

@@ -185,6 +185,10 @@ def _check_tables(stmt, views):
 				raise frappe.PermissionError(_("Schema {0} is not allowed").format(tbl.db))
 		if name in cte_names and not tbl.db:
 			continue
+		if name not in views and not name.startswith("tab") and frappe.db.exists("DocType", name):
+			# a model often writes the DocType itself ("Customer Settlements"): its table is meant
+			name = f"tab{name}"
+			tbl.set("this", exp.to_identifier(name, quoted=True))
 		if name in views:
 			view = views[name]
 			for dt in view.get("doctypes") or []:
