@@ -77,6 +77,66 @@ class Source:
 		}
 
 
+# ---------------------------------------------------------------- subaccounts
+
+
+def _subaccount_owners(src, accounts):
+	"""{subaccount: the asked account}: the subaccounts (of any depth) of the asked accounts that were not asked themselves.
+
+	A parent account with subaccounts has no own entries (as in 1C): asked alone, it is read with its subaccounts and
+	their sums come back under its code. Asked together with its subaccounts (a trial balance), every one keeps its own.
+	"""
+	if not accounts:
+		return {}
+	account_doctype = frappe.get_meta(src.reg.register_doctype).get_field(src.m["account"]["debit"]).options
+	parent_field = frappe.db.get_value("Chart of Accounts", {"account_doctype": account_doctype}, "parent_account_field")
+	if not parent_field:
+		return {}
+	children = {}
+	level = list(accounts)
+	while level:  # one statement per level of the tree; none for accounts without subaccounts
+		rows = frappe.get_all(account_doctype, filters={parent_field: ["in", level]}, fields=["name", parent_field], as_list=True)
+		for name, parent in rows:
+			children.setdefault(parent, []).append(name)
+		level = [name for name, _parent in rows if name not in children]
+	asked = set(accounts)
+	owners = {}
+	for account in accounts:
+		stack = list(children.get(account, ()))
+		while stack:
+			child = stack.pop()
+			if child in asked or child in owners:
+				continue
+			owners[child] = account
+			stack.extend(children.get(child, ()))
+	return owners
+
+
+def _with_subaccounts(src, group):
+	"""(the group with the subaccounts of its accounts, {subaccount: asked account})."""
+	owners = _subaccount_owners(src, group.accounts)
+	if not owners:
+		return group, owners
+	wide = Group(group.accounts + sorted(owners), group.level_slots, group.filters, group.slow)
+	return wide, owners
+
+
+def _owned(result, owners):
+	"""The keys of a turnover result with the subaccounts put under the asked account."""
+	if not owners:
+		return result
+	out = {}
+	for (account, levels, currency), vec in result.items():
+		key = (owners.get(account, account), levels, currency)
+		target = out.get(key)
+		if target is None:
+			out[key] = list(vec)
+		else:
+			for i, value in enumerate(vec):
+				target[i] += value
+	return out
+
+
 # ---------------------------------------------------------------- periods
 
 
@@ -232,13 +292,22 @@ def acc_turnover(
 	out = {}
 	months, edges = split_range(begin, end)
 	args = (organizations, currency, by_currency, n_levels)
-	for group in groups:
+	for asked in groups:
+		group, owners = _with_subaccounts(src, asked)
+		part = {}
 		if group.slow:
-			_read_entries(src, group, [(begin, end)], out, *args)
-			continue
-		if months:
-			_read_totals(src, group, months, out, *args)
-		_read_entries(src, group, edges, out, *args)
+			_read_entries(src, group, [(begin, end)], part, *args)
+		else:
+			if months:
+				_read_totals(src, group, months, part, *args)
+			_read_entries(src, group, edges, part, *args)
+		for key, vec in _owned(part, owners).items():
+			target = out.get(key)
+			if target is None:
+				out[key] = vec
+			else:
+				for i, value in enumerate(vec):
+					target[i] += value
 	return out
 
 
@@ -283,6 +352,7 @@ def side_condition(src, groups, organizations=(), currency=None, sides=SIDES):
 	"""
 	parts, params = [], []
 	for group in groups:
+		group = _with_subaccounts(src, group)[0]  # an entry of a subaccount touches its parent account
 		for side in sides:
 			sw = Where()
 			_common_where(group, sw, src.entry_cols(side), organizations, currency, with_org=False)
@@ -333,7 +403,8 @@ def acc_corr_turnover(register, begin, end, groups, organizations=(), currency=N
 	src = Source(register)
 	amount = src.m["amount"]
 	out = {}
-	for group in groups:
+	for asked in groups:
+		group, owners = _with_subaccounts(src, asked)
 		for side, other in (("debit", "credit"), ("credit", "debit")):
 			w = Where()
 			if begin is not None:
@@ -347,7 +418,7 @@ def acc_corr_turnover(register, begin, end, groups, organizations=(), currency=N
 				f"FROM {db.quote(src.entries)} WHERE {w.sql()} GROUP BY {own}, {corr}"
 			)
 			for r in frappe.db.sql(sql, w.params, as_dict=True):
-				vec = out.setdefault((r["account"], r["corr"] or ""), [0.0, 0.0])
+				vec = out.setdefault((owners.get(r["account"], r["account"]), r["corr"] or ""), [0.0, 0.0])
 				vec[0 if side == "debit" else 1] += flt(r["total"])
 	return out
 
@@ -366,9 +437,10 @@ def acc_side_sums(register, side, account, date_from, date_to, organization, cor
 		f"SELECT {slot} AS sub_key, "
 		f"COALESCE(SUM(CASE WHEN {date} < %s THEN {m['amount']} END), 0) AS before_sum, "
 		f"COALESCE(SUM(CASE WHEN {date} >= %s THEN {m['amount']} END), 0) AS turn_sum "
-		f"FROM {db.quote(src.entries)} WHERE {m['organization']} = %s AND {m['account'][side]} = %s AND {date} <= %s"
+		f"FROM {db.quote(src.entries)} WHERE {m['organization']} = %s AND {m['account'][side]} IN %s AND {date} <= %s"
 	)
-	values = [date_from, date_from, organization, account, date_to]
+	accounts = (account, *_subaccount_owners(src, [account]))
+	values = [date_from, date_from, organization, accounts, date_to]
 	if corr_like:
 		sql += " AND (" + " OR ".join([f"{m['account'][other]} LIKE %s"] * len(corr_like)) + ")"
 		values += list(corr_like)
@@ -391,6 +463,8 @@ def acc_entry_balances(register, organization, upto, accounts, type_fields=None)
 		return []
 	src = Source(register)
 	m, date = src.m, src.date_field
+	owners = _subaccount_owners(src, accounts)
+	accounts = accounts + sorted(owners)
 	parts, params = [], []
 	for side, other in (("debit", "credit"), ("credit", "debit")):
 		select = [f"{m['account'][side]} AS account"]
@@ -419,7 +493,7 @@ def acc_entry_balances(register, organization, upto, accounts, type_fields=None)
 	)
 	return [
 		{
-			"account": r.account,
+			"account": owners.get(r.account, r.account),
 			"types": [r.t1 or "", r.t2 or "", r.t3 or ""],
 			"subs": [r.s1 or "", r.s2 or "", r.s3 or ""],
 			"currency": r.cur or "",
