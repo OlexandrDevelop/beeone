@@ -907,3 +907,68 @@ def table_name(prefix: str, register: str) -> str:
 	digest = hashlib.sha1(name.encode()).hexdigest()[:8]
 	room = limit - len(prefix.encode()) - 9
 	return f"{prefix}{name.encode()[:room].decode(errors='ignore')}_{digest}"
+
+
+# ---------------------------------------------------------------- autonomous counter
+
+_autonomous = __import__("threading").local()
+
+
+def _autonomous_connection():
+	"""A raw connection of the site in autocommit, one per thread and site (the transaction of the request is not it)."""
+	site = frappe.local.site
+	conns = getattr(_autonomous, "conns", None)
+	if conns is None:
+		conns = _autonomous.conns = {}
+	conn = conns.get(site)
+	if conn is None:
+		conn = frappe.db.get_connection()
+		if dialect().name == "postgres":
+			conn.autocommit = True
+		else:
+			conn.autocommit(True)
+		conns[site] = conn
+	return conn
+
+
+def _drop_autonomous_connection():
+	conns = getattr(_autonomous, "conns", None) or {}
+	conn = conns.pop(frappe.local.site, None)
+	if conn is not None:
+		try:
+			conn.close()
+		except Exception:
+			pass
+
+
+def autonomous_counter(table: str, key: str, count: int) -> int:
+	"""Add `count` to the counter `key` of `table` (columns name, current) in its own committed transaction and return
+	the new value. The row is locked for one statement, not for the whole posting that asked for a number."""
+	q = quote
+	if dialect().name == "postgres":
+		sql = (
+			f"INSERT INTO {q(table)} ({q('name')}, {q('current')}) VALUES (%s, %s) "
+			f"ON CONFLICT ({q('name')}) DO UPDATE SET {q('current')} = {q(table)}.{q('current')} + EXCLUDED.{q('current')} "
+			f"RETURNING {q('current')}"
+		)
+		params, then = (key, count), None
+	else:
+		sql = (
+			f"INSERT INTO {q(table)} ({q('name')}, {q('current')}) VALUES (%s, LAST_INSERT_ID(%s)) "
+			f"ON DUPLICATE KEY UPDATE {q('current')} = LAST_INSERT_ID({q('current')} + %s)"
+		)
+		params, then = (key, count, count), "SELECT LAST_INSERT_ID()"
+	for attempt in (1, 2):
+		try:
+			cursor = _autonomous_connection().cursor()
+			cursor.execute(sql, params)
+			if then:
+				cursor.execute(then)
+			value = cursor.fetchone()[0]
+			cursor.close()
+			return int(value)
+		except Exception:
+			# a connection closed by the server (restart, idle timeout): one new connection, then fail
+			_drop_autonomous_connection()
+			if attempt == 2:
+				raise

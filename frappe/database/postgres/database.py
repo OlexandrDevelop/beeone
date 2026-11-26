@@ -23,7 +23,7 @@ from psycopg2.errors import (
 	SequenceGeneratorLimitExceeded,
 	SyntaxError,
 )
-from psycopg2.extensions import ISOLATION_LEVEL_REPEATABLE_READ
+from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_REPEATABLE_READ
 
 import frappe
 from frappe.database.database import Database
@@ -45,6 +45,19 @@ LOCATE_QUERY_PATTERN = re.compile(r"locate\(", flags=re.IGNORECASE)
 PG_TRANSFORM_PATTERN = re.compile(r"([=><]+)\s*([+-]?\d+)(\.0)?(?![a-zA-Z\.\d])")
 FROM_TAB_PATTERN = re.compile(r"from tab([\w-]*)", flags=re.IGNORECASE)
 
+
+
+def isolation_level():
+	"""The isolation of the transactions: READ COMMITTED unless the site config says `postgres_isolation_level:
+	"repeatable_read"`.
+
+	A posting locks its keys (the totals of the registers, the counter of the numbers) with SELECT ... FOR UPDATE and
+	then reads them. In READ COMMITTED a second posting of the same key waits for the first and reads what it wrote,
+	as 1C does on PostgreSQL and as a locking read of MariaDB InnoDB does; in REPEATABLE READ PostgreSQL ends the second
+	posting with "could not serialize access" instead (a busy item or the number counter of a document type failed
+	every other posting of a hundred users)."""
+	level = str(frappe.conf.get("postgres_isolation_level") or "read_committed").lower().replace(" ", "_")
+	return ISOLATION_LEVEL_REPEATABLE_READ if level == "repeatable_read" else ISOLATION_LEVEL_READ_COMMITTED
 
 class PostgresExceptionUtil:
 	ProgrammingError = psycopg2.ProgrammingError
@@ -195,7 +208,7 @@ class PostgresDatabase(PostgresExceptionUtil, Database):
 			conn_settings["port"] = self.port
 
 		conn = psycopg2.connect(**conn_settings)
-		conn.set_isolation_level(ISOLATION_LEVEL_REPEATABLE_READ)
+		conn.set_isolation_level(isolation_level())
 
 		return conn
 

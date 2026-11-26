@@ -112,3 +112,56 @@ What it shows:
 - Load speed: the earlier row-by-row loader of this task ran at about 170 thousand rows per minute on MariaDB
   (about 1 hour for 10 million rows); that is why the generator uses multi-row inserts. No new measurement of the
   batch loader was made in this task (decision of the user, 2026-11-02).
+
+## Balances and turnovers from the totals tables (2026-11-26)
+
+Code: `frappe/beeone/registers/totals_read.py`, used by `query.balance`, `query.turnover` and the opening balance of
+`query.balance_and_turnover`. As 1C reads its totals:
+
+- a balance on a date of this or the previous month = the current balance (`__beeone_cur_*`) minus the movements after
+  the date;
+- an earlier balance = the monthly turnovers (`__beeone_tot_*`) before its month plus the movements of its month;
+- a turnover takes its whole months from the monthly turnovers and only the cut months from the movements.
+
+The row level rights (`rights.restrictions`, the User Permissions of the other Link dimensions) are applied to the
+totals keys; a filter the text keys cannot take (`like`, `<`, …) or a Link permission of a dimension that is not
+restricting reads the movements as before. The monthly totals get index (dimensions…, period) for one key.
+Site config `beeone_register_totals_reads: 0` switches it off. Equality: `test_beeone_register_totals_read` (random
+movements of two years, every kind of date, grouping and filter, the rights) and 616 checks on a copy of a working
+HiveFirm site (every register, six dates, four groupings, four periods): no difference.
+
+Measured on 2 000 000 movements, PostgreSQL 16, 500 items × 5 warehouses × 5 years (dense keys), median:
+
+| Query | movements | totals | × |
+| --- | --- | --- | --- |
+| balance today by item | 407 ms | 43 ms | 9.4 |
+| balance today by warehouse and item | 523 ms | 92 ms | 5.7 |
+| balance at the end of a past month by item | 415 ms | 79 ms | 5.2 |
+| balance of a date three years ago by item | 266 ms | 44 ms | 6.0 |
+| turnover of a year by item | 226 ms | 34 ms | 6.6 |
+| turnover of one month by item | 31 ms | 8 ms | 3.7 |
+| balance of one key on a date | 5.8 ms | 2.8 ms | 2.1 |
+
+The time of the totals does not grow with the history; the time of the movements does. With sparse keys (the default
+benchmark, 5000 items × 20 warehouses, about one movement per key and month) the monthly totals are as big as the
+movements and the gain is 1.3–4×.
+
+## Concurrent postings on PostgreSQL (2026-11-26)
+
+- Isolation: READ COMMITTED (site config `postgres_isolation_level: "repeatable_read"` gives the old one). A posting
+  locks its keys with SELECT … FOR UPDATE and then reads them; in REPEATABLE READ PostgreSQL ended every second
+  posting of a busy key (the totals of an item, the counter of the numbers) with "could not serialize access", in READ
+  COMMITTED it waits and reads what the first one wrote, as 1C on PostgreSQL and as a locking read of InnoDB.
+- Numbering: the counter of a document type is taken in its own committed transaction (`db.autonomous_counter`), so
+  the documents of one type no longer queue on one row for the whole posting. A failed posting leaves a gap; a DocType
+  that must have none is listed in the hook `beeone_numbering_in_transaction`; site config
+  `beeone_numbering_autonomous: 0` keeps every counter in the transaction.
+- `lock_keys` locks in chunks of 500 keys (one statement of tens of thousands of row values exceeded the parser stack).
+- PostgreSQL keeps the table list in the client cache, as MariaDB does (`information_schema` was asked several times
+  per posting).
+
+Load test of a copy of a working HiveFirm site (100 users, a think time of 3–8 s, 17 actions/s: lists, forms, catalogs,
+search, 13 reports, «save and post» of sales shipments by 25 users over 32 items), 8 gunicorn workers × 4 threads on a
+shared 12-core host: lists 0.11 s / p99 0.5 s, forms 0.14 s / 0.7 s, reports 0.24 s / 1.0 s, catalogs 0.26 s / 1.5 s,
+posting 0.4–1.0 s median without errors (before: 81 of 192 postings failed, reports p99 3.7 s). The rest of the time
+is CPU of the application: the transactions mostly wait for the client, rarely for a lock.

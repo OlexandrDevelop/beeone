@@ -10,12 +10,28 @@ separator. The counter lives in the standard `Series` table and is read under a 
 
 A DocType takes its names from the settings with `"autoname": "numbering"`, or code calls
 `next_name()` / `name_for()` directly.
+
+The number is taken in its own short committed transaction (`db.autonomous_counter`): the counter of a document type
+is locked for one statement, not for the whole posting, so parallel postings of one type do not queue on it. A posting
+that fails afterwards leaves a gap in the numbers. A DocType that must have no gaps (a tax invoice) is listed in the
+hook `beeone_numbering_in_transaction` and keeps the counter in the transaction of the document, under a row lock;
+site config `beeone_numbering_autonomous: 0` keeps every counter there. The tests keep it there too (their
+transaction is rolled back), unless `frappe.flags.beeone_numbering_autonomous` asks for the autonomous one.
 """
 
 import frappe
 from frappe import _
 from frappe.model.naming import getseries
 from frappe.utils import cint, getdate
+
+def autonomous(ref_doctype: str) -> bool:
+	"""Whether the counter of `ref_doctype` is taken in its own transaction (see the module docstring)."""
+	if frappe.flags.beeone_numbering_autonomous is not None:
+		return bool(frappe.flags.beeone_numbering_autonomous)
+	if frappe.flags.in_test or not cint(frappe.conf.get("beeone_numbering_autonomous", 1)):
+		return False
+	return ref_doctype not in set(frappe.get_hooks("beeone_numbering_in_transaction") or [])
+
 
 RESET_NEVER = "Never"
 RESET_YEARLY = "Yearly"
@@ -72,6 +88,8 @@ def next_name(
 		prefix, scope=scope, scope_chars=scope_chars, reset=reset, date=date, separator=separator
 	)
 	series_key = key or f"NS:{ref_doctype}:{head}"
+	if autonomous(ref_doctype):
+		return head + ("%0" + str(int(digits)) + "d") % db.autonomous_counter("tabSeries", series_key, 1)
 	try:
 		db.insert_missing("Series", {"name": series_key, "current": 0})
 	except Exception as e:
@@ -110,6 +128,9 @@ def next_names(
 	if head:
 		head += glue
 	series_key = key or f"NS:{ref_doctype}:{head}"
+	if autonomous(ref_doctype):
+		last = db.autonomous_counter("tabSeries", series_key, count)
+		return [head + ("%0" + str(int(digits)) + "d") % n for n in range(last - count + 1, last + 1)]
 	try:
 		db.insert_missing("Series", {"name": series_key, "current": 0})
 	except Exception as e:
