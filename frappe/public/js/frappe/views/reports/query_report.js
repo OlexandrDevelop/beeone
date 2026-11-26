@@ -2606,6 +2606,10 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.$status.html(status_message).show();
 	}
 	show_report_message(message) {
+		// beeone: a list of lines (the header of a report: title, organizations, date) is one line each, not glued
+		if (Array.isArray(message)) {
+			message = message.map((line) => `<div class="bo-report-line">${line}</div>`).join("");
+		}
 		this.$report_message.html(message).show();
 	}
 	hide_status() {

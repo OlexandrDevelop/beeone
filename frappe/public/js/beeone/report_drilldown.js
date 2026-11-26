@@ -172,6 +172,14 @@ frappe.provide("beeone.drill");
 
 		const column = report.datatable.getColumn ? report.datatable.getColumn(col_index) : null;
 		const fieldname = column && ((column.docfield && column.docfield.fieldname) || column.fieldname || column.id);
+		// a report's own menu: `drill_menu(report, row, fieldname)` of its script gives the items ({label, hint, icon, run})
+		const own_menu = report.report_settings && report.report_settings.drill_menu;
+		const own_items = own_menu && own_menu(report, row, fieldname);
+		if (own_items) {
+			const [mx, my] = [e.clientX, e.clientY];
+			Promise.resolve(own_items).then((items) => D.menu(mx, my, __("Drill down"), items || []));
+			return;
+		}
 		const row_links = D.row_links(report, row);
 		const ctx = {
 			row: row_links,
