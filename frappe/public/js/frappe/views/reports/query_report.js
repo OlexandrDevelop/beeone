@@ -1333,6 +1333,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		// beeone: resources «one under another» need a line of the row for every part of a resource
 		const bo_lines = Math.max(1, ...columns.map((c) => (c.bo_stack ? c.bo_stack.length : 1)));
 		const bo_cell_height = 22 + 17 * (bo_lines - 1);
+		// a row of several lines: a long text wraps onto them instead of being cut (user 2026-11-26)
+		this.$report.toggleClass("bo-wrap", bo_lines > 1).css("--bo-lines", bo_lines);
 		if (
 			this.datatable &&
 			this.datatable.options &&

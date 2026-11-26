@@ -225,3 +225,21 @@ html[data-theme="dark"] body.bo-shell .bo-report .dt-header .dt-cell__content,
 html[data-theme="dark"] body.bo-shell .bo-report .bo-band {
 	color: #e2e8f0;
 }
+
+// A row of several lines (the resources «one under another»): a long text of a cell wraps onto the lines of the row
+// instead of being cut; what does not fit in them ends with «…» (user 2026-11-26).
+.bo-wrap .dt-scrollable .dt-cell__content {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-overflow: clip;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: var(--bo-lines, 1);
+	overflow: hidden;
+}
+.bo-wrap .dt-scrollable .dt-tree-node {
+	display: block; // the indent of the level holds for every line of the text
+}
+.bo-wrap .dt-scrollable .dt-cell__content .bo-rt {
+	display: inline; // the text of a group row goes on after the toggle of the level; the cell carries the tone
+}
