@@ -25,6 +25,15 @@ class TestAccountingQuery(base.TestAccountingTotals):
 		self.post("D3", self.entry("CUR", "A1", 70, "2026-02-17", currency_dr="USD", currency_amount_dr=2))
 		self.post("D4", self.entry("SUB", "A1", 5, "2026-03-04", sub_dr1="P2"), self.entry("A1", "A2", 9, "2026-03-04", org="O2"))
 
+	def test_empty_value_filter(self):
+		# an empty value among the allowed ones stands for an empty column (a contract settled without documents)
+		w = q.Where()
+		w.in_("c", ["A", None])
+		self.assertEqual((w.sql(), w.params), ("(c IN (%s) OR COALESCE(c, '') = '')", ["A"]))
+		w = q.Where()
+		w.in_("c", [""])
+		self.assertEqual((w.sql(), w.params), ("COALESCE(c, '') = ''", []))
+
 	def test_split_range(self):
 		self.assertEqual(
 			q.split_range(date(2026, 1, 1), date(2026, 4, 1)), ((date(2026, 1, 1), date(2026, 4, 1)), [])

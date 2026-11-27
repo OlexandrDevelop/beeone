@@ -179,12 +179,18 @@ class Where:
 		self.params.extend(params)
 
 	def in_(self, column, values):
+		"""`column` is one of `values`; an empty value (None or "") among them stands for an empty column."""
 		values = list(values)
 		if not values:
 			self.parts.append("1 = 0")
 			return
-		self.parts.append(f"{column} IN ({', '.join(['%s'] * len(values))})")
-		self.params.extend(values)
+		filled = [v for v in values if v not in (None, "")]
+		condition = f"{column} IN ({', '.join(['%s'] * len(filled))})" if filled else ""
+		if len(filled) < len(values):
+			empty = f"COALESCE({column}, '') = ''"
+			condition = f"({condition} OR {empty})" if condition else empty
+		self.parts.append(condition)
+		self.params.extend(filled)
 
 	def sql(self):
 		return " AND ".join(self.parts) if self.parts else "1 = 1"
