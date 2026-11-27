@@ -634,7 +634,15 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		const { filters = [] } = this.report_settings;
 
 		let filter_area = this.page.page_form;
+		let compact_settings_area = filter_area;
 		this.filters = [];
+		if (this.report_settings.compact_filters) {
+			this.page.wrapper.addClass("bo-report-compact");
+			const settings = $(
+				`<details class="bo-report-settings"><summary>${__("Settings")}</summary><div class="bo-report-settings-fields"></div></details>`
+			).appendTo(filter_area);
+			compact_settings_area = settings.find(".bo-report-settings-fields");
+		}
 		if (this.report_settings.separate_check_filters) this.setup_check_filter_area();
 		this.filters = filters
 			.map((df, index) => {
@@ -643,7 +651,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				if (df.fieldtype === "Check" && this.check_filter_area) {
 					f = this.page.add_field(df, this.check_filter_area);
 				} else {
-					f = this.page.add_field(df, filter_area);
+					f = this.page.add_field(df, df.compact ? compact_settings_area : filter_area);
 				}
 				if (df.default) {
 					f.set_input(df.default);
@@ -2614,6 +2622,10 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		this.$status.html(status_message).show();
 	}
 	show_report_message(message) {
+		if (this.report_settings.hide_screen_header && Array.isArray(message)) {
+			this.$report_message.empty().hide();
+			return;
+		}
 		// beeone: a list of lines (the header of a report: title, organizations, date) is one line each, not glued
 		if (Array.isArray(message)) {
 			message = message.map((line) => `<div class="bo-report-line">${line}</div>`).join("");

@@ -15,6 +15,49 @@
 	}
 }
 
+// Compact report filters keep the result visible while leaving filter values and
+// their normal change handlers untouched. Reports opt in through
+// `compact_filters`; infrequent controls can additionally set `compact: true`.
+.bo-report-compact {
+	.page-form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		column-gap: 8px;
+		row-gap: 4px;
+
+		.form-group {
+			margin: 0;
+			padding-right: 0;
+			min-height: 28px;
+		}
+
+		.form-control,
+		.control-input {
+			min-height: 28px;
+			height: 28px;
+		}
+
+		.bo-report-settings {
+			flex: 1 0 100%;
+			margin: 0;
+
+			> summary {
+				cursor: pointer;
+				line-height: 28px;
+				min-height: 28px;
+			}
+
+			.bo-report-settings-fields {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: flex-end;
+				gap: 4px 8px;
+			}
+		}
+	}
+}
+
 // grid report
 .grid-report .plot {
 	margin: 15px;
