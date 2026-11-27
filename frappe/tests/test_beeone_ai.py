@@ -412,7 +412,8 @@ class TestBeeoneAI(IntegrationTestCase):
 		with patch("frappe.beeone.subscription.has_feature", return_value=False):
 			r = self.ask(FakeModel([]))
 		self.assertEqual(r["status"], "Without Model")
-		self.assertIn("subscription", r["answer"])
+		# the texts of the assistant are Ukrainian whatever the language of the user
+		self.assertIn("за підпискою BeeOne", r["answer"])
 		self.assertIn("Press «Fill»", r["answer"])
 
 	def test_cloud_sends_the_conversation_to_the_server_with_the_key(self):
