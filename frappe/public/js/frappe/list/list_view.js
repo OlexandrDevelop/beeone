@@ -2023,6 +2023,9 @@ frappe.views.ListView = class ListView extends frappe.views.BaseList {
 			let formatter = this.settings.formatters[subject_field.fieldname];
 			value = formatter(value, subject_field, doc);
 		}
+		if (subject_field.fieldtype === "Select" && value) {
+			value = __(value);
+		}
 
 		if (!value) {
 			value = doc.name;
