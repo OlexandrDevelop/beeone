@@ -94,7 +94,8 @@ frappe.ui.form.ControlMultiSelectList = class ControlMultiSelectList extends (
 					let options = this._selected_values
 						.concat(filtered_options)
 						.uniqBy((opt) => opt.value);
-					this.set_selectable_items(options);
+					const titles = this.bo_option_titles(options);
+					Promise.resolve(titles).then(() => this.set_selectable_items(options));
 				});
 			}, 300)
 		);
@@ -128,8 +129,11 @@ frappe.ui.form.ControlMultiSelectList = class ControlMultiSelectList extends (
 				this._options = this._selected_values
 					.concat(this._options)
 					.uniqBy((opt) => opt.value);
-				this.set_selectable_items(this._options);
-				this.$filter_input.trigger("focus");
+				// beeone: the selected values listed by their titles too
+				return Promise.resolve(this.bo_option_titles()).then(() => {
+					this.set_selectable_items(this._options);
+					this.$filter_input.trigger("focus");
+				});
 			});
 		});
 
@@ -294,7 +298,27 @@ frappe.ui.form.ControlMultiSelectList = class ControlMultiSelectList extends (
 		} else {
 			this._options = this.process_options(this.df.options);
 		}
-		return promise;
+		return promise.then(() => this.bo_option_titles());
+	}
+
+	// beeone: options of a DocType given by their names only (organizations of a report filter) are listed by the
+	// titles of their records — «ВІМАКС ПРО», not «000000001»; the name stays the value
+	bo_option_titles(options) {
+		const doctype = this.df.options;
+		if (!doctype || typeof doctype !== "string" || !frappe.boot.user.can_read?.includes(doctype)) return;
+		const bare = (options || this._options || []).filter((opt) => opt.value && opt.label === opt.value);
+		return Promise.all(
+			bare.map((opt) => {
+				const known = frappe.utils.get_link_title(doctype, opt.value);
+				const title = known ? Promise.resolve(known) : frappe.utils.fetch_link_title(doctype, opt.value);
+				return title.then((t) => {
+					if (t && t !== opt.value) {
+						opt.label = frappe.utils.escape_html(t);
+						if (!opt.description) opt.description = frappe.utils.escape_html(opt.value);
+					}
+				});
+			})
+		).catch(() => {});
 	}
 
 	set_selectable_items(options) {

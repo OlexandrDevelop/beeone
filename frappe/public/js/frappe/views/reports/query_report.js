@@ -500,7 +500,11 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 			// beeone: the items of «Дії» first, the buttons of the report (onload) after them
 			() => this.set_actions(),
 			() => this.report_settings.onload && this.report_settings.onload(this),
-			() => (this._no_refresh = false),
+			() => {
+				this._no_refresh = false;
+				// beeone: a set_filter_value started in onload (not awaited) must not put the suppression back
+				this._no_refresh_epoch = (this._no_refresh_epoch || 0) + 1;
+			},
 			() => this.refresh(),
 			// rebuild the dropdown here (not in load_report) because
 			// clear_custom_actions() above wipes it, and refresh_report also runs
@@ -1840,6 +1844,7 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 		}
 
 		const previously_suppressed = this._no_refresh;
+		const epoch = this._no_refresh_epoch;
 		this._no_refresh = true;
 		try {
 			for (const fieldname of Object.keys(field_value_map)) {
@@ -1850,7 +1855,8 @@ frappe.views.QueryReport = class QueryReport extends frappe.views.BaseList {
 				}
 			}
 		} finally {
-			this._no_refresh = previously_suppressed;
+			// beeone: the report has lifted the suppression meanwhile (the end of refresh_report): it stays lifted
+			this._no_refresh = epoch === this._no_refresh_epoch ? previously_suppressed : false;
 		}
 		if (!previously_suppressed) this.refresh(true);
 	}
