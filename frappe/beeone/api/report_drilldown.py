@@ -117,7 +117,7 @@ def _links(filters, doctypes) -> dict:
 	by_doctype = {}
 	for f in filters:
 		doctype = f.get("options")
-		if f.get("fieldtype") != "Link" or doctype not in doctypes:
+		if f.get("fieldtype") not in ("Link", "MultiSelectList") or doctype not in doctypes:
 			continue
 		name = f["fieldname"]
 		if name == scrub(doctype):
@@ -158,12 +158,14 @@ def targets(report: str, doctypes=None, row_doctypes=None) -> list[dict]:
 				continue
 		except Exception:
 			continue
+		multi = [f["fieldname"] for f in entry["filters"] if f["fieldname"] in links and f.get("fieldtype") == "MultiSelectList"]
 		hits_row = sum(1 for dt in links.values() if dt in row_doctypes)
 		result.append(
 			{
 				"report": name,
 				"label": frappe._(name),
 				"links": links,
+				"multi": multi,  # the list filters among `links`: they take a list of values
 				"period": _period(entry["filters"]),
 				"same": name == report,
 				# the row's values first, then a report of the same subsystem

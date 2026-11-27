@@ -57,6 +57,9 @@ frappe.provide("beeone.drill");
 			const value = f.get_value && f.get_value();
 			if (df.fieldtype === "Link" && df.options && value && typeof value === "string") {
 				out.push({ doctype: df.options, value, fieldname: df.fieldname, label: df.label });
+			} else if (df.fieldtype === "MultiSelectList" && df.options && Array.isArray(value) && value.length) {
+				// a list filter (organizations): its values go on as a list, or the first one into a Link filter
+				out.push({ doctype: df.options, value: value[0], values: value, fieldname: df.fieldname, label: df.label });
 			}
 		});
 		return out;
@@ -79,7 +82,8 @@ frappe.provide("beeone.drill");
 				(ctx.clicked && ctx.clicked.doctype === doctype && ctx.clicked) ||
 				ctx.row.find((l) => l.doctype === doctype) ||
 				ctx.filters.find((l) => l.doctype === doctype);
-			if (pick) filters[fieldname] = pick.value;
+			if (!pick) return;
+			filters[fieldname] = (target.multi || []).includes(fieldname) ? pick.values || [pick.value] : pick.value;
 		});
 		const src = ctx.period;
 		const p = target.period || {};
@@ -218,7 +222,8 @@ frappe.provide("beeone.drill");
 				const hint = Object.entries(t.links || {})
 					.filter(([f]) => filters[f])
 					.map(([f, dt]) => {
-						return `${__(dt)}: ${frappe.utils.get_link_title(dt, filters[f]) || filters[f]}`;
+						const v = Array.isArray(filters[f]) ? filters[f].join(", ") : filters[f];
+						return `${__(dt)}: ${frappe.utils.get_link_title(dt, v) || v}`;
 					})
 					.join(" · ");
 				items.push({ icon: "file-text", label: __(t.report), hint, run: () => D.open_report(report, t, ctx) });
