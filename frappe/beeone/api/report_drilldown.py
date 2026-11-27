@@ -83,6 +83,7 @@ def _catalog() -> list[dict]:
 			"Report Filter",
 			filters={"parent": row.name, "parenttype": "Report"},
 			fields=["fieldname", "fieldtype", "options", "label"],
+			order_by="idx asc",
 		):
 			filters.setdefault(f.fieldname, dict(f))
 		if not filters:
@@ -111,13 +112,20 @@ def _period(filters) -> dict:
 
 
 def _links(filters, doctypes) -> dict:
-	"""One filter per DocType: `counterparty` before `counterparty_group`, a plain one before a «group» one."""
+	"""One filter per DocType: `counterparty` before `counterparty_group`, a plain one before a «group» or a
+	correspondent one (`account` of «Ledger Account» before `corr_account`)."""
 	by_doctype = {}
 	for f in filters:
 		doctype = f.get("options")
 		if f.get("fieldtype") != "Link" or doctype not in doctypes:
 			continue
-		rank = 0 if f["fieldname"] == scrub(doctype) else 2 if "group" in f["fieldname"] else 1
+		name = f["fieldname"]
+		if name == scrub(doctype):
+			rank = 0
+		elif "group" in name or name.startswith("corr"):
+			rank = 2
+		else:
+			rank = 1
 		if doctype not in by_doctype or rank < by_doctype[doctype][0]:
 			by_doctype[doctype] = (rank, f["fieldname"])
 	return {fieldname: doctype for doctype, (_rank, fieldname) in by_doctype.items()}
