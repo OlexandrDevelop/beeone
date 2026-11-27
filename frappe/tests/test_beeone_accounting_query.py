@@ -34,6 +34,16 @@ class TestAccountingQuery(base.TestAccountingTotals):
 		w.in_("c", [""])
 		self.assertEqual((w.sql(), w.params), ("COALESCE(c, '') = ''", []))
 
+	def test_typed_slot_groups_by_the_doctype(self):
+		# T-2563: a typed slot is "DocType<sep>name", an empty value stays empty; other slots are plain
+		group = q.Group(["A1"], level_slots=[2, 0], typed=[2])
+		cols = {"account": "acc", "currency": "cur", "slot": lambda n: f"s{n}", "slot_doctype": lambda n: f"d{n}"}
+		select, group_by = q._select_dims(group, cols, False)
+		self.assertIn(f"CONCAT(COALESCE(d3, ''), '{q.TYPED}', s3) END AS l0", select[1])
+		self.assertEqual(select[2], "s1 AS l1")
+		self.assertEqual(q.split_typed(f"Sales Shipment{q.TYPED}N-1"), ("Sales Shipment", "N-1"))
+		self.assertEqual(q.split_typed("N-1"), (None, "N-1"))
+
 	def test_split_range(self):
 		self.assertEqual(
 			q.split_range(date(2026, 1, 1), date(2026, 4, 1)), ((date(2026, 1, 1), date(2026, 4, 1)), [])

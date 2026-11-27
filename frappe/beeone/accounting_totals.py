@@ -95,12 +95,16 @@ def collect(reg, mapping: dict, row, sign: int, deltas: dict, accounts: dict):
 			if i >= len(definitions) or definitions[i].get(chart.subconto_turnover_only_field):
 				value = ""
 			subs.append(value)
+		# the DocType of a dynamic subconto: two documents of different kinds with the same name are two totals rows
+		types = []
+		for i, field in enumerate((mapping.get("subconto_doctype") or {}).get(side) or []):
+			types.append(cstr(row.get(field)) if subs[i] else "")
 		currency = cstr(row.get(mapping["currency"][side])) if doc.get(chart.currency_accounting_field) else ""
-		name = hashlib.sha1("|".join([period, organization, account, *subs, currency]).encode()).hexdigest()
+		name = hashlib.sha1("|".join([period, organization, account, *subs, currency, *types]).encode()).hexdigest()
 		item = deltas.get(name)
 		if item is None:
 			item = deltas[name] = {
-				"key": (period, organization, account, *subs, currency),
+				"key": (period, organization, account, *subs, currency, *types),
 				"sums": defaultdict(float),
 			}
 		item["sums"][side, "amount"] += sign * flt(row.get(mapping["amount"]))
@@ -113,7 +117,7 @@ def apply(mapping: dict, deltas: dict):
 	if not deltas:
 		return
 	t = mapping["totals"]
-	keys = [t["period"], t["organization"], t["account"], *t["subconto"], t["currency"]]
+	keys = [t["period"], t["organization"], t["account"], *t["subconto"], t["currency"], *(t.get("subconto_doctype") or [])]
 	resources = _columns(mapping)
 	standard = ["owner", "modified_by", "creation", "modified", "docstatus", "idx"]
 	columns = ["name", *standard, *keys, *resources]

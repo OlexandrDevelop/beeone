@@ -28,6 +28,18 @@ SIDES = ("debit", "credit")
 SUMS = ("debit", "credit", "qty_dr", "qty_cr", "cur_dr", "cur_cr")
 
 
+# the separator of the DocType and the name in a typed level value (see Group.typed, split_typed)
+TYPED = "\x1f"
+
+
+def split_typed(value):
+	"""(DocType or None, name) of a level value of a typed slot."""
+	if value and TYPED in value:
+		doctype, _sep, name = value.partition(TYPED)
+		return doctype or None, name
+	return None, value
+
+
 class Group:
 	"""Accounts of one layout, read by one statement.
 
@@ -37,11 +49,13 @@ class Group:
 	slow: read from the entries only.
 	"""
 
-	def __init__(self, accounts, level_slots=(), filters=(), slow=False):
+	def __init__(self, accounts, level_slots=(), filters=(), slow=False, typed=()):
 		self.accounts = list(accounts)
 		self.level_slots = tuple(level_slots)
 		self.filters = [(slot, list(values)) for slot, values in filters]
 		self.slow = slow
+		# slots (0-based) whose level value carries the DocType of a dynamic subconto: "DocType<TYPED>name"
+		self.typed = set(typed or ())
 
 
 class Source:
@@ -65,6 +79,7 @@ class Source:
 			"org": m["organization"],
 			"currency": m["currency"][side],
 			"slot": lambda n: m["subconto"][side][n - 1],
+			"slot_doctype": (lambda n: m["subconto_doctype"][side][n - 1]) if m.get("subconto_doctype") else None,
 		}
 
 	def totals_cols(self) -> dict:
@@ -74,6 +89,7 @@ class Source:
 			"org": t["organization"],
 			"currency": t["currency"],
 			"slot": lambda n: t["subconto"][n - 1],
+			"slot_doctype": (lambda n: t["subconto_doctype"][n - 1]) if t.get("subconto_doctype") else None,
 		}
 
 
@@ -117,7 +133,7 @@ def _with_subaccounts(src, group):
 	owners = _subaccount_owners(src, group.accounts)
 	if not owners:
 		return group, owners
-	wide = Group(group.accounts + sorted(owners), group.level_slots, group.filters, group.slow)
+	wide = Group(group.accounts + sorted(owners), group.level_slots, group.filters, group.slow, group.typed)
 	return wide, owners
 
 
@@ -214,6 +230,12 @@ def _select_dims(group, cols, by_currency):
 	for i, slot in enumerate(group.level_slots):
 		if slot is None:
 			select.append(f"'' AS l{i}")
+		elif slot in group.typed and cols.get("slot_doctype"):
+			value, doctype = cols["slot"](slot + 1), cols["slot_doctype"](slot + 1)
+			select.append(
+				f"CASE WHEN COALESCE({value}, '') = '' THEN '' ELSE CONCAT(COALESCE({doctype}, ''), '{TYPED}', {value}) END AS l{i}"
+			)
+			group_by.append(f"l{i}")
 		else:
 			select.append(f"{cols['slot'](slot + 1)} AS l{i}")
 			group_by.append(f"l{i}")
