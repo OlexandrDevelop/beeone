@@ -153,6 +153,10 @@ def update_password(user, pwd, doctype="User", fieldname="password", logout_all_
 
 	query.run()
 
+	# a new password ends the login without a password (frappe.core.doctype.user.user.remove_password)
+	if doctype == "User" and fieldname == "password" and frappe.db.has_column("User", "login_without_password"):
+		frappe.db.set_value("User", user, "login_without_password", 0, update_modified=False)
+
 	# clear all the sessions except current
 	if logout_all_sessions:
 		from frappe.sessions import clear_sessions

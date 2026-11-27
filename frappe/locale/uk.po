@@ -42242,3 +42242,24 @@ msgstr "Об'єкт „{0}“ не має позначки на видаленн
 #: frappe/public/js/beeone/shell/desk.js
 msgid "Drag a widget to any place of the desktop"
 msgstr "Перетягніть віджет у будь-яке місце робочого столу"
+
+msgid "Remove Password"
+msgstr "Видалити пароль"
+
+msgid "Remove the password of {0}? The user will log in with the login only, without a password, until a new password is set."
+msgstr "Видалити пароль користувача {0}? Користувач входитиме лише за логіном, без пароля, доки йому не встановлять новий пароль."
+
+msgid "Password removed"
+msgstr "Пароль видалено"
+
+msgid "Login Without Password"
+msgstr "Вхід без пароля"
+
+msgid "The password was removed by the administrator: the user logs in with the login only, until a new password is set"
+msgstr "Пароль видалив адміністратор: користувач входить лише за логіном, доки не встановлено новий пароль"
+
+msgid "The password of the Administrator cannot be removed"
+msgstr "Пароль адміністратора видалити не можна"
+
+msgid "The password was removed by {0}"
+msgstr "Пароль видалив {0}"

@@ -71,6 +71,7 @@
   "change_password",
   "new_password",
   "logout_all_sessions",
+  "login_without_password",
   "reset_password_key",
   "last_reset_password_key_generated_on",
   "last_password_reset_date",
@@ -354,6 +355,14 @@
    "fieldtype": "Check",
    "hidden": 1,
    "label": "Logout From All Devices After Changing Password"
+  },
+  {
+   "fieldname": "login_without_password",
+   "fieldtype": "Check",
+   "label": "Login Without Password",
+   "read_only": 1,
+   "default": "0",
+   "description": "The password was removed by the administrator: the user logs in with the login only, until a new password is set"
   },
   {
    "fieldname": "reset_password_key",

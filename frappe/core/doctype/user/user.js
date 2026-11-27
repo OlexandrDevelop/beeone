@@ -190,6 +190,32 @@ frappe.ui.form.on("User", {
 				__("Password")
 			);
 
+			// as in 1С: the user logs in with the login only until a new password is set
+			if (frappe.user.has_role("System Manager") && frm.doc.name != "Administrator") {
+				frm.add_custom_button(
+					__("Remove Password"),
+					function () {
+						frappe.confirm(
+							__(
+								"Remove the password of {0}? The user will log in with the login only, without a password, until a new password is set.",
+								[frm.doc.full_name || frm.doc.name]
+							),
+							() =>
+								frappe
+									.call({
+										method: "frappe.core.doctype.user.user.remove_password",
+										args: { user: frm.doc.name },
+									})
+									.then(() => {
+										frappe.show_alert({ message: __("Password removed"), indicator: "orange" });
+										frm.reload_doc();
+									})
+						);
+					},
+					__("Password")
+				);
+			}
+
 			if (frappe.user.has_role("System Manager")) {
 				frappe.db.get_single_value("LDAP Settings", "enabled").then((value) => {
 					if (value === 1 && frm.doc.name != "Administrator") {

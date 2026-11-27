@@ -881,6 +881,11 @@ class User(Document):
 
 		user = users[0]
 		user["is_authenticated"] = True
+		if validate_password and not password and user["name"] != "Administrator" and frappe.db.get_value(
+			"User", user["name"], "login_without_password"
+		):
+			# the administrator removed the password: the login alone (frappe.auth.passwordless)
+			return user
 		if validate_password:
 			try:
 				check_password(user["name"], password, delete_tracker_cache=False)
@@ -1566,3 +1571,21 @@ def clear_session(sid_hash: str):
 			delete_session(sid=session, reason="Force Logged out by the user", user=frappe.session.user)
 			frappe.toast(_("Successfully signed out"))
 			return
+
+
+@frappe.whitelist()
+def remove_password(user: str):
+	"""«Видалити пароль» (as in 1С): the user logs in with the login only until a new password is set. System Manager;
+	not the Administrator; the sessions of the user end."""
+	frappe.only_for("System Manager")
+	if user == "Administrator":
+		frappe.throw(_("The password of the Administrator cannot be removed"))
+	if not frappe.db.exists("User", user):
+		frappe.throw(_("User {0} does not exist").format(user))
+	frappe.db.delete("__Auth", {"doctype": "User", "name": user, "fieldname": "password"})
+	frappe.db.set_value("User", user, "login_without_password", 1)
+	from frappe.sessions import clear_sessions
+
+	clear_sessions(user=user, force=True)
+	frappe.get_doc("User", user).add_comment("Info", _("The password was removed by {0}").format(frappe.session.user))
+	return True

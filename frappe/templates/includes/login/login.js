@@ -24,10 +24,7 @@ login.bind_events = function () {
 			login.show_field_error("login_email", {{ _("Email is required.") | tojson }});
 			hasError = true;
 		}
-		if (!args.pwd) {
-			login.show_field_error("login_password", {{ _("Password is required.") | tojson }});
-			hasError = true;
-		}
+		// an empty password is checked by the server: a user whose password was removed logs in with the login only
 		if (hasError) return false;
 		login.call(args, null, "/api/method/login");
 		return false;

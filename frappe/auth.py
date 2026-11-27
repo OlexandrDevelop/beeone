@@ -257,9 +257,11 @@ class LoginManager:
 	def authenticate(self, user: str | None = None, pwd: str | None = None):
 		from frappe.core.doctype.user.user import User
 
-		if not (user and pwd):
+		if not user:
 			user, pwd = frappe.form_dict.get("usr"), frappe.form_dict.get("pwd")
-		if not (user and pwd):
+		pwd = pwd or ""
+		# an empty password is a login only for a user whose password the administrator removed (as in 1С)
+		if not user or not (pwd or passwordless(user)):
 			self.fail(_("Incomplete login details"), user=user)
 
 		if len(pwd) > MAX_PASSWORD_SIZE:
@@ -755,3 +757,14 @@ def validate_auth_via_hooks():
 def check_request_ip():
 	if frappe.local.request_ip is None:
 		frappe.local.request_ip = "127.0.0.1"
+
+
+def passwordless(login: str) -> bool:
+	"""The user of the login (name, or the user name / mobile number when they are allowed) logs in without a password:
+	the administrator removed it (User.login_without_password). Never the Administrator."""
+	from frappe.core.doctype.user.user import User
+
+	found = User.find_by_credentials(login, "", validate_password=False)
+	if not found or found.name == "Administrator":
+		return False
+	return bool(frappe.db.get_value("User", found.name, "login_without_password"))
